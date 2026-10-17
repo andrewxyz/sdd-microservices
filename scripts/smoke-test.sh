@@ -13,10 +13,12 @@ cd "$REPO_ROOT"
 
 LIFECYCLE=0
 SCALE=0
+CONFIG_DOWN=0
 for arg in "$@"; do
   case "$arg" in
     --lifecycle) LIFECYCLE=1 ;;
     --scale) SCALE=1 ;;
+    --config-down) CONFIG_DOWN=1 ;;
     *) echo "unknown option: $arg" >&2; exit 2 ;;
   esac
 done
@@ -112,19 +114,22 @@ GW="http://localhost:9080"
 
 gw_status() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 
+# Waits until the gateway can actually reach a service. Needed after anything that recreates a
+# container, because registration and the gateway's registry fetch are both periodic: the platform
+# reports healthy before it is routable, and SC-002 allows 30s for that to settle.
+wait_for_routable() {
+  for _ in $(seq 1 24); do
+    [ "$(gw_status "$GW/api/v1/echo/ping")" = "200" ] && return 0
+    sleep 5
+  done
+  return 1
+}
+
 # A healthy gateway is not yet a routing gateway. Registration and the gateway's registry fetch are
 # both periodic, so for a few seconds after start the gateway is up but has no instance to route to
 # and correctly answers 503. SC-002 allows 30s for a service to appear, so wait that out before
 # asserting anything that depends on routing; failing here would be reporting the clock, not a bug.
-routable=0
-for _ in $(seq 1 24); do
-  if [ "$(gw_status "$GW/api/v1/echo/ping")" = "200" ]; then
-    routable=1
-    break
-  fi
-  sleep 5
-done
-if [ "$routable" = "1" ]; then
+if wait_for_routable; then
   pass "the gateway routes a public path to the echo service"
 else
   fail "the gateway routes a public path to the echo service" \
@@ -275,8 +280,11 @@ if [ -n "$missing_apps" ]; then
 else
 # The gateway serves from its cached registry during an outage, so the cache has to be warm first:
 # confirm routing works, then take the registry away and check it keeps working.
-if [ "$(gw_status "$GW/api/v1/echo/ping")" != "200" ]; then
-  fail "requests keep working while the registry is down" "routing was already broken before the test"
+# up.sh above may have rebuilt and recreated containers, so wait for routing to settle again before
+# taking the registry away: this test is about surviving an outage, not about startup timing.
+if ! wait_for_routable; then
+  fail "requests keep working while the registry is down" \
+       "the gateway could not route within 120s, so the outage test could not start"
 else
   docker compose stop discovery-server >/dev/null 2>&1
 
@@ -365,6 +373,39 @@ if [ "$SCALE" -eq 1 ]; then
   fi
 
   docker compose --profile scale rm -sf echo-service-b >/dev/null 2>&1
+fi
+
+# --------------------------------------------- live config edit (FR-016, SC-003)
+CONFIG_FILE="backend/config-repo/echo-service.yml"
+if [ -f "$CONFIG_FILE" ]; then
+  original="$(cat "$CONFIG_FILE")"
+  # Always put the file back, even if a check below fails or the script is interrupted.
+  restore_config() { printf '%s\n' "$original" >"$CONFIG_FILE"; }
+  trap restore_config EXIT
+
+  new_greeting="smoke-greeting-$$"
+  printf 'echo:\n  greeting: %s\n' "$new_greeting" >"$CONFIG_FILE"
+
+  landed=0
+  started=$SECONDS
+  for _ in $(seq 1 20); do
+    if curl -s "$GW/api/v1/echo/ping" | grep -q "$new_greeting"; then
+      landed=$((SECONDS - started))
+      break
+    fi
+    sleep 1
+  done
+  restore_config
+
+  if [ "$landed" -gt 0 ] || curl -s "$GW/api/v1/echo/ping" | grep -q "$new_greeting"; then
+    if [ "${landed:-99}" -le 10 ]; then
+      pass "a central config edit reaches the running service in ${landed}s (SC-003 allows 10s)"
+    else
+      fail "a central config edit reaches the running service within 10s" "took ${landed}s"
+    fi
+  else
+    fail "a central config edit reaches the running service within 10s" "never arrived within 20s"
+  fi
 fi
 
 # ----------------------------------------------------------------- lifecycle
