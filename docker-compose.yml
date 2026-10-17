@@ -186,36 +186,6 @@ services:
       retries: 20
       start_period: 30s
 
-  # Throwaway service for the SC-007 walkthrough: proves the README's "add a service" steps produce
-  # a service that registers, loads its settings and routes, with no wiring code of its own.
-  # Started on demand:  docker compose --profile probe up -d probe-service
-  probe-service:
-    profiles: ["probe"]
-    build:
-      context: ./backend
-      dockerfile: docker/Dockerfile
-      args:
-        MODULE: probe-service
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?SPRING_PROFILES_ACTIVE is required}
-      CONFIG_SERVER_URL: http://config-server:9888
-      CONFIG_USER: ${CONFIG_USER:?CONFIG_USER is required}
-      CONFIG_PASSWORD: ${CONFIG_PASSWORD:?CONFIG_PASSWORD is required}
-      EUREKA_URL: http://${EUREKA_USER:?EUREKA_USER is required}:${EUREKA_PASSWORD:?EUREKA_PASSWORD is required}@discovery-server:9761/eureka/
-    ports:
-      - "9001:9001"
-    depends_on:
-      discovery-server:
-        condition: service_healthy
-      config-server:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:9001/actuator/health/readiness"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 30s
-
   # A second copy of the echo service, for checking that calls spread across instances.
   # Started on demand:  docker compose --profile scale up -d echo-service-b
   # No host port: it is reached only through the gateway, by service name.
