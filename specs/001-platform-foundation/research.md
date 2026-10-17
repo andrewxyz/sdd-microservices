@@ -115,6 +115,15 @@ the same checks become permanent tests (see Test mapping).
 - **Outage tolerance**: clients keep their cached registry during a Eureka outage and re-register on their own
   when it returns; the spring-cloud-netflix client does this by default. A permanent test stops and starts
   the registry and asserts routing continues and instances reappear.
+- **Healthy is not routable (measured 2026-10-17)**: a service reports healthy as soon as its own
+  readiness probe passes, but it registers shortly afterwards, and the gateway only sees it on its next
+  5 s registry fetch. Measured on the real stack: immediately after `scripts/up.sh` reported every
+  container healthy, `GET /api/v1/echo/ping` through the gateway returned **503** for several seconds,
+  then 200. The 503 is correct (no instance to route to) but surprising, so `up.sh` and the README now
+  say so explicitly, and the smoke test waits for routability before asserting anything that depends on
+  it. A second consequence: the gateway only survives a registry outage once its instance cache is warm,
+  so the outage check must route successfully first. With a warm cache, a deliberate 30 s outage produced
+  **30/30 successful requests**, confirming FR-014.
 - **Instance identity**: `eureka.instance.prefer-ip-address=true` and
   `instance-id=${spring.application.name}:${HOSTNAME:${random.uuid}}`, so two echo copies are distinct and
   reachable inside Docker networks.

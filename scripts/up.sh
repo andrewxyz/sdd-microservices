@@ -197,4 +197,8 @@ cat <<'EOF'
 
   Stop:   docker compose down
   Reset:  docker compose down -v     (wipes stored data)
+
+  Note: services register with the registry a few seconds after they report healthy, so a request
+  through the gateway can answer 503 for up to about 30 seconds after this message. That is the
+  registry doing its job, not a failure; retry and it clears.
 EOF

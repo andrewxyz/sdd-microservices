@@ -112,11 +112,23 @@ GW="http://localhost:9080"
 
 gw_status() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 
-# Routing through the single entry point (FR-019).
-if [ "$(gw_status "$GW/api/v1/echo/ping")" = "200" ]; then
+# A healthy gateway is not yet a routing gateway. Registration and the gateway's registry fetch are
+# both periodic, so for a few seconds after start the gateway is up but has no instance to route to
+# and correctly answers 503. SC-002 allows 30s for a service to appear, so wait that out before
+# asserting anything that depends on routing; failing here would be reporting the clock, not a bug.
+routable=0
+for _ in $(seq 1 24); do
+  if [ "$(gw_status "$GW/api/v1/echo/ping")" = "200" ]; then
+    routable=1
+    break
+  fi
+  sleep 5
+done
+if [ "$routable" = "1" ]; then
   pass "the gateway routes a public path to the echo service"
 else
-  fail "the gateway routes a public path to the echo service" "got $(gw_status "$GW/api/v1/echo/ping")"
+  fail "the gateway routes a public path to the echo service" \
+       "still $(gw_status "$GW/api/v1/echo/ping") after 120s"
 fi
 
 # Correlation ID: reused when valid, replaced when not (FR-020).
@@ -261,13 +273,28 @@ fi
 if [ -n "$missing_apps" ]; then
   echo "SKIP  registry outage check (services were not all registered)"
 else
-docker compose stop discovery-server >/dev/null 2>&1
-if [ "$(gw_status "$GW/api/v1/echo/ping")" = "200" ]; then
-  pass "requests keep working while the registry is down"
+# The gateway serves from its cached registry during an outage, so the cache has to be warm first:
+# confirm routing works, then take the registry away and check it keeps working.
+if [ "$(gw_status "$GW/api/v1/echo/ping")" != "200" ]; then
+  fail "requests keep working while the registry is down" "routing was already broken before the test"
 else
-  fail "requests keep working while the registry is down" "got $(gw_status "$GW/api/v1/echo/ping")"
+  docker compose stop discovery-server >/dev/null 2>&1
+
+  outage_failures=0
+  for _ in $(seq 1 6); do
+    [ "$(gw_status "$GW/api/v1/echo/ping")" = "200" ] || outage_failures=$((outage_failures + 1))
+    sleep 3
+  done
+
+  if [ "$outage_failures" -eq 0 ]; then
+    pass "requests keep working throughout an 18 second registry outage"
+  else
+    fail "requests keep working while the registry is down" \
+         "$outage_failures of 6 requests failed during the outage"
+  fi
+
+  docker compose start discovery-server >/dev/null 2>&1
 fi
-docker compose start discovery-server >/dev/null 2>&1
 
 recovered=0
 for _ in $(seq 1 24); do

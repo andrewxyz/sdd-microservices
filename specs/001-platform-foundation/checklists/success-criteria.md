@@ -10,7 +10,8 @@ checkout. Timings below are from that setup and should be read as a pessimistic 
 | # | Criterion | Status | Evidence |
 |---|-----------|--------|----------|
 | SC-001 | Healthy in under 3 min warm, 10 min cold | **Met** | Warm start from a wiped state: **149 s**. Cold start including three image builds: completed in a single background run; CI measures both against the 180 s / 600 s budgets and fails if either is exceeded. |
-| SC-002 | Registered within 30 s; gone within 30 s (graceful) or 90 s (crash) | **Met** | `scripts/smoke-test.sh` checks registration of `CONFIG-SERVER`, `ECHO-SERVICE` and `API-GATEWAY`; `--scale` kills a copy and asserts only 200 or 503 follow. |
+| SC-002 | Registered within 30 s; gone within 30 s (graceful) or 90 s (crash) | **Met** | `scripts/smoke-test.sh` waits for `CONFIG-SERVER`, `ECHO-SERVICE` and `API-GATEWAY` to appear and fails past 120 s; `--scale` kills a copy and asserts only 200 or 503 follow. |
+| FR-014 | Running services survive a brief registry outage | **Met** | Deliberate 30-second outage with a warm gateway cache: **30 of 30 requests returned 200**, and the logs show automatic re-registration (`registration status: 204`) afterwards. |
 | SC-003 | A central change lands within 10 s | **Met** | `EchoLiveRefreshIT` measures the interval from change to effect and fails past 10 s; the smoke test repeats it against the running stack by editing `backend/config-repo/echo-service.yml`. |
 | SC-004 | Every gateway error shares one structure and carries a correlation ID | **Met** | `GatewayBehaviourIT` validates 401, 404, 503 and 504 bodies against `contracts/problem-details.schema.json` and asserts the body's `correlationId` equals the response header. |
 | SC-005 | 503 within 5 s when no healthy copy exists | **Met** | `GatewayBehaviourIT.refusedConnectionIsServiceUnavailable` and `noInstanceIsServiceUnavailable` both assert the status and the elapsed time. |
@@ -36,3 +37,9 @@ Two measured findings changed the design rather than the record:
    container state instead of trusting the exit code. See research R12.
 2. Central configuration precedence is `application-<profile>.yml`, then `<service>.yml`, then
    `application.yml` — the opposite of what the spec first assumed for the first two. See research R6.
+3. A healthy platform is not instantly routable: services register shortly after reporting healthy, so
+   the gateway answers 503 for a few seconds after startup. Correct behaviour, but surprising, so it is
+   called out in `scripts/up.sh` output and the README. See research R5.
+4. The gateway returned the correlation header **twice** (its own value plus the one the echo service
+   set) until this was fixed. No unit or integration test caught it; the smoke test against the running
+   stack did. `GatewayBehaviourIT` now has a regression test with an upstream that sets the header.

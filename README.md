@@ -42,6 +42,11 @@ present and non-empty, and every host port is free. Each failure names exactly w
 Running `scripts/up.sh` a second time while the platform is already up is harmless: it skips ports
 its own containers already hold and leaves everything running.
 
+**Healthy is not immediately routable.** Services register with the registry shortly *after* they
+report healthy, and the gateway refreshes its view of the registry every five seconds. So for up to
+about 30 seconds after startup finishes, a request through the gateway can return 503 because it has
+no instance to route to yet. That is the registry working as intended; wait a moment and retry.
+
 After a start:
 
 | What | Where |
