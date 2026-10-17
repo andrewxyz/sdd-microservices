@@ -248,20 +248,35 @@ the same checks become permanent tests (see Test mapping).
   api-gateway and echo-service (and echo-service-b). `db-init` depends on PostgreSQL being healthy and runs
   on every start.
 - **Data**: named volumes for PostgreSQL and RabbitMQ; `docker compose down` keeps them, `down -v` wipes them.
-- **`--wait` and the one-shot db-init (Verified 2026-10-17)**: community reports said `docker compose up
-  --wait` can return exit code 1 when a one-shot container exits very quickly, even with exit code 0
-  ([forum report](https://forums.docker.com/t/behavior-of-up-wait-changed/147699),
+- **`--wait` and the one-shot db-init (Verified 2026-10-17; the first measurement was wrong)**: community
+  reports said `docker compose up --wait` can return exit code 1 when a one-shot container exits, even with
+  exit code 0 ([forum report](https://forums.docker.com/t/behavior-of-up-wait-changed/147699),
   [write-up](https://zenn.dev/takashiaihara/articles/979cb208ca4994)); the official docs do not address it.
-  **Measured and not reproducible on the target setup.** The spike in
-  [spikes/compose-wait/docker-compose.yml](spikes/compose-wait/docker-compose.yml) runs a long-running
-  healthchecked service that `depends_on` a one-shot with `condition: service_completed_successfully`, in two
-  variants: the one-shot exits instantly, and the one-shot sleeps 2 s first. Command:
-  `docker compose --profile <instant|delayed> up --wait --wait-timeout 60`. On **Docker Compose 2.40.3**
-  (Docker 29.1.3, WSL2 Ubuntu) **both variants exited 0** and the long-running service reached `Healthy`.
-  **Decision**: `up.sh` uses plain `docker compose up --build --wait --wait-timeout 180` with no
-  treat-failure-as-success fallback; a non-zero exit is a real failure and `up.sh` prints
-  `docker compose ps -a` as a diagnostic before exiting non-zero. CI logs its Compose version, so a
-  regression on an older/newer version shows up as a genuine CI failure rather than being masked.
+
+  **First attempt (wrong conclusion).** The spike in
+  [spikes/compose-wait/docker-compose.yml](spikes/compose-wait/docker-compose.yml) ran a healthchecked
+  service that `depends_on` a one-shot with `condition: service_completed_successfully`. Both variants
+  exited 0 on Compose 2.40.3, and R12 concluded no fallback was needed.
+
+  **What the real stack showed.** The first `scripts/up.sh` run failed with
+  `the platform did not come up healthy`, while `docker compose ps` showed all six long-running services
+  `healthy` and `db-init` `Exited (0)`. Reproduced deliberately from a wiped state: `docker compose up
+  --wait --wait-timeout 300` exits **1** after 41 s, printing `container learnhub-db-init-1 exited (0)`.
+
+  **Why the spike missed it.** It gave the one-shot a dependent declaring
+  `service_completed_successfully`, which tells Compose the exit is expected. The real `db-init` has no
+  dependent (no service uses a database yet), so `--wait` sees a container that is not running and calls
+  the run failed. A second `up` on an already-started stack also exits 0, so only a clean start shows it.
+
+  **Decision (restored).** `up.sh` does not trust the exit code alone. After `up --build --wait` it reads
+  `docker compose ps`: the run succeeded when every long-running service is healthy and `db-init` exited 0,
+  and anything else is a real failure reported with the offending services named. The alternative,
+  giving `db-init` a dependent with `service_completed_successfully`, was rejected: no service genuinely
+  depends on the databases yet, and inventing a dependency to satisfy a CLI quirk would be a lie in the
+  topology. Revisit when the first business service really does depend on `db-init`.
+
+  **Lesson for later spikes**: a spike has to model the real topology. This one differed from production in
+  exactly the detail that mattered.
 - **Cold build time against SC-001 (resolved 2026-10-17)**: the spec owner split the budget. SC-001 now reads
   under 3 minutes with the images already built (the warm start) and under 10 minutes on a clean checkout that
   must build them. Mitigations still apply: BuildKit cache mount for `~/.m2` shared across image builds,

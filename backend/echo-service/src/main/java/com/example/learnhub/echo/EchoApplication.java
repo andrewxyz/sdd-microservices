@@ -2,6 +2,7 @@ package com.example.learnhub.echo;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 /**
  * Deliberately bare. Registration with the registry, loading central configuration, health probes,
@@ -9,6 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * there is nothing here to write (FR-029). {@code NoWiringCodeTest} enforces that.
  */
 @SpringBootApplication
+@ConfigurationPropertiesScan
 public class EchoApplication {
 
     public static void main(String[] args) {

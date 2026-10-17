@@ -1,0 +1,7 @@
+# Settings for the echo service.
+#
+# Change echo.greeting and call http://localhost:9099/api/v1/echo/ping again: the new value appears
+# within about ten seconds, with no commit, rebuild or restart (FR-016).
+
+echo:
+  greeting: Hello from LearnHub
