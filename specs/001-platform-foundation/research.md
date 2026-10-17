@@ -106,10 +106,10 @@ the same checks become permanent tests (see Test mapping).
   well inside 30 s (SC-002 holds). A **crash** is evicted after about 60 s of lease expiry plus up to 5 s for
   the next eviction run (about 65 s), and the gateway's cached registry adds up to 5 s more (about 70 s in
   the worst case). During that gap, calls to a dead instance get connection-refused, mapped to 503 (R3).
-- **Open point for the spec owner**: SC-002 and the user story say "within about 30 seconds after it stops".
-  This holds for stops but not crashes. Options: keep as is and word SC-002 for graceful stops (recommended,
-  since the specified 30 s expiry is the user's setting), or set lease expiry to 15 s so the effective window
-  is about 30 s (about 40 s with eviction and fetch). The plan keeps 30 s as specified.
+- **Resolved 2026-10-17**: the spec owner split the two cases rather than retuning the lease. FR-011, SC-002
+  and the US2 acceptance scenario now read 30 seconds for a graceful stop and 90 seconds for a crash. The
+  lease expiry stays at the specified 30 s, so the effective crash window is about 65 to 70 s, inside the
+  90 s bound with margin for a slow machine.
 - **Outage tolerance**: clients keep their cached registry during a Eureka outage and re-register on their own
   when it returns; the spring-cloud-netflix client does this by default. A permanent test stops and starts
   the registry and asserts routing continues and instances reappear.
@@ -151,6 +151,11 @@ the same checks become permanent tests (see Test mapping).
   `echo-service`; the path is forwarded unchanged because services own `/api/v1` paths (Principle IX).
 - **Public routes**: route metadata `public: true`, parsed as Boolean or String (`"true"`). Anything else is
   protected and returns 401 problem details for every request until the auth spec.
+- **Two routes per service when its paths are mixed (added 2026-10-17)**: echo's public `/ping` and protected
+  `/secure/ping` share the `/api/v1/echo/` prefix, so one route cannot carry both access levels. The gateway
+  declares a narrow public route first (`echo-public`, `Path=/api/v1/echo/ping`, `order: 0`) and a catch-all
+  protected route second (`echo`, `Path=/api/v1/echo/**`, `order: 1`). Protected-by-default still holds: the
+  catch-all is protected, so a new echo path is protected until someone lists it explicitly.
 - **Filter order**: correlation ID, then route access, then rate limiter. Unauthorized requests are not
   rate-limited ahead of the 401 decision, and every error response already carries a correlation ID.
 - **Correlation ID**: header `X-Correlation-Id`; a client value is reused only if it matches
@@ -161,9 +166,17 @@ the same checks become permanent tests (see Test mapping).
   ignored, idle-bucket eviction, no Redis, limits from refreshable properties. Behind Docker Desktop,
   requests from the host share one bridge address, so the 429 test uses an injectable address resolver
   instead of real source addresses. Single gateway instance only (high availability is out of scope).
+- **Default limit values (decided 2026-10-17)**: capacity 200 tokens, refill 100 per second. Chosen so the
+  two smoke checks that share one source address do not collide: the 100-call load-spread check (SC-006) and
+  the 100-call problem-details sweep stay under the capacity, while the 429 check deliberately exceeds it by
+  firing a concurrent burst of 400 requests. A limit low enough for a sequential `curl` loop to trip would
+  break the spread check, so the 429 smoke check must use concurrency, not a serial loop.
 - **Error handler**: custom `ErrorWebExceptionHandler` returning `application/problem+json` with `type`,
   `title`, `status`, `detail`, `instance` and `correlationId` for 401, 404, 429, 503, 504 (and 500 as
-  fallback). Schema in [contracts/problem-details.schema.json](contracts/problem-details.schema.json).
+  fallback). Schema in [contracts/problem-details.schema.json](contracts/problem-details.schema.json),
+  copied to `backend/platform-common/src/main/resources/schemas/` so every error test validates against the
+  published schema instead of a hand-listed field set that could drift from it (the arrangement already used
+  for the event envelope).
 - **Timeouts**: connect 2 s, response 5 s as defaults in `api-gateway.yml`; the 5 s response limit also meets
   SC-005 for routes with no healthy copy because `lb://` with no instances fails immediately.
 - **CORS**: global CORS from refreshable `globalcors` properties (R1); preflight handled before filters (R2).
@@ -223,7 +236,9 @@ the same checks become permanent tests (see Test mapping).
   `4.3-management` style tags, but the official tag list could not be fetched here. A CI step pulls the image;
   failure means pinning an exact `4.3.x-management` tag.
 - **Health checks**: Spring services use `/actuator/health/readiness` with `start_period`; PostgreSQL
-  `pg_isready`; RabbitMQ `rabbitmq-diagnostics ping`; Mailpit `/mailpit readyz`.
+  `pg_isready`; RabbitMQ `rabbitmq-diagnostics ping`; Mailpit `/mailpit readyz`. On Eureka and the config
+  server `/actuator/health/**` stays reachable without a login in every profile so these checks keep working
+  outside `local`; constitution v1.1.0 Principle VII allows exactly this exemption and nothing wider.
 - **Order** (`depends_on` with `condition: service_healthy`): discovery-server, then config-server, then
   api-gateway and echo-service (and echo-service-b). `db-init` depends on PostgreSQL being healthy and runs
   on every start.
@@ -236,11 +251,11 @@ the same checks become permanent tests (see Test mapping).
   non-zero, inspect `docker compose ps -a`; treat the run as successful when every long-running service is
   healthy and `db-init` exited 0, otherwise print the failing services and fail. A CI step exercises this
   on the Compose version the runner provides.
-- **Risk: cold build time against SC-001 (Unverified)**: a clean checkout compiles several Maven modules in
-  containers; this may exceed 3 minutes on a cold machine. Mitigations: BuildKit cache mount for
-  `~/.m2` shared across image builds, builds run in parallel by Compose, one reactor build per image via
-  `mvn -pl <MODULE> -am`. CI will record the cold and warm times. If the cold build alone exceeds the budget,
-  the spec owner should decide whether SC-001 means "from images built" or "from clean checkout".
+- **Cold build time against SC-001 (resolved 2026-10-17)**: the spec owner split the budget. SC-001 now reads
+  under 3 minutes with the images already built (the warm start) and under 10 minutes on a clean checkout that
+  must build them. Mitigations still apply: BuildKit cache mount for `~/.m2` shared across image builds,
+  builds run in parallel by Compose, one reactor build per image via `mvn -pl <MODULE> -am`. CI records both
+  times (T141).
 - **Windows**: `up.sh` and `smoke-test.sh` need bash (Git Bash or WSL); README says so. Port probing uses
   bash `/dev/tcp`; ports owned by this project's running containers are read from `docker compose ps` and
   skipped, so a second run is harmless.
@@ -264,8 +279,12 @@ the same checks become permanent tests (see Test mapping).
   empty values), and `up.sh` checks the same list first so it can report every missing setting by name within
   30 seconds before any container starts. `.env.example` lists every variable with placeholder values.
   Variables: PostgreSQL admin user and password, one password per service database, RabbitMQ user and
-  password, Eureka and config-server basic-auth user and password, `EUREKA_URL`, `CONFIG_SERVER_URL`,
-  `SPRING_PROFILES_ACTIVE`.
+  password, Eureka and config-server basic-auth user and password, `SPRING_PROFILES_ACTIVE`.
+- **`EUREKA_URL` and `CONFIG_SERVER_URL` are not `.env` variables (decided 2026-10-17)**: Compose builds both
+  from internal container names and the credential variables (for example
+  `http://${EUREKA_USER}:${EUREKA_PASSWORD}@discovery-server:9761/eureka/`), because the Eureka client takes
+  its credentials inside the URL. Putting them in `.env` would duplicate the passwords in a second place and
+  let the two drift. They stay out of `.env.example` for the same reason.
 - **Port check**: every host port in the port table (9080, 9761, 9888, 9099, 9432, 9672, 9673, 9025, 9825)
   must be free; the message names the port and the component that needs it. 9001 to 9007 are reserved but
   not bound, since nothing runs there.
@@ -287,9 +306,13 @@ the same checks become permanent tests (see Test mapping).
 ### R16. CI
 
 - **Decision**: GitHub Actions workflow with two jobs: (1) backend build and tests (`mvn verify` in
-  `backend/`, Testcontainers uses the runner's Docker); (2) `scripts/up.sh` followed by
-  `scripts/smoke-test.sh`, then `docker compose down -v`. The image pull and the cold and warm startup times
-  are logged (R12). Shell scripts get `shellcheck`.
+  `backend/`, Testcontainers uses the runner's Docker); (2) `scripts/up.sh` followed by **every** smoke mode,
+  then `docker compose down -v`. The image pull and the cold and warm startup times are logged (R12). Shell
+  scripts get `shellcheck`.
+- **All smoke modes run in CI (added 2026-10-17)**: the default checks, `--lifecycle` and `--auth-profile`.
+  Constitution Principle VI requires every acceptance scenario to pass in CI, and `--auth-profile` is the only
+  check covering FR-018 (login required outside `local`), so omitting it would leave an acceptance scenario
+  ungated.
 - **Note**: `shellcheck` is a CI lint step, not a runtime dependency.
 
 ## Test mapping

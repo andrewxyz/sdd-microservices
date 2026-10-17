@@ -44,16 +44,19 @@ platform (images are built in containers).
 
 **Project Type**: Backend microservices monorepo (Maven multi-module, `backend/`); `frontend/` untouched.
 
-**Performance Goals**: whole platform healthy in under 3 minutes (SC-001); service visible in registry
-within 30 s of start and gone within 30 s of a graceful stop (SC-002); config edit effective within 10 s
-(SC-003); 503 within 5 s when no healthy copy exists (SC-005); startup precheck failure within 30 s (SC-009).
+**Performance Goals**: whole platform healthy in under 3 minutes with images built, under 10 minutes on a
+clean checkout that builds them (SC-001); service visible in registry within 30 s of start, gone within 30 s
+of a graceful stop and within 90 s of a crash (SC-002); config edit effective within 10 s (SC-003); 503
+within 5 s when no healthy copy exists (SC-005); startup precheck failure within 30 s (SC-009); config
+client gives up within 30 s when the config server is unreachable (FR-017).
 
 **Constraints**: connect timeout 2 s, response timeout 5 s; config poll every 5 s; Eureka tuning (5 s
 eviction, self-preservation off, 5 s registry fetch, 10 s renewal, 30 s expiry, client health check on);
 no Redis, no Spring Cloud Bus, no tracing or log-aggregation tools; secrets only from environment values.
 
 **Scale/Scope**: single-machine local environment; 4 Spring services + 3 third-party containers + 1
-one-shot job (+1 optional echo copy); 2 shared libraries; 4 config-repo files; 0 business tables.
+one-shot job (+1 optional echo copy); 2 shared libraries + 1 test-only module; 4 config-repo files; 0
+business tables.
 
 ## Constitution Check
 
@@ -61,22 +64,27 @@ one-shot job (+1 optional echo copy); 2 shared libraries; 4 config-repo files; 0
 
 | # | Principle | Result | Notes |
 |---|-----------|--------|-------|
-| I | Monorepo layout, independent deployability | **PASS with deviation D1** | All services, shared libs, `config-repo` and Docker build files are under `backend/`; `frontend/` untouched (a `.gitkeep` keeps the empty folder in git). Root additions beyond the constitution's list: `scripts/`, `.gitignore`, `.dockerignore` (D1). |
+| I | Monorepo layout, independent deployability | **PASS** | All services, shared libs, `config-repo` and Docker build files are under `backend/`; `frontend/` untouched apart from `.gitkeep`. Root files `scripts/`, `.gitignore`, `.dockerignore` and `.gitattributes` are allowed by constitution v1.1.0 (former deviation D1, now resolved). |
 | II | Service ownership, data isolation | **PASS** | Seven empty databases/logins provisioned; no service uses them yet. Shared code limited to `shared-events` and `platform-common`; neither contains domain logic. |
 | III | Discovery and configuration | **PASS** | Discovery and config servers configured locally; gateway and echo use non-optional `configserver:` import with fail-fast + retry; Eureka/config URLs from environment; routes use `lb://` service names. |
 | IV | Gateway as only entry point | **PASS with deviation D4** | CORS, correlation ID, rate limit, explicit public routes, protected by default. JWT validation and identity headers are deferred to the auth spec (spec out-of-scope); until then protected routes answer 401. OpenAPI documented for echo. |
 | V | Sync/async communication | **PASS (limited scope)** | Envelope, exchange name and routing-key naming rule in `shared-events`; Feign interceptor in `platform-common`. No Feign client or consumer exists yet, so timeout/circuit-breaker/DLQ rules apply from the first spec that adds one. |
-| VI | Test-first (NON-NEGOTIABLE) | **PASS** | Tasks will order each test before its implementation. Testcontainers for PostgreSQL and RabbitMQ; no H2. Envelope serialization test included; Feign contract tests N/A (no Feign client). Acceptance scenarios gated in CI. |
-| VII | Security and secrets | **PASS** | All secrets from environment; `.env.example` committed with placeholders; `.env` git-ignored; basic auth on Eureka and config server outside `local`. BCrypt/JWT deferred with auth. |
-| VIII | Errors and observability | **PASS** | RFC 7807 + `correlationId` from gateway handler and servlet advice; liveness/readiness probes on every Spring service; ECS structured logs with correlation ID in MDC. |
+| VI | Test-first (NON-NEGOTIABLE) | **PASS** | Tasks order each test before its implementation. Testcontainers for PostgreSQL and RabbitMQ; no H2. Envelope serialization test included; Feign contract tests N/A (no Feign client). CI runs the default, `--lifecycle` and `--auth-profile` smoke modes, so every acceptance scenario is gated. |
+| VII | Security and secrets | **PASS** | All secrets from environment; `.env.example` committed with placeholders; `.env` git-ignored; basic auth on Eureka and config server outside `local`, with only `/actuator/health/**` exempt as constitution v1.1.0 allows. BCrypt/JWT deferred with auth. |
+| VIII | Errors and observability | **PASS** | RFC 7807 + `correlationId` from gateway handler and servlet advice on every client-reachable API; Eureka and config server keep framework-default errors, which constitution v1.1.0 permits. Liveness/readiness probes on every Spring service; ECS structured logs with correlation ID in MDC. |
 | IX | Conventions | **PASS with deviation D3** | Base package `com.example.learnhub.<service>`; `/api/v1` paths; single version source; port map followed. Layer packages created only where code exists in infrastructure services and echo (D3). Flyway: no schema exists yet, so no migrations (first business service adds them). |
-| X | Simplicity | **PASS with deviation D2** | No extra services. WireMock is a test-scope library not named in the constitution (D2). |
+| X | Simplicity | **PASS** | No extra services. WireMock is approved as a test-scope-only library by constitution v1.1.0 (former deviation D2, now resolved). |
 
-**Gate result**: no unjustified violations. Four deviations are recorded below. D1 and D2 need a
-constitution amendment when this feature is merged (proposed in Complexity Tracking).
+**Gate result**: no violations. Constitution v1.1.0 (amended before implementation started) resolved the
+former deviations D1 and D2 and added the health-probe and infrastructure-error scope rules. Two scoped
+deviations remain, recorded below.
 
 **Post-design re-check**: unchanged. Design artifacts introduced no new deployable component and no library
 beyond those already listed.
+
+**Post-analysis re-check (2026-10-17)**: `/speckit-analyze` found that the former D1 and D2 deviations were
+scheduled to be amended only after the code that relied on them, which inverts Principle X. The constitution
+was therefore amended to v1.1.0 **before** implementation starts, and this table reflects the amended text.
 
 ## Project Structure
 
@@ -105,11 +113,13 @@ sdd-microservices/
 ├── .env.example                       # every setting, placeholder values only
 ├── .gitignore                         # ignores .env, target/, IDE files
 ├── .dockerignore
+├── .gitattributes                     # forces LF on *.sh and Docker files (CRLF breaks them in containers)
 ├── README.md                          # start/stop/restart/reset, port table, add a service, change a setting
 ├── scripts/
 │   ├── up.sh                          # preflight (runtime, settings, ports) then compose up --build --wait
-│   └── smoke-test.sh                  # exercises the running stack end to end
-├── .github/workflows/ci.yml           # backend build+tests, up.sh, smoke test
+│   ├── smoke-test.sh                  # exercises the running stack end to end
+│   └── tests/                         # preflight test, fake docker shim, port-holder helper
+├── .github/workflows/ci.yml           # backend build+tests, up.sh, smoke test (all modes)
 ├── frontend/.gitkeep                  # folder stays empty
 ├── specs/                             # Spec Kit
 └── backend/
@@ -125,6 +135,7 @@ sdd-microservices/
     ├── shared-events/                 # EventEnvelope record, exchange name, routing-key rule; Jackson only
     │   └── src/{main,test}/java/com/example/learnhub/events/
     ├── platform-common/
+    │   ├── src/main/resources/schemas/problem-details.schema.json   # copy of the contract; tests validate against it
     │   └── src/{main,test}/java/com/example/learnhub/common/
     │       ├── config/                # reactive-safe: ConfigWatcher auto-configuration
     │       ├── correlation/           # CorrelationIds (regex, generation); servlet filter (optional deps)
@@ -134,20 +145,23 @@ sdd-microservices/
     ├── config-server/                 # native backend over /config-repo, registers with Eureka
     ├── api-gateway/                   # WebFlux gateway: filters, error handler, rate limiter
     │   └── src/{main,test}/java/com/example/learnhub/gateway/
-    └── echo-service/                  # GET /api/v1/echo/ping, GET /api/v1/echo/secure/ping
-        └── src/{main,test}/java/com/example/learnhub/echo/
+    ├── echo-service/                  # GET /api/v1/echo/ping, GET /api/v1/echo/secure/ping
+    │   └── src/{main,test}/java/com/example/learnhub/echo/
+    └── infra-tests/                   # test-only module: provisioning IT, Compose/.env/POM static checks
+        └── src/test/java/com/example/learnhub/infra/
 ```
 
 **Structure Decision**: Backend and frontend as separate top-level folders, where `backend/` is a self-contained Maven multi-module
-build (one folder per service plus two shared libraries), `frontend/` is reserved and empty, and
-repo-root files are limited to startup, example settings, README, CI and ignore files. This matches
-constitution Principle I; the extra root files are listed as D1.
+build (one folder per service, two shared libraries and one test-only module), `frontend/` is reserved and
+empty, and repo-root files are limited to startup, example settings, README, CI, scripts and hygiene files.
+This matches constitution Principle I as amended in v1.1.0.
 
 ## Complexity Tracking
 
 | Deviation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| **D1**: root `scripts/`, `.gitignore`, `.dockerignore`, `frontend/.gitkeep` (Principle I: "nothing else belongs at the root") | The spec requires one command from the repo root (FR-001) and the plan needs `.gitignore` for `.env` and `.dockerignore` for build speed. | Putting scripts under `backend/` breaks "one command from the repo root" and mixes frontend-relevant tooling into the backend folder. Proposal: PATCH amendment to Principle I listing `scripts/` and ignore files. |
-| **D2**: WireMock as a test-scope library (Principle X: no technology without amending) | The gateway needs controllable upstream behavior (slow, refused, healthy copies) that the real echo service cannot produce on demand. | Hand-written stub servers or mocks duplicate WireMock for no gain. Proposal: MINOR amendment adding WireMock to the allowed test tooling. |
+| ~~**D1**~~: resolved by constitution v1.1.0 | Principle I now lists `scripts/`, `.gitignore`, `.dockerignore`, `.gitattributes` and the `frontend/.gitkeep` placeholder. | — |
+| ~~**D2**~~: resolved by constitution v1.1.0 | Principle X and the Technology Stack section now name WireMock as the one approved test-scope-only library. | — |
 | **D3**: layer packages (`api/application/domain/infrastructure`) only where code exists, for infrastructure services and echo (Principle IX) | These services have no domain; empty `domain/` and `application/` packages add noise (YAGNI, Principle X). | Creating empty layers to satisfy the letter of the rule. The full four-layer layout applies to business services from the next spec. |
 | **D4**: JWT validation and user-identity headers not implemented (Principle IV) | Spec explicitly puts login and token checks out of scope; protected routes simply return 401. | Implementing auth now pulls the auth service into this feature. |
+| **D5**: `backend/infra-tests` reads repo-root files (`docker-compose.yml`, `.env.example`, `scripts/up.sh`) and `shared-events` tests compare against `specs/.../contracts/`, so `backend/` is not fully self-contained for tests (Principle I) | These static checks keep the Compose file, the example settings and the published contracts honest; they have no home inside a service module. | Duplicating the checks in bash under `scripts/tests/` loses the typed YAML and JSON parsing. The `backend/` **build and runtime** stay self-contained: the cross-reading is test-only, and each such test skips when the file is absent. |

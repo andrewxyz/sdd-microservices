@@ -8,7 +8,8 @@ of these; this guide is the manual version.
 
 ## Prerequisites
 
-- A container runtime with Docker Compose v2 running. No local JDK or Maven is needed.
+- A container runtime with Docker Compose v2 running, and a bash shell (Git Bash or WSL on Windows) for the
+  scripts. No local JDK or Maven is needed.
 - Free host ports: 9080, 9761, 9888, 9099, 9432, 9672, 9673, 9025, 9825.
 - `cp .env.example .env` and replace the placeholder values (names are listed in
   [data-model.md](data-model.md#environment-settings-envexample)).
@@ -20,9 +21,10 @@ Ports follow the constitution's port table; the gateway is `http://localhost:908
 
 | Step | Command | Expected |
 |------|---------|----------|
-| Start | `scripts/up.sh` | Preflight passes, images build, every component reports healthy in under 3 minutes (see research R12 on cold builds) |
+| Start | `scripts/up.sh` | Preflight passes and every component reports healthy: under 10 minutes on the first run, which builds the images, and under 3 minutes once they exist (SC-001) |
 | Status | `docker compose ps` | All long-running services `healthy`; `db-init` exited with code 0 |
 | Restart | `scripts/up.sh` again | Healthy again, no errors, data still present |
+| Second start while running | `scripts/up.sh` once more without stopping | Exits 0, no duplicate containers, everything still healthy |
 | Stop | `docker compose down` | Containers removed, volumes kept |
 | Reset | `docker compose down -v` | Containers and data wiped; next start behaves like a clean checkout |
 
@@ -37,7 +39,8 @@ Failure checks (each must stop before any container starts and finish in under 3
 
 1. Open `http://localhost:9761` or run
    `curl -s -H 'Accept: application/json' http://localhost:9761/eureka/apps`.
-   Expect `API-GATEWAY`, `CONFIG-SERVER` and `ECHO-SERVICE` within 30 seconds of start.
+   Expect `API-GATEWAY`, `CONFIG-SERVER` and `ECHO-SERVICE` within 30 seconds of start. Under a non-local
+   profile add `-u "$EUREKA_USER:$EUREKA_PASSWORD"`; only `/actuator/health/**` is reachable without a login.
 2. Start the second copy: `docker compose --profile scale up -d echo-service-b`.
    Expect two `ECHO-SERVICE` instances within 30 seconds.
 3. Spread check:
@@ -46,8 +49,8 @@ Failure checks (each must stop before any container starts and finish in under 3
 4. Graceful stop: `docker compose stop echo-service-b`. Expect the instance gone from the dashboard within
    30 seconds.
 5. Crash: `docker kill <echo-service-b container>`. Expect brief 503 responses through the gateway for that
-   instance, then removal from the registry after about 65 to 70 seconds (research R5; this is longer than
-   30 seconds by design of the Eureka lease logic).
+   instance, then removal from the registry within 90 seconds (about 65 to 70 in practice). A crash takes
+   longer than the 30 seconds of a graceful stop because the lease must expire; SC-002 states both bounds.
 6. Registry outage: `docker compose stop discovery-server`. Expect `/api/v1/echo/ping` to keep answering 200.
    Then `docker compose start discovery-server`. Expect all instances listed again without restarting them.
 
@@ -79,7 +82,7 @@ Expected statuses for `http://localhost:9080` (every error body is `application/
 | Unknown path | `curl -i http://localhost:9080/nope` | 404 |
 | Protected route | `curl -i http://localhost:9080/api/v1/echo/secure/ping` | 401 |
 | No healthy copy | `docker compose stop echo-service`, then call `/ping` | 503 in under 5 seconds |
-| Rate limit | call `/ping` in a tight loop until the limit in `api-gateway.yml` is exceeded | 429 problem details; recovers after refill |
+| Rate limit | fire a concurrent burst of 400 calls to `/ping` (a serial loop will not outpace the 100/s refill) | 429 problem details once the 200-token capacity empties; recovers after refill |
 | Preflight allowed | `curl -i -X OPTIONS -H 'Origin: <allowed origin>' -H 'Access-Control-Request-Method: GET' .../api/v1/echo/secure/ping` | 200 with CORS headers, never 401 |
 | Preflight refused | same with an origin not in the allowed list | 403 |
 | Log carries ID | `docker compose logs api-gateway echo-service` | structured (ECS) lines containing the correlation ID of a request you made |
@@ -106,10 +109,13 @@ Event envelope: the `shared-events` tests serialize an envelope, validate it aga
   fail on existing roles or databases.
 - Mail: send a message to `smtp://localhost:9025` (for example with `curl --url smtp://localhost:9025
   --mail-from a@example.com --mail-rcpt b@example.com -T message.txt`) and see it at
-  `http://localhost:9825`. Nothing is delivered elsewhere.
+  `http://localhost:9825`. Nothing is delivered elsewhere: Mailpit is configured with no relay, which
+  `docker compose config` and its `/api/v1/info` endpoint confirm.
 - Secrets: `git grep -n -i -E 'password|secret' -- . ':!.env.example'` shows no real secret; `.env` is ignored.
 
 ## Full automated pass
 
-`mvn -f backend/pom.xml verify` (unit and Testcontainers tests), then `scripts/up.sh` and
-`scripts/smoke-test.sh`. CI runs exactly this sequence.
+`mvn -f backend/pom.xml verify` (unit and Testcontainers tests), then `scripts/up.sh` followed by all three
+smoke modes: `scripts/smoke-test.sh`, `scripts/smoke-test.sh --lifecycle` and
+`scripts/smoke-test.sh --auth-profile`. CI runs exactly this sequence and finishes with
+`docker compose down -v`.

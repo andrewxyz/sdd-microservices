@@ -7,8 +7,9 @@
 **Status**: Draft
 
 **Scope**: Backend only. Touches `backend/` (all services and shared code, one folder per service) and
-the repo-root files `docker-compose.yml`, `.env.example` and `README.md`. The `frontend/` folder is
-not touched and stays empty.
+the repo-root files `docker-compose.yml`, `.env.example`, `README.md`, `scripts/`, CI configuration
+and the repo hygiene files (`.gitignore`, `.dockerignore`, `.gitattributes`). The `frontend/` folder
+is not touched and stays empty apart from a `.gitkeep` placeholder.
 
 **Input**: User description: "Build the backend foundation of LearnHub, an online learning platform
 made of microservices. There is no business domain yet. The goal is that a developer can start the
@@ -24,6 +25,17 @@ setup."
 - Q: How does a developer change a central setting during local development? → A: By editing a
   settings file in the repo's central settings folder; it is picked up with no commit and no restart.
 
+### Session 2026-10-17 (post-analysis)
+
+- Q: Does SC-001's 3-minute budget include building the service images on a clean checkout? → A:
+  No. The 3 minutes are measured from built images (a warm start). The cold first run, which builds
+  the images, has its own looser budget of 10 minutes.
+- Q: "Within about 30 seconds after it stops" (FR-011, SC-002) cannot hold for a crashed instance,
+  which takes about 65 to 70 seconds to evict. How should it read? → A: Split the two cases: 30
+  seconds for a graceful stop, 90 seconds for a crash.
+- Q: How long may a service retry central configuration before failing (FR-017)? → A: At most 30
+  seconds.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Start the whole platform with one command (Priority: P1)
@@ -37,13 +49,15 @@ developer is told exactly what, before or at startup, instead of seeing a confus
 is the base every other story depends on and the main promise of the foundation.
 
 **Independent Test**: On a clean checkout, run the single startup command and wait. Every component
-reports healthy within 3 minutes. Then stop, restart, and finally run the documented reset.
+reports healthy within the SC-001 budget (10 minutes on the first run, which builds the images; 3 minutes
+once they exist). Then stop, restart, and finally run the documented reset.
 
 **Acceptance Scenarios**:
 
 1. **Given** a clean checkout with the example settings copied and filled in, **When** the developer
    runs the one startup command from the repo root, **Then** all components start in dependency order
-   and every one reports healthy within 3 minutes.
+   and every one reports healthy within 10 minutes on this first run (which builds the service images) and
+   within 3 minutes on any later run that reuses them.
 2. **Given** a required setting is missing, **When** the developer runs the startup command, **Then**
    startup stops and a message names the missing setting.
 3. **Given** one of the host ports in the port table is already occupied, **When** the developer runs
@@ -73,8 +87,9 @@ start a second echo copy, send repeated calls by name, and stop/restart the regi
 
 1. **Given** the registry is healthy, **When** a service starts, **Then** it appears on the dashboard
    under its service name within about 30 seconds.
-2. **Given** a service is listed on the dashboard, **When** it is stopped, **Then** it disappears from
-   the dashboard within about 30 seconds.
+2. **Given** a service is listed on the dashboard, **When** it is stopped gracefully, **Then** it
+   disappears from the dashboard within about 30 seconds; **and when** it crashes instead, **Then**
+   it disappears within 90 seconds (lease expiry takes longer than a clean deregistration).
 3. **Given** two copies of the same service are registered, **When** a caller makes repeated calls by
    service name, **Then** calls are spread across both copies.
 4. **Given** services are running, **When** the registry goes down briefly, **Then** running services
@@ -189,8 +204,8 @@ configuration code. Serialize and read back a sample event in the standard wrapp
 - The platform is started a second time while already running: no duplicate components or errors.
 - The registry or configuration service restarts while others are running: behavior as described in
   Stories 2 and 3; services recover on their own.
-- A service that crashes (rather than stops cleanly) is removed from the registry within a bounded time
-  and the entry point returns 503 for it once no healthy copy remains.
+- A service that crashes (rather than stops cleanly) is removed from the registry within 90 seconds,
+  and the entry point returns 503 (never a hang) for calls routed to it in the meantime.
 - A client sends a malformed correlation ID: a new one is generated and used instead.
 - A client sends a correlation ID that is valid: it is reused, not replaced.
 - Database initialization is re-run on a restart or reset: it is safe to repeat and never fails because
@@ -232,8 +247,9 @@ configuration code. Serialize and read back a sample event in the standard wrapp
 
 - **FR-010**: Every service except the registry itself MUST register under its service name, with no
   service-specific registration code.
-- **FR-011**: A started service MUST appear on the registry dashboard within about 30 seconds, and a
-  stopped service MUST disappear within about 30 seconds.
+- **FR-011**: A started service MUST appear on the registry dashboard within about 30 seconds. A
+  gracefully stopped service MUST disappear within about 30 seconds; a crashed one MUST disappear
+  within 90 seconds.
 - **FR-012**: Services and the entry point MUST address other services by name only; no host or port may
   be hardcoded.
 - **FR-013**: Calls to a service with several registered copies MUST be spread across the copies.
@@ -247,8 +263,9 @@ configuration code. Serialize and read back a sample event in the standard wrapp
 - **FR-016**: A developer MUST be able to change a setting by editing a file in the central settings
   folder (`backend/config-repo`), and the change MUST take effect in a running service within about
   10 seconds without a commit, rebuild or restart.
-- **FR-017**: A service that cannot reach central configuration at startup MUST retry for a short bounded
-  period and then fail with a clear message; it MUST NOT run with missing settings.
+- **FR-017**: A service that cannot reach central configuration at startup MUST retry for at most 30
+  seconds and then fail with a clear message naming the configuration service; it MUST NOT run with
+  missing settings.
 - **FR-018**: Outside the local development environment, the registry dashboard and the configuration
   service MUST require a login; in local development they MUST NOT.
 
@@ -300,10 +317,12 @@ configuration code. Serialize and read back a sample event in the standard wrapp
 
 ### Measurable Outcomes
 
-- **SC-001**: On a clean checkout, one command brings the whole platform to fully healthy in under 3
-  minutes, with every component reporting healthy.
-- **SC-002**: A started service appears in the registry dashboard within 30 seconds, and a stopped one
-  disappears within 30 seconds, in 100% of trials.
+- **SC-001**: One command brings the whole platform to fully healthy in under 3 minutes with the
+  service images already built, and in under 10 minutes on a clean checkout that must build them
+  first; in both cases every component reports healthy.
+- **SC-002**: A started service appears in the registry dashboard within 30 seconds and a gracefully
+  stopped one disappears within 30 seconds, in 100% of trials; a crashed one disappears within 90
+  seconds.
 - **SC-003**: A setting edited in the central settings folder is in effect in a running service within
   10 seconds, in 100% of trials, with no commit, rebuild or restart.
 - **SC-004**: 100% of errors produced by the entry point (404, 401, 429, 503) share the same structure
@@ -321,11 +340,14 @@ configuration code. Serialize and read back a sample event in the standard wrapp
 
 ## Assumptions
 
-- Developers have a container runtime installed and running; no other local tooling is required to start
-  the platform.
+- Developers have a container runtime installed and running, and a bash shell (Git Bash or WSL on
+  Windows) to run the startup and smoke scripts. No JDK or build tool is required to start the
+  platform, because the images are built in containers.
 - Development environment is called "local"; "outside local" covers every other named environment, and
   those environments need no production deployment in this spec.
-- Routes use the form `/api/v1/<service-name>/...`, per the constitution's REST convention.
+- Routes use the form `/api/v1/<short-name>/...` per the constitution's REST convention, where the
+  short name is the service's name without its `-service` suffix (for example `echo` for
+  `echo-service`).
 - The correlation ID travels in a documented request/response header, and a client-supplied value is
   accepted only if it is well formed.
 - The echo service offers one public path (to prove routing) and one protected path (to prove the

@@ -33,8 +33,9 @@ A record that one copy of a service is alive.
 | `lease` | renewal 10 s; expiry 30 s configured (effective about 60 s, see research R5) |
 
 State transitions: `STARTING` -> `UP` (readiness + client health check) -> `DOWN` (health fails) ->
-removed. Removal happens immediately on graceful shutdown (deregister) and on lease expiry plus eviction run
-(about 65 s) after a crash. The gateway sees changes after its next 5 s registry fetch.
+removed. Removal happens immediately on graceful shutdown (deregister, so well inside the 30 s of SC-002)
+and on lease expiry plus eviction run (about 65 s, bounded by 90 s in SC-002) after a crash. The gateway
+sees changes after its next 5 s registry fetch.
 
 ## Central setting set
 
@@ -73,9 +74,20 @@ A mapping from a path prefix to a service, defined in `api-gateway.yml`.
 | `path` | `/api/v1/<short-name>/**` |
 | `uri` | `lb://<registered-service-name>` (never a host or port) |
 | `metadata.public` | Boolean or String `"true"` marks a public route; absent or anything else means protected |
+| `order` | Lower runs first; a narrow public route must precede a broader protected one |
 
 Rules: protected routes answer 401 for every request until the auth spec; unmatched paths answer 404.
-This feature has one route: `echo` -> `lb://echo-service`.
+
+A service whose paths are a mix of public and protected needs one route per access level, because
+`metadata.public` applies to a whole route. This feature therefore has two, both to `lb://echo-service`:
+
+| id | path | public | order |
+|----|------|--------|-------|
+| `echo-public` | `/api/v1/echo/ping` | `true` | 0 |
+| `echo` | `/api/v1/echo/**` | absent (protected) | 1 |
+
+Protected-by-default is preserved: the catch-all is the protected one, so any echo path not listed
+explicitly as public is protected.
 
 ## Correlation ID
 
@@ -136,10 +148,13 @@ Names only; every value is a placeholder.
 | Group | Variables |
 |-------|-----------|
 | Mode | `SPRING_PROFILES_ACTIVE` (default `local`) |
-| Addresses | `EUREKA_URL`, `CONFIG_SERVER_URL` |
 | Eureka / config-server basic auth | `EUREKA_USER`, `EUREKA_PASSWORD`, `CONFIG_USER`, `CONFIG_PASSWORD` |
 | PostgreSQL | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `AUTH_DB_PASSWORD`, `COURSE_DB_PASSWORD`, `ENROLLMENT_DB_PASSWORD`, `PAYMENT_DB_PASSWORD`, `CERTIFICATE_DB_PASSWORD`, `REVIEW_DB_PASSWORD`, `NOTIFICATION_DB_PASSWORD` |
 | RabbitMQ | `RABBITMQ_DEFAULT_USER`, `RABBITMQ_DEFAULT_PASS` |
 
 Rules: all are required and non-empty (compose `${VAR:?message}` and `up.sh`); `.env` is git-ignored and
 only `.env.example` is committed.
+
+`EUREKA_URL` and `CONFIG_SERVER_URL` are **not** `.env` variables. Compose derives them from internal
+container names and the credentials above (`http://${EUREKA_USER}:${EUREKA_PASSWORD}@discovery-server:9761/eureka/`
+and `http://config-server:9888`), so a password is never written in two places.
