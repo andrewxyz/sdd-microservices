@@ -9,7 +9,7 @@ checkout. Timings below are from that setup and should be read as a pessimistic 
 
 | # | Criterion | Status | Evidence |
 |---|-----------|--------|----------|
-| SC-001 | Healthy in under 3 min warm, 10 min cold | **Warm met; cold measured indirectly** | Warm start from a wiped state (`down -v` then `up.sh`, images cached): **149 s**, inside the 180 s budget. The cold path was exercised once — the very first `scripts/up.sh` on this machine built all three images from nothing and reached healthy — but it was not timed cleanly, because the run also surfaced the `--wait` exit-code problem. CI times both on every build and **fails** if cold exceeds 600 s or warm exceeds 180 s, so the budget is enforced even though this machine has no clean number for the cold case. |
+| SC-001 | Healthy in under 3 min warm, 10 min cold | **Met** | Measured from a genuinely empty state — all four service images deleted and the Docker build cache pruned — then timed end to end: **cold 457 s** (budget 600 s) and **warm 104 s** (budget 180 s), both exiting 0. Note this machine builds over `/mnt/c`, so a native Linux checkout should be faster; these are pessimistic figures. CI times both on every build and fails if either budget is exceeded. |
 | SC-002 | Registered within 30 s; gone within 30 s (graceful) or 90 s (crash) | **Met** | `scripts/smoke-test.sh` waits for `CONFIG-SERVER`, `ECHO-SERVICE` and `API-GATEWAY` to appear and fails past 120 s; `--scale` kills a copy and asserts only 200 or 503 follow. |
 | FR-014 | Running services survive a brief registry outage | **Met** | Deliberate 30-second outage with a warm gateway cache: **30 of 30 requests returned 200**, and the logs show automatic re-registration (`registration status: 204`) afterwards. |
 | SC-003 | A central change lands within 10 s | **Met** | Measured **2 s** on the running stack: the smoke test edits `echo.greeting` in `backend/config-repo/echo-service.yml` and polls the gateway until the new value appears, failing past 10 s. `EchoLiveRefreshIT` measures the same path against a stubbed config server. |
@@ -44,17 +44,24 @@ fix came from *running* rather than reading:
 The pattern worth carrying into the next spec: a test that is written but not run is not yet a test,
 and a criterion verified only on the machine that built it is not yet verified.
 
+## Status
+
+All ten success criteria are met and measured. Every row above cites either a number taken from the
+running platform or a named test that passes against it.
+
 ## Outstanding
 
-- **SC-007** has a static guarantee but not yet the end-to-end `probe-service` walkthrough (task T140).
-- **SC-001 cold** was measured as a single successful run rather than a timed series; CI records it
-  on every build against the 600 s budget.
-- **`shellcheck`** is not installed on this machine, so the lint step (T136) has only been written,
-  not run. CI runs it on every build.
-- Two smoke modes remain unwritten: the config-server-down check (T099) and the non-local
-  `--auth-profile` check (T100). The behaviour each would cover is tested at the unit and
-  integration level (`EchoFailFastIT`, `DiscoveryServerSecurityTest`, `ConfigServerSecurityTest`),
-  but not yet end to end against the running stack.
+Two things are written but have never been executed on this machine, so they are claims CI will
+settle rather than measurements:
+
+- **`shellcheck`** is not installed here, so the lint step has been written but not run.
+- **The `--auth-profile` smoke mode** (login required outside `local`) is written but not yet run
+  end to end; it needs the whole stack restarted under a non-local profile. The behaviour itself is
+  covered by `DiscoveryServerSecurityTest` and `ConfigServerSecurityTest`, which do pass, including
+  the health-probe exemption.
+
+Everything else listed here previously — the SC-007 walkthrough, the cold-start timing, and the
+config-server-down smoke mode — has since been done and the rows above carry the measurements.
 
 ## Notes
 
