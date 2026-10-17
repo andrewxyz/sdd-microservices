@@ -1,0 +1,27 @@
+# Secrets: the real environment file is never committed. .env.example is.
+.env
+!.env.example
+
+# Java / Maven build output
+target/
+*.class
+*.jar
+*.war
+
+# IDE
+*.iml
+.idea/
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp

@@ -1,0 +1,10 @@
+# Test-only configuration.
+#
+# The config import MUST live in a config file, not in @SpringBootTest(properties = ...): research R1
+# found that an import supplied as a test property is not re-read on refresh, so the refresh test
+# would silently pass for the wrong reason. ConfigRefreshIT writes this file before the context starts.
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: "file:./target/refresh-it/config.yml"

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  LearnHub backend parent POM.
+
+  Constitution Principle IX: this file is the ONLY place in the repository where a version number is
+  declared. Child modules must never put <version> on a dependency or plugin; they inherit everything
+  from here or from the imported BOMs.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.15</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.example.learnhub</groupId>
+  <artifactId>learnhub-backend</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>LearnHub Backend</name>
+  <description>Parent of every LearnHub backend module; single source of versions.</description>
+
+  <!-- Each module registers itself here as its own task creates it. -->
+  <modules>
+    <module>shared-events</module>
+    <module>api-gateway</module>
+  </modules>
+
+  <properties>
+    <java.version>21</java.version>
+    <!--
+      Spring Cloud 2025.0.3 is the final open-source release of its line; see the accepted risk in
+      the constitution. A later spec may move to Spring Boot 4 with Spring Cloud 2025.1.x.
+    -->
+    <spring-cloud.version>2025.0.3</spring-cloud.version>
+    <!-- Test-scope only; approved by constitution v1.1.0 Principle X. Exact version, never a range. -->
+    <wiremock.version>3.13.2</wiremock.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${spring-cloud.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock-standalone</artifactId>
+        <version>${wiremock.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <!-- Internal modules: children depend on these without a version. -->
+      <dependency>
+        <groupId>com.example.learnhub</groupId>
+        <artifactId>shared-events</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.example.learnhub</groupId>
+        <artifactId>platform-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- Unit tests: *Test. Run by `mvn test`, no Docker required. -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <includes>
+              <include>**/*Test.java</include>
+            </includes>
+            <excludes>
+              <exclude>**/*IT.java</exclude>
+            </excludes>
+          </configuration>
+        </plugin>
+        <!-- Integration tests: *IT. Run by `mvn verify`; Testcontainers ones need a Docker daemon. -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <configuration>
+            <includes>
+              <include>**/*IT.java</include>
+            </includes>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

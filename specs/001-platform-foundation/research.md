@@ -30,9 +30,11 @@ the same checks become permanent tests (see Test mapping).
 - **Alternatives considered**: custom `CorsConfigurationSource` bean reading its own properties; rejected as
   unnecessary given the evidence. Kept as the documented fallback if a future Gateway upgrade regresses
   (the permanent refresh test would catch it).
-- **Limits of the check**: route addition and origin change were observed; route removal and URI change use
-  the same mechanism but are not separately proven. The permanent test covers add and change of origin;
-  add a removal assertion in the same test.
+- **Re-verified in repo on 2026-10-17** by the permanent guard test
+  `backend/api-gateway/src/test/java/com/example/learnhub/gateway/refresh/ConfigRefreshIT.java`, which closes
+  the gap the spike left: it asserts origin change (`a` 200 to 403, `b` 403 to 200), route **addition**
+  (404 to 200), route **removal** (200 to 404) and property rebind in one refresh. No fallback is needed.
+  If a later Spring Cloud upgrade regresses this, that test fails and the documented fallback applies.
 - **Side finding (Verified)**: with `spring.config.import` supplied only as a test property, `refresh()`
   reported no changes. It worked when the import was in `application.yml`. Tests that exercise refresh must
   declare the import in a config file, as the real services do.
@@ -231,10 +233,10 @@ the same checks become permanent tests (see Test mapping).
 - **Images**: runtime stage `eclipse-temurin:21-jre-alpine` (busybox `wget` for health checks, no extra
   package), build stage a Maven + JDK 21 image, non-root user. Third-party images are `postgres:16`,
   `rabbitmq:4.3-management` and `axllent/mailpit`.
-- **Image existence**: `postgres:16` and the Temurin and Maven images are long-standing tags. `rabbitmq:4.3`
-  is only indirectly confirmed (**Unverified**): search results show RabbitMQ 4.3 as released and list
-  `4.3-management` style tags, but the official tag list could not be fetched here. A CI step pulls the image;
-  failure means pinning an exact `4.3.x-management` tag.
+- **Image existence**: `postgres:16` and the Temurin and Maven images are long-standing tags.
+  `rabbitmq:4.3-management` was **Verified on 2026-10-17**: `EnvelopeBrokerRoundTripIT` pulled and ran it
+  through Testcontainers successfully, so no exact `4.3.x` pin is needed. CI still pulls it explicitly so a
+  tag that disappears upstream fails loudly rather than mid-test.
 - **Health checks**: Spring services use `/actuator/health/readiness` with `start_period`; PostgreSQL
   `pg_isready`; RabbitMQ `rabbitmq-diagnostics ping`; Mailpit `/mailpit readyz`. On Eureka and the config
   server `/actuator/health/**` stays reachable without a login in every profile so these checks keep working
@@ -243,14 +245,20 @@ the same checks become permanent tests (see Test mapping).
   api-gateway and echo-service (and echo-service-b). `db-init` depends on PostgreSQL being healthy and runs
   on every start.
 - **Data**: named volumes for PostgreSQL and RabbitMQ; `docker compose down` keeps them, `down -v` wipes them.
-- **Risk: `--wait` and the one-shot db-init (Unverified)**: community reports say `docker compose up --wait`
-  can return exit code 1 when a one-shot container exits very quickly, even with exit code 0
+- **`--wait` and the one-shot db-init (Verified 2026-10-17)**: community reports said `docker compose up
+  --wait` can return exit code 1 when a one-shot container exits very quickly, even with exit code 0
   ([forum report](https://forums.docker.com/t/behavior-of-up-wait-changed/147699),
   [write-up](https://zenn.dev/takashiaihara/articles/979cb208ca4994)); the official docs do not address it.
-  Mitigation in `up.sh`: after `docker compose up --build --wait --wait-timeout 180`, if the exit code is
-  non-zero, inspect `docker compose ps -a`; treat the run as successful when every long-running service is
-  healthy and `db-init` exited 0, otherwise print the failing services and fail. A CI step exercises this
-  on the Compose version the runner provides.
+  **Measured and not reproducible on the target setup.** The spike in
+  [spikes/compose-wait/docker-compose.yml](spikes/compose-wait/docker-compose.yml) runs a long-running
+  healthchecked service that `depends_on` a one-shot with `condition: service_completed_successfully`, in two
+  variants: the one-shot exits instantly, and the one-shot sleeps 2 s first. Command:
+  `docker compose --profile <instant|delayed> up --wait --wait-timeout 60`. On **Docker Compose 2.40.3**
+  (Docker 29.1.3, WSL2 Ubuntu) **both variants exited 0** and the long-running service reached `Healthy`.
+  **Decision**: `up.sh` uses plain `docker compose up --build --wait --wait-timeout 180` with no
+  treat-failure-as-success fallback; a non-zero exit is a real failure and `up.sh` prints
+  `docker compose ps -a` as a diagnostic before exiting non-zero. CI logs its Compose version, so a
+  regression on an older/newer version shows up as a genuine CI failure rather than being masked.
 - **Cold build time against SC-001 (resolved 2026-10-17)**: the spec owner split the budget. SC-001 now reads
   under 3 minutes with the images already built (the warm start) and under 10 minutes on a clean checkout that
   must build them. Mitigations still apply: BuildKit cache mount for `~/.m2` shared across image builds,
