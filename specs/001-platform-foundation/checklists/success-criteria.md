@@ -16,7 +16,7 @@ checkout. Timings below are from that setup and should be read as a pessimistic 
 | SC-004 | Every gateway error shares one structure and carries a correlation ID | **Met** | `GatewayBehaviourIT` validates 401, 404, 503 and 504 bodies against `contracts/problem-details.schema.json` and asserts the body's `correlationId` equals the response header. The smoke test repeats the 401 and 404 cases against the running stack. A defect found this way (the header returned twice) is fixed and covered by a regression test. |
 | FR-024 | Rate limiting per client address | **Met** | A 400-request parallel burst against the running gateway was refused with 429 (30 refused in the recorded run) and recovered afterwards. Bucket behaviour, refill, isolation between addresses and eviction are unit-tested with an injected clock. |
 | SC-005 | 503 within 5 s when no healthy copy exists | **Met** | `GatewayBehaviourIT.refusedConnectionIsServiceUnavailable` and `noInstanceIsServiceUnavailable` both assert the status and the elapsed time. |
-| SC-006 | 100 calls, each of two copies gets at least 40 | **Pending a run** | Implemented as `scripts/smoke-test.sh --scale`; CI runs it. Not yet executed on this machine. |
+| SC-006 | 100 calls, each of two copies gets at least 40 | **Met** | `scripts/smoke-test.sh --scale`, run on this machine: **50 / 50** across `echo-service-b` and `echo-service:377513d527ae`, both far above the 40 minimum. The same run killed a copy and confirmed only 200 or 503 followed, never a hang or a 500. 24 of 24 checks passed. |
 | SC-007 | A new service needs no wiring code | **Met (static)** | `NoWiringCodeTest` scans every service module for registration, config and health code and finds none; `BuildRulesTest` confirms no child POM declares a version. The end-to-end walkthrough (T140) is still outstanding. |
 | SC-008 | Stop, restart and reset using only the README | **Met** | `scripts/smoke-test.sh --lifecycle`: a marker row survives `docker compose down` and a restart, and is gone after `down -v`. 10 of 10 checks passed. |
 | SC-009 | A missing setting or occupied port fails in under 30 s, naming it | **Met** | `scripts/tests/up-preflight.test.sh`: 5 of 5 pass, covering runtime down, missing and empty settings, an occupied port, a port already held by this project, and the happy path. Each asserts no container was started and the failure took under 30 s. |
@@ -24,10 +24,15 @@ checkout. Timings below are from that setup and should be read as a pessimistic 
 
 ## Outstanding
 
-- **SC-006** needs one `scripts/smoke-test.sh --scale` run on this machine (or the first CI run).
 - **SC-007** has a static guarantee but not yet the end-to-end `probe-service` walkthrough (task T140).
 - **SC-001 cold** was measured as a single successful run rather than a timed series; CI records it
-  on every build.
+  on every build against the 600 s budget.
+- **`shellcheck`** is not installed on this machine, so the lint step (T136) has only been written,
+  not run. CI runs it on every build.
+- Two smoke modes remain unwritten: the config-server-down check (T099) and the non-local
+  `--auth-profile` check (T100). The behaviour each would cover is tested at the unit and
+  integration level (`EchoFailFastIT`, `DiscoveryServerSecurityTest`, `ConfigServerSecurityTest`),
+  but not yet end to end against the running stack.
 
 ## Notes
 
