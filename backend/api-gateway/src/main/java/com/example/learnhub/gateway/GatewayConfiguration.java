@@ -15,7 +15,7 @@ import io.micrometer.context.integration.Slf4jThreadLocalAccessor;
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cloud.endpoint.event.RefreshEvent;
+import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
@@ -29,8 +29,6 @@ import org.springframework.core.Ordered;
 @EnableConfigurationProperties(RateLimiterProperties.class)
 public class GatewayConfiguration {
 
-    /** Correlation first, so even a 401 or 429 carries an ID. */
-    private static final int CORRELATION_ORDER = Ordered.HIGHEST_PRECEDENCE;
     /** Access next: an unauthorised caller should not spend rate-limit tokens. */
     private static final int ROUTE_ACCESS_ORDER = Ordered.HIGHEST_PRECEDENCE + 10;
     /** Rate limit last of the three, applying only to requests that could actually proceed. */
@@ -85,13 +83,14 @@ public class GatewayConfiguration {
     /**
      * Drop the buckets when central configuration changes, so a new limit applies at once rather
      * than waiting for the old buckets to be evicted.
+     *
+     * <p>Listens for {@link EnvironmentChangeEvent}, not {@code RefreshEvent}: confirmed via
+     * {@code javap} on spring-cloud-context that {@code ContextRefresher.refresh()} publishes only
+     * {@code EnvironmentChangeEvent} (with the set of changed property keys), never
+     * {@code RefreshEvent}. A listener on the wrong type silently never fires.
      */
-    @EventListener(RefreshEvent.class)
-    void onConfigurationRefresh(RefreshEvent event) {
+    @EventListener(EnvironmentChangeEvent.class)
+    void onConfigurationRefresh(EnvironmentChangeEvent event) {
         rateLimiter.reset();
-    }
-
-    static int correlationOrder() {
-        return CORRELATION_ORDER;
     }
 }

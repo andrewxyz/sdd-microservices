@@ -37,7 +37,11 @@ public class RouteAccessGlobalFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
-        if (route == null || isPublic(route.getMetadata())) {
+        // No matched route should not reach a global filter in practice (an unmatched path never gets
+        // this far), but if it ever did, failing open here would make a routing bug into a security
+        // hole. "Protected by default" means unauthenticated-by-default too when the route itself is
+        // unknown, not just when its metadata says so.
+        if (route != null && isPublic(route.getMetadata())) {
             return chain.filter(exchange);
         }
         return Mono.error(new ResponseStatusException(
