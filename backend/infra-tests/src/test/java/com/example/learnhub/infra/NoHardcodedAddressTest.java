@@ -63,11 +63,26 @@ class NoHardcodedAddressTest {
 
         for (Path file : files) {
             int lineNumber = 0;
+            boolean inAllowedOrigins = false;
+
             for (String line : Files.readAllLines(file)) {
                 lineNumber++;
                 String trimmed = line.strip();
                 if (trimmed.startsWith("#")) {
                     continue;
+                }
+
+                // CORS allowed-origins are browser addresses, not service addresses: they are
+                // supposed to be literal URLs, and the registry has nothing to do with them.
+                if (trimmed.startsWith("allowed-origins")) {
+                    inAllowedOrigins = true;
+                    continue;
+                }
+                if (inAllowedOrigins) {
+                    if (trimmed.startsWith("- ") || trimmed.startsWith("\"") || trimmed.isEmpty()) {
+                        continue;
+                    }
+                    inAllowedOrigins = false;
                 }
 
                 Matcher url = LITERAL_URL.matcher(trimmed);

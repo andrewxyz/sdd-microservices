@@ -51,7 +51,11 @@ class EnvExampleTest {
     @DisplayName("every variable the Compose file requires is documented in .env.example")
     void composeVariablesAreDocumented() throws Exception {
         Assumptions.assumeTrue(Files.exists(COMPOSE), "docker-compose.yml not present yet");
-        String compose = Files.readString(COMPOSE);
+        // Strip comments: the file documents the ${VAR:?message} convention in prose, and matching
+        // that would report a variable literally called VAR.
+        String compose = Files.readAllLines(COMPOSE).stream()
+                .filter(line -> !line.strip().startsWith("#"))
+                .collect(java.util.stream.Collectors.joining("\n"));
 
         Set<String> declared = declaredNames();
         Matcher matcher = Pattern.compile("\\$\\{([A-Z0-9_]+)[:?}-]").matcher(compose);

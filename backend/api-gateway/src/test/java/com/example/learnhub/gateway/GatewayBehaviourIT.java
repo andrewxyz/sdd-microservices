@@ -60,6 +60,11 @@ class GatewayBehaviourIT {
                 .willReturn(aResponse().withStatus(200).withBody("{\"ok\":true}")));
         upstream.stubFor(get(urlPathEqualTo("/api/v1/quoted/ping"))
                 .willReturn(aResponse().withStatus(200).withBody("{\"ok\":true}")));
+        // Mirrors the real echo service, which also sets a correlation header on its response.
+        upstream.stubFor(get(urlPathEqualTo("/api/v1/echoing/ping"))
+                .willReturn(aResponse().withStatus(200)
+                        .withHeader(CorrelationIds.HEADER, "set-by-the-upstream-service")
+                        .withBody("{\"ok\":true}")));
         upstream.stubFor(get(urlPathEqualTo("/api/v1/slow/thing"))
                 .willReturn(aResponse().withStatus(200).withFixedDelay(8000).withBody("too slow")));
 
@@ -96,6 +101,12 @@ class GatewayBehaviourIT {
                               predicates: ["Path=/api/v1/quoted/ping"]
                               metadata:
                                 public: "true"
+                            - id: echoing
+                              uri: http://localhost:%d
+                              order: 0
+                              predicates: ["Path=/api/v1/echoing/**"]
+                              metadata:
+                                public: true
                             - id: echo
                               uri: http://localhost:%d
                               order: 1
@@ -124,7 +135,7 @@ class GatewayBehaviourIT {
                       capacity: 20
                       refill-per-second: 1
                       idle-eviction: PT10M
-                """.formatted(upstream.port(), upstream.port(), upstream.port(),
+                """.formatted(upstream.port(), upstream.port(), upstream.port(), upstream.port(),
                         upstream.port(), deadPort));
 
         try (InputStream in = GatewayBehaviourIT.class.getClassLoader()
@@ -223,6 +234,16 @@ class GatewayBehaviourIT {
         upstream.verify(getRequestedFor(urlPathEqualTo("/api/v1/echo/ping"))
                 .withHeader(CorrelationIds.HEADER,
                         com.github.tomakehurst.wiremock.client.WireMock.equalTo("forwarded-id-123")));
+    }
+
+    @Test
+    @DisplayName("the correlation header appears exactly once, even when the service sets one too")
+    void correlationHeaderIsNotDuplicated() {
+        EntityExchangeResult<byte[]> result = call("/api/v1/echoing/ping", "single-value-1234");
+
+        assertThat(result.getResponseHeaders().get(CorrelationIds.HEADER))
+                .as("a duplicated header leaves the client guessing which value is real")
+                .containsExactly("single-value-1234");
     }
 
     @Test

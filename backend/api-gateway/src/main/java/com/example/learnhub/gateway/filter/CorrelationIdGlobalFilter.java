@@ -35,7 +35,15 @@ public class CorrelationIdGlobalFilter implements GlobalFilter, Ordered {
                 .request(builder -> builder.header(CorrelationIds.HEADER, correlationId))
                 .build();
         mutated.getAttributes().put(ATTRIBUTE, correlationId);
-        mutated.getResponse().getHeaders().set(CorrelationIds.HEADER, correlationId);
+
+        // Set the header just before the response is committed, not now. The downstream service also
+        // returns a correlation header, and the gateway copies upstream headers into the response, so
+        // setting it up front leaves the client with the value twice. Replacing it at commit time
+        // collapses both into the single value this request was actually handled under.
+        mutated.getResponse().beforeCommit(() -> {
+            mutated.getResponse().getHeaders().set(CorrelationIds.HEADER, correlationId);
+            return Mono.empty();
+        });
 
         return chain.filter(mutated)
                 .contextWrite(Context.of(CorrelationIds.MDC_KEY, correlationId));

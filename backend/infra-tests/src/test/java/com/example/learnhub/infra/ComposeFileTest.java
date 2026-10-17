@@ -82,8 +82,10 @@ class ComposeFileTest {
         for (String name : services.keySet()) {
             for (String mapping : ports(name)) {
                 int hostPort = Integer.parseInt(mapping.split(":")[0].replace("\"", "").trim());
-                assertThat(hostPort).as("%s must not use a reserved business port", name)
-                        .isNotBetween(9001, 9007);
+                assertThat(hostPort < 9001 || hostPort > 9007)
+                        .as("%s uses port %d, which is reserved for a future business service",
+                                name, hostPort)
+                        .isTrue();
             }
         }
     }
@@ -134,6 +136,30 @@ class ComposeFileTest {
             assertThat(raw).as("%s must use the ${VAR:?message} form", variable)
                     .contains("${" + variable + ":?");
         }
+    }
+
+    @Test
+    @DisplayName("the gateway is published on 9080 and waits for discovery and config")
+    void gatewayIsWiredCorrectly() {
+        assertThat(ports("api-gateway")).contains("9080:9080");
+        assertThat(service("api-gateway").get("build").toString()).contains("api-gateway");
+        assertThat(dependsOn("api-gateway")).containsKeys("discovery-server", "config-server");
+        assertThat(service("api-gateway")).containsKey("healthcheck");
+    }
+
+    @Test
+    @DisplayName("the second echo copy is opt-in, shares the image and publishes no host port")
+    void secondEchoCopyIsScaleOnly() {
+        Map<String, Object> second = service("echo-service-b");
+
+        assertThat(second.get("profiles").toString()).contains("scale");
+        assertThat(second.get("build").toString())
+                .as("same image as echo-service, so it is a genuine second copy")
+                .contains("echo-service");
+        assertThat(second.get("hostname")).isEqualTo("echo-service-b");
+        assertThat(ports("echo-service-b")).as("reached only through the gateway").isEmpty();
+        assertThat(second).containsKey("healthcheck");
+        assertThat(dependsOn("echo-service-b")).containsKeys("discovery-server", "config-server");
     }
 
     @Test

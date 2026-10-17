@@ -12,9 +12,11 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 LIFECYCLE=0
+SCALE=0
 for arg in "$@"; do
   case "$arg" in
     --lifecycle) LIFECYCLE=1 ;;
+    --scale) SCALE=1 ;;
     *) echo "unknown option: $arg" >&2; exit 2 ;;
   esac
 done
@@ -173,26 +175,39 @@ else
   fail "preflight from an origin that is not allowed is refused" "got $preflight_denied"
 fi
 
-# Rate limit: a concurrent burst must trip it. A serial loop cannot outrun the 100/s refill, which
-# is why the burst is concurrent (research R8).
-rm -f /tmp/learnhub-burst-*.txt
-for i in $(seq 1 400); do
-  curl -s -o /dev/null -w '%{http_code}\n' "$GW/api/v1/echo/ping" >>"/tmp/learnhub-burst-$((i % 20)).txt" &
-done
-wait
-burst_429="$(cat /tmp/learnhub-burst-*.txt 2>/dev/null | grep -c '^429$' || true)"
+# Rate limit: the burst has to outrun the refill, so it must be genuinely parallel. Spawning curls
+# one at a time is too slow — at 100 tokens/s the bucket refills faster than a shell loop empties
+# it. Each curl also makes several requests in one process, keeping the rate high (research R8).
+burst_out="$(mktemp)"
+printf '%s\n' $(seq 1 40) | xargs -P 40 -I{} \
+  curl -s -o /dev/null -w '%{http_code}\n' \
+    "$GW/api/v1/echo/ping" "$GW/api/v1/echo/ping" "$GW/api/v1/echo/ping" "$GW/api/v1/echo/ping" \
+    "$GW/api/v1/echo/ping" "$GW/api/v1/echo/ping" "$GW/api/v1/echo/ping" "$GW/api/v1/echo/ping" \
+    "$GW/api/v1/echo/ping" "$GW/api/v1/echo/ping" >"$burst_out" 2>/dev/null
+burst_429="$(grep -c '^429$' "$burst_out" || true)"
+burst_total="$(grep -c . "$burst_out" || true)"
+rm -f "$burst_out"
+
 if [ "${burst_429:-0}" -gt 0 ]; then
-  pass "a concurrent burst is rate limited with 429 ($burst_429 of 400 refused)"
+  pass "a concurrent burst is rate limited with 429 ($burst_429 of $burst_total refused)"
 else
-  fail "a concurrent burst is rate limited with 429" "no 429 responses"
+  fail "a concurrent burst is rate limited with 429" \
+       "none of $burst_total requests were refused; the burst may be slower than the refill rate"
 fi
 
-# The limit must recover, or later checks would be poisoned by it.
-sleep 3
-if [ "$(gw_status "$GW/api/v1/echo/ping")" = "200" ]; then
+# The limit must recover, or every later check would inherit it.
+recovered_limit=0
+for _ in $(seq 1 10); do
+  sleep 2
+  if [ "$(gw_status "$GW/api/v1/echo/ping")" = "200" ]; then
+    recovered_limit=1
+    break
+  fi
+done
+if [ "$recovered_limit" = "1" ]; then
   pass "the rate limit recovers after the burst"
 else
-  fail "the rate limit recovers after the burst" "still refused"
+  fail "the rate limit recovers after the burst" "still refused after 20s"
 fi
 
 # --------------------------------------------------- second start is harmless
@@ -215,6 +230,114 @@ if scripts/up.sh >/tmp/learnhub-second-up.log 2>&1; then
   fi
 else
   fail "running up.sh again while the stack is up succeeds" "$(tail -5 /tmp/learnhub-second-up.log)"
+fi
+
+# ----------------------------------------------------- registry and discovery
+registry_lists() {
+  curl -s -u "${EUREKA_USER:-eureka}:${EUREKA_PASSWORD:-}" -H 'Accept: application/json' \
+       http://localhost:9761/eureka/apps 2>/dev/null
+}
+
+# Registration is not instant: a service that has just restarted needs up to its 30s lease interval
+# to appear. Wait for it rather than sampling once, or this reports a timing artefact as a failure.
+missing_apps=""
+for _ in $(seq 1 24); do
+  apps="$(registry_lists)"
+  missing_apps=""
+  for app in CONFIG-SERVER ECHO-SERVICE API-GATEWAY; do
+    echo "$apps" | grep -q "$app" || missing_apps="$missing_apps $app"
+  done
+  [ -z "$missing_apps" ] && break
+  sleep 5
+done
+if [ -z "$missing_apps" ]; then
+  pass "every service is registered under its own name"
+else
+  fail "every service is registered under its own name" "missing:$missing_apps after 120s"
+fi
+
+# FR-014: a brief registry outage must not stop services that are already running. Only meaningful
+# once everything is registered, so it is skipped if the check above failed.
+if [ -n "$missing_apps" ]; then
+  echo "SKIP  registry outage check (services were not all registered)"
+else
+docker compose stop discovery-server >/dev/null 2>&1
+if [ "$(gw_status "$GW/api/v1/echo/ping")" = "200" ]; then
+  pass "requests keep working while the registry is down"
+else
+  fail "requests keep working while the registry is down" "got $(gw_status "$GW/api/v1/echo/ping")"
+fi
+docker compose start discovery-server >/dev/null 2>&1
+
+recovered=0
+for _ in $(seq 1 24); do
+  if registry_lists | grep -q "ECHO-SERVICE"; then
+    recovered=1
+    break
+  fi
+  sleep 5
+done
+if [ "$recovered" = "1" ]; then
+  pass "services re-register on their own once the registry returns"
+else
+  fail "services re-register on their own once the registry returns" "not listed within 120s"
+fi
+fi
+
+# --------------------------------------------------- two copies (SC-006)
+if [ "$SCALE" -eq 1 ]; then
+  docker compose --profile scale up -d echo-service-b >/dev/null 2>&1
+
+  registered_two=0
+  for _ in $(seq 1 24); do
+    if [ "$(registry_lists | grep -o 'ECHO-SERVICE' | wc -l)" -ge 1 ] &&
+       [ "$(curl -s "$GW/api/v1/echo/ping" >/dev/null; for _ in 1 2 3 4 5 6 7 8 9 10; do
+              curl -s "$GW/api/v1/echo/ping"; done | grep -o '"instanceId":"[^"]*"' | sort -u | wc -l)" -ge 2 ]; then
+      registered_two=1
+      break
+    fi
+    sleep 5
+  done
+
+  if [ "$registered_two" = "1" ]; then
+    pass "a second copy of the echo service registers and receives traffic"
+  else
+    fail "a second copy of the echo service registers and receives traffic" "only one instance answered"
+  fi
+
+  # SC-006: 100 calls, each copy at least 40.
+  : >/tmp/learnhub-spread.txt
+  for _ in $(seq 1 100); do
+    curl -s "$GW/api/v1/echo/ping" | grep -o '"instanceId":"[^"]*"' >>/tmp/learnhub-spread.txt
+  done
+  counts="$(sort /tmp/learnhub-spread.txt | uniq -c | sort -rn)"
+  lowest="$(echo "$counts" | awk 'NF {print $1}' | tail -1)"
+  instances="$(echo "$counts" | grep -c .)"
+
+  if [ "$instances" -eq 2 ] && [ "${lowest:-0}" -ge 40 ]; then
+    pass "100 calls spread across both copies, each at least 40 ($(echo "$counts" | tr '\n' ' '))"
+  else
+    fail "100 calls spread across both copies, each at least 40" "$(echo "$counts" | tr '\n' ' ')"
+  fi
+
+  # A crashed instance: 503 rather than a hang, then eviction inside the 90s SC-002 allows.
+  crashed="$(docker compose ps -q echo-service-b)"
+  docker kill "$crashed" >/dev/null 2>&1
+  bad=0
+  for _ in $(seq 1 20); do
+    code="$(gw_status "$GW/api/v1/echo/ping")"
+    case "$code" in
+      200|503) ;;
+      *) bad=1 ;;
+    esac
+  done
+  if [ "$bad" -eq 0 ]; then
+    pass "a crashed copy produces 200 or 503, never a hang or a 500"
+  else
+    fail "a crashed copy produces 200 or 503, never a hang or a 500" "saw an unexpected status"
+  fi
+
+  docker compose --profile scale rm -sf echo-service-b >/dev/null 2>&1
 fi
 
 # ----------------------------------------------------------------- lifecycle

@@ -54,6 +54,16 @@ class NoWiringCodeTest {
         }
     }
 
+    /**
+     * Removes block and line comments before scanning. Without this, a comment explaining why a
+     * service deliberately does <em>not</em> use something would be reported as using it.
+     */
+    private static String stripComments(String source) {
+        return source
+                .replaceAll("(?s)/\\*.*?\\*/", "")
+                .replaceAll("(?m)//.*$", "");
+    }
+
     private static List<Path> mainSources(Path module) throws IOException {
         Path main = module.resolve("src/main/java");
         if (!Files.isDirectory(main)) {
@@ -71,7 +81,7 @@ class NoWiringCodeTest {
 
         for (Path module : serviceModules) {
             for (Path source : mainSources(module)) {
-                String code = Files.readString(source);
+                String code = stripComments(Files.readString(source));
                 for (String[] forbidden : FORBIDDEN) {
                     if (code.contains(forbidden[0])) {
                         violations.add("%s uses %s: %s".formatted(
@@ -91,7 +101,7 @@ class NoWiringCodeTest {
 
         for (Path module : serviceModules) {
             for (Path source : mainSources(module)) {
-                String code = Files.readString(source);
+                String code = stripComments(Files.readString(source));
                 if (code.contains("\"/health\"") || code.contains("(\"/actuator")) {
                     violations.add(BACKEND.relativize(source).toString());
                 }

@@ -115,7 +115,13 @@ Event envelope: the `shared-events` tests serialize an envelope, validate it aga
 
 ## Full automated pass
 
-`mvn -f backend/pom.xml verify` (unit and Testcontainers tests), then `scripts/up.sh` followed by all three
-smoke modes: `scripts/smoke-test.sh`, `scripts/smoke-test.sh --lifecycle` and
-`scripts/smoke-test.sh --auth-profile`. CI runs exactly this sequence and finishes with
-`docker compose down -v`.
+`mvn -f backend/pom.xml verify` (unit and Testcontainers tests), then `scripts/up.sh` followed by the smoke
+modes: `scripts/smoke-test.sh` (default checks), `scripts/smoke-test.sh --scale` (two echo copies, load
+spread, a crashed copy) and `scripts/smoke-test.sh --lifecycle` (data survives a restart and is wiped by
+`down -v`). CI runs exactly this sequence and finishes with `docker compose down -v`.
+
+Measured results for each success criterion are recorded in
+[checklists/success-criteria.md](checklists/success-criteria.md).
+
+**If Docker runs inside WSL rather than Docker Desktop**, run all of the above from inside WSL: Maven on the
+Windows side cannot reach the daemon, so the Testcontainers tests would fail with a connection error.

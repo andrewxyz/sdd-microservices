@@ -46,6 +46,7 @@ After a start:
 
 | What | Where |
 |------|-------|
+| **Gateway (the only entry point for clients)** | <http://localhost:9080/api/v1/echo/ping> |
 | Registry dashboard | <http://localhost:9761> |
 | Config server | <http://localhost:9888> |
 | Echo service | <http://localhost:9099/api/v1/echo/ping> |
@@ -55,7 +56,8 @@ After a start:
 Check it is all working:
 
 ```bash
-scripts/smoke-test.sh              # health, databases, broker, mail
+scripts/smoke-test.sh              # health, databases, broker, mail, gateway, registry
+scripts/smoke-test.sh --scale      # also: two echo copies, load spread, a crashed copy
 scripts/smoke-test.sh --lifecycle  # also: data survives a restart, and down -v wipes it
 ```
 

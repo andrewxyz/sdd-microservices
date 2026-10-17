@@ -68,6 +68,9 @@ jobs:
       - name: Smoke test (default checks)
         run: scripts/smoke-test.sh
 
+      - name: Smoke test (two echo copies, load spread and crash handling)
+        run: scripts/smoke-test.sh --scale
+
       - name: Smoke test (lifecycle: restart keeps data, down -v wipes it)
         run: scripts/smoke-test.sh --lifecycle
 
