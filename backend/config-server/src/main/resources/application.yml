@@ -1,0 +1,56 @@
+# Configured locally, like the registry: this service is the source of central configuration, so it
+# cannot fetch its own from anywhere (constitution Principle III).
+
+spring:
+  application:
+    name: config-server
+  profiles:
+    # The native backend reads plain files, so an edit in backend/config-repo is visible on the next
+    # request with no commit (clarification Q2, FR-016).
+    include: native
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: file:${CONFIG_REPO_PATH:/config-repo}
+  security:
+    user:
+      name: ${CONFIG_USER:config}
+      password: ${CONFIG_PASSWORD:config}
+
+server:
+  port: 9888
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:9761/eureka/}
+    registry-fetch-interval-seconds: 5
+    healthcheck:
+      enabled: true
+  instance:
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${HOSTNAME:${random.uuid}}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+platform:
+  config-watcher:
+    # It serves configuration; it does not consume any.
+    enabled: false
+
+logging:
+  structured:
+    format:
+      console: ecs

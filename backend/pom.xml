@@ -28,6 +28,10 @@
   <!-- Each module registers itself here as its own task creates it. -->
   <modules>
     <module>shared-events</module>
+    <module>platform-common</module>
+    <module>discovery-server</module>
+    <module>config-server</module>
+    <module>echo-service</module>
     <module>api-gateway</module>
   </modules>
 

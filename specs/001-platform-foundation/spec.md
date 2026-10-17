@@ -259,7 +259,8 @@ configuration code. Serialize and read back a sample event in the standard wrapp
 **Central configuration**
 
 - **FR-015**: All service settings MUST be held centrally, delivered to each service as shared defaults,
-  service-specific settings and per-environment overrides, with more specific values taking precedence.
+  service-specific settings and per-environment overrides. An environment override beats a service's own
+  setting, and both beat the shared default.
 - **FR-016**: A developer MUST be able to change a setting by editing a file in the central settings
   folder (`backend/config-repo`), and the change MUST take effect in a running service within about
   10 seconds without a commit, rebuild or restart.

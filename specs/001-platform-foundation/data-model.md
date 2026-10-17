@@ -44,8 +44,15 @@ The configuration a service receives, assembled by the config server from `backe
 | Layer | Source file | Precedence |
 |-------|-------------|------------|
 | Shared defaults | `application.yml` | lowest |
-| Environment override | `application-<profile>.yml` (for example `application-local.yml`) | middle |
-| Service-specific | `<service-name>.yml` | highest |
+| Service-specific | `<service-name>.yml` | middle |
+| Environment override | `application-<profile>.yml` (for example `application-local.yml`) | highest |
+
+The order is the one Spring Cloud Config's native backend actually returns, measured by
+`ConfigServerNativeIT` on 2026-10-17: `application-local.yml`, then `echo-service.yml`, then
+`application.yml`. An environment override therefore beats a service's own file, which is the useful
+behavior (a profile can adjust any service), but it means a key set in both `application-local.yml` and
+`<service>.yml` takes the `local` value. A service-and-profile file (`<service>-<profile>.yml`) would sit
+above all three; none is used in this feature.
 
 Refreshable keys (rebound on refresh without restart):
 

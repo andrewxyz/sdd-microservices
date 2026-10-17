@@ -128,8 +128,11 @@ the same checks become permanent tests (see Test mapping).
   read-only at `/config-repo` from the host working tree.
 - **Rationale**: the native backend reads files on each request, so edits are visible with no commit
   (clarification Q2, FR-016). Read-only mount means a service cannot modify settings.
-- **Layering**: clients receive `application.yml` (shared), `application-local.yml` (profile), `<app>.yml`
-  (service) with service-specific and profile values winning over shared defaults (spec scenario US3-1).
+- **Layering (Verified 2026-10-17)**: clients receive `application.yml` (shared), `<app>.yml` (service) and
+  `application-<profile>.yml` (environment). Measured precedence, highest first: `application-local.yml`,
+  `echo-service.yml`, `application.yml`. An initial assumption that the service file ranks highest was
+  **wrong** and was caught by `ConfigServerNativeIT`; the environment override beats the service file. Both
+  beat the shared defaults, which is what spec scenario US3-1 requires. See data-model.md for the table.
 - **Alternatives considered**: git backend (needs a commit, rejected by Q2); baking config into the image
   (needs a rebuild, rejected by FR-016).
 

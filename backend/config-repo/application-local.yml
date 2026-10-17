@@ -1,0 +1,11 @@
+# Local development overrides.
+#
+# The refresh endpoint is exposed here only. The config watcher already applies edits within about
+# ten seconds without it (FR-016); this is for a developer who wants to force the update by hand.
+# Outside the local profile it stays closed.
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,refresh
