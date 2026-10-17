@@ -9,7 +9,7 @@ checkout. Timings below are from that setup and should be read as a pessimistic 
 
 | # | Criterion | Status | Evidence |
 |---|-----------|--------|----------|
-| SC-001 | Healthy in under 3 min warm, 10 min cold | **Met** | Warm start from a wiped state: **149 s**. Cold start including three image builds: completed in a single background run; CI measures both against the 180 s / 600 s budgets and fails if either is exceeded. |
+| SC-001 | Healthy in under 3 min warm, 10 min cold | **Warm met; cold measured indirectly** | Warm start from a wiped state (`down -v` then `up.sh`, images cached): **149 s**, inside the 180 s budget. The cold path was exercised once — the very first `scripts/up.sh` on this machine built all three images from nothing and reached healthy — but it was not timed cleanly, because the run also surfaced the `--wait` exit-code problem. CI times both on every build and **fails** if cold exceeds 600 s or warm exceeds 180 s, so the budget is enforced even though this machine has no clean number for the cold case. |
 | SC-002 | Registered within 30 s; gone within 30 s (graceful) or 90 s (crash) | **Met** | `scripts/smoke-test.sh` waits for `CONFIG-SERVER`, `ECHO-SERVICE` and `API-GATEWAY` to appear and fails past 120 s; `--scale` kills a copy and asserts only 200 or 503 follow. |
 | FR-014 | Running services survive a brief registry outage | **Met** | Deliberate 30-second outage with a warm gateway cache: **30 of 30 requests returned 200**, and the logs show automatic re-registration (`registration status: 204`) afterwards. |
 | SC-003 | A central change lands within 10 s | **Met** | Measured **2 s** on the running stack: the smoke test edits `echo.greeting` in `backend/config-repo/echo-service.yml` and polls the gateway until the new value appears, failing past 10 s. `EchoLiveRefreshIT` measures the same path against a stubbed config server. |
@@ -24,6 +24,21 @@ checkout. Timings below are from that setup and should be read as a pessimistic 
 | FR-020 | Structured logs carry the correlation ID | **Met** | `StructuredLoggingTest` parses a captured log line as ECS JSON and asserts `correlationId` is its own field, not merely present in the text. |
 | SC-009 | A missing setting or occupied port fails in under 30 s, naming it | **Met** | `scripts/tests/up-preflight.test.sh`: 5 of 5 pass, covering runtime down, missing and empty settings, an occupied port, a port already held by this project, and the happy path. Each asserts no container was started and the failure took under 30 s. |
 | SC-010 | No real secret committed; every setting documented | **Met** | `EnvExampleTest` cross-checks every `${VAR}` in `docker-compose.yml` against `.env.example`, requires secret-like values to start with `change-me`, and asserts `.env` is git-ignored and untracked. |
+
+## What the verification itself taught
+
+Several of these criteria only turned out to be true after something was fixed, and in every case the
+fix came from *running* rather than reading:
+
+- The correlation header came back twice until the smoke test against a real downstream caught it.
+- `docker compose up --wait` really does fail on a clean start; the earlier spike said otherwise
+  because it did not model the real topology.
+- Config precedence was the reverse of what the spec assumed.
+- The shell scripts had no executable bit, so a fresh clone could not follow the README.
+- Four tests had been written but never executed; two of them could not have passed as written.
+
+The pattern worth carrying into the next spec: a test that is written but not run is not yet a test,
+and a criterion verified only on the machine that built it is not yet verified.
 
 ## Outstanding
 
