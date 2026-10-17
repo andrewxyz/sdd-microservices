@@ -105,6 +105,96 @@ else
   pass "Mailpit relays nowhere, so local mail stays on the machine"
 fi
 
+# ---------------------------------------------------------------- gateway
+GW="http://localhost:9080"
+
+gw_status() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
+
+# Routing through the single entry point (FR-019).
+if [ "$(gw_status "$GW/api/v1/echo/ping")" = "200" ]; then
+  pass "the gateway routes a public path to the echo service"
+else
+  fail "the gateway routes a public path to the echo service" "got $(gw_status "$GW/api/v1/echo/ping")"
+fi
+
+# Correlation ID: reused when valid, replaced when not (FR-020).
+returned="$(curl -s -D- -o /dev/null -H 'X-Correlation-Id: smoke-valid-1234' "$GW/api/v1/echo/ping" \
+            | tr -d '\r' | awk -F': ' '/^[Xx]-[Cc]orrelation-[Ii]d/{print $2}')"
+if [ "$returned" = "smoke-valid-1234" ]; then
+  pass "a valid correlation id is reused and returned"
+else
+  fail "a valid correlation id is reused and returned" "got '$returned'"
+fi
+
+replaced="$(curl -s -D- -o /dev/null -H 'X-Correlation-Id: bad id!' "$GW/api/v1/echo/ping" \
+            | tr -d '\r' | awk -F': ' '/^[Xx]-[Cc]orrelation-[Ii]d/{print $2}')"
+if [ -n "$replaced" ] && [ "$replaced" != "bad id!" ]; then
+  pass "a malformed correlation id is replaced"
+else
+  fail "a malformed correlation id is replaced" "got '$replaced'"
+fi
+
+# Error statuses and their shared shape (FR-022, SC-004).
+check_problem() {
+  label="$1"; url="$2"; expected="$3"
+  body="$(curl -s -o /tmp/learnhub-problem.json -w '%{http_code}' "$url")"
+  if [ "$body" != "$expected" ]; then
+    fail "$label" "expected $expected, got $body"
+    return
+  fi
+  for field in '"status"' '"title"' '"correlationId"'; do
+    if ! grep -q "$field" /tmp/learnhub-problem.json; then
+      fail "$label" "problem body is missing $field"
+      return
+    fi
+  done
+  pass "$label"
+}
+
+check_problem "an unknown path returns 404 problem details" "$GW/nope" "404"
+check_problem "a protected route returns 401 problem details" "$GW/api/v1/echo/secure/ping" "401"
+
+# Preflight from an allowed origin must never be refused, even on a protected route (research R2).
+preflight_allowed="$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS \
+  -H 'Origin: http://localhost:9000' -H 'Access-Control-Request-Method: GET' \
+  "$GW/api/v1/echo/secure/ping")"
+if [ "$preflight_allowed" = "200" ]; then
+  pass "preflight from an allowed origin succeeds on a protected route"
+else
+  fail "preflight from an allowed origin succeeds on a protected route" "got $preflight_allowed"
+fi
+
+preflight_denied="$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS \
+  -H 'Origin: http://evil.example' -H 'Access-Control-Request-Method: GET' \
+  "$GW/api/v1/echo/ping")"
+if [ "$preflight_denied" = "403" ]; then
+  pass "preflight from an origin that is not allowed is refused"
+else
+  fail "preflight from an origin that is not allowed is refused" "got $preflight_denied"
+fi
+
+# Rate limit: a concurrent burst must trip it. A serial loop cannot outrun the 100/s refill, which
+# is why the burst is concurrent (research R8).
+rm -f /tmp/learnhub-burst-*.txt
+for i in $(seq 1 400); do
+  curl -s -o /dev/null -w '%{http_code}\n' "$GW/api/v1/echo/ping" >>"/tmp/learnhub-burst-$((i % 20)).txt" &
+done
+wait
+burst_429="$(cat /tmp/learnhub-burst-*.txt 2>/dev/null | grep -c '^429$' || true)"
+if [ "${burst_429:-0}" -gt 0 ]; then
+  pass "a concurrent burst is rate limited with 429 ($burst_429 of 400 refused)"
+else
+  fail "a concurrent burst is rate limited with 429" "no 429 responses"
+fi
+
+# The limit must recover, or later checks would be poisoned by it.
+sleep 3
+if [ "$(gw_status "$GW/api/v1/echo/ping")" = "200" ]; then
+  pass "the rate limit recovers after the burst"
+else
+  fail "the rate limit recovers after the burst" "still refused"
+fi
+
 # --------------------------------------------------- second start is harmless
 # Compare the set of services, not container ids: db-init is expected to re-run on every start
 # (FR-007), so it legitimately gets a new container each time.

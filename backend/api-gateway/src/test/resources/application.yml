@@ -1,10 +1,28 @@
-# Test-only configuration.
+# Test defaults.
 #
-# The config import MUST live in a config file, not in @SpringBootTest(properties = ...): research R1
-# found that an import supplied as a test property is not re-read on refresh, so the refresh test
-# would silently pass for the wrong reason. ConfigRefreshIT writes this file before the context starts.
+# The config client is switched off here: with it enabled, Spring Cloud insists on a
+# "configserver:" entry in spring.config.import and fails the context without one. Tests supply
+# their settings from a local file instead, through a profile-specific file below.
+#
+# That import has to live in a config file rather than @SpringBootTest(properties = ...): research
+# R1 found a test-property import is not re-read on refresh, which would make the refresh test pass
+# for the wrong reason.
+
 spring:
   application:
     name: api-gateway
-  config:
-    import: "file:./target/refresh-it/config.yml"
+  cloud:
+    config:
+      enabled: false
+  main:
+    allow-bean-definition-overriding: true
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+platform:
+  config-watcher:
+    enabled: false

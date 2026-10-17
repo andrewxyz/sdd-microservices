@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
  * route-refresh listener) becomes necessary.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@org.springframework.test.context.ActiveProfiles("refreshit")
 @Import(ConfigRefreshIT.ProbeConfig.class)
 class ConfigRefreshIT {
 
@@ -53,12 +54,18 @@ class ConfigRefreshIT {
                             allowed-methods: ["GET", "OPTIONS"]
                             allowed-headers: "*"
                       routes:
+                        # Marked public because the gateway protects every route by default; this
+                        # test is about refresh, not access control.
                         - id: kept
                           uri: forward:/__probe/one
                           predicates: ["Path=/api/v1/kept/**"]
+                          metadata:
+                            public: true
                         - id: removable
                           uri: forward:/__probe/two
                           predicates: ["Path=/api/v1/removable/**"]
+                          metadata:
+                            public: true
             """;
 
     private static final String AFTER = """
@@ -79,9 +86,13 @@ class ConfigRefreshIT {
                         - id: kept
                           uri: forward:/__probe/one
                           predicates: ["Path=/api/v1/kept/**"]
+                          metadata:
+                            public: true
                         - id: added
                           uri: forward:/__probe/two
                           predicates: ["Path=/api/v1/added/**"]
+                          metadata:
+                            public: true
             """;
 
     @BeforeAll

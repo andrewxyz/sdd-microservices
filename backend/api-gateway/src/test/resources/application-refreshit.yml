@@ -1,0 +1,4 @@
+# Settings file for ConfigRefreshIT, which rewrites it mid-test to prove a refresh takes effect.
+spring:
+  config:
+    import: "file:./target/refresh-it/config.yml"

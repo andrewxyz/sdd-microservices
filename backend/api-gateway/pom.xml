@@ -27,6 +27,36 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-config</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.retry</groupId>
+      <artifactId>spring-retry</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-aop</artifactId>
+    </dependency>
+    <!-- Carries the correlation ID across reactive operators so log lines keep it (research R9). -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>context-propagation</artifactId>
+    </dependency>
+    <!--
+      The gateway is a WebFlux application. platform-common's servlet half is guarded by
+      @ConditionalOnWebApplication(SERVLET) and its servlet dependencies are optional, so depending
+      on it here brings the config watcher and CorrelationIds without any servlet classes.
+    -->
+    <dependency>
+      <groupId>com.example.learnhub</groupId>
+      <artifactId>platform-common</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>

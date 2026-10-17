@@ -1,0 +1,21 @@
+# Identity and config bootstrap only; routes, CORS, timeouts and limits all come from the config
+# server (backend/config-repo/api-gateway.yml).
+
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: "configserver:${CONFIG_SERVER_URL}"
+  cloud:
+    config:
+      username: ${CONFIG_USER}
+      password: ${CONFIG_PASSWORD}
+      fail-fast: true
+      retry:
+        max-attempts: 6
+        initial-interval: 1000
+        multiplier: 1.5
+        max-interval: 6000
+
+server:
+  port: 9080

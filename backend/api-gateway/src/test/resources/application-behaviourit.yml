@@ -1,0 +1,4 @@
+# Settings file for GatewayBehaviourIT: routes, CORS and limits pointing at its WireMock upstreams.
+spring:
+  config:
+    import: "file:./target/behaviour-it/config.yml"
