@@ -95,7 +95,8 @@ if printf 'From: smoke@learnhub.test\r\nTo: inbox@learnhub.test\r\nSubject: %s\r
    curl -fsS --url smtp://localhost:9025 --mail-from smoke@learnhub.test \
         --mail-rcpt inbox@learnhub.test -T /tmp/learnhub-mail.txt >/dev/null 2>&1; then
   sleep 1
-  if curl -fsS "http://localhost:9825/api/v1/messages" 2>/dev/null | grep -q "$mail_subject"; then
+  mailpit_messages="$(curl -fsS "http://localhost:9825/api/v1/messages" 2>/dev/null || true)"
+  if printf '%s' "$mailpit_messages" | grep -q "$mail_subject"; then
     pass "a message sent to Mailpit SMTP appears in its web API"
   else
     fail "a message sent to Mailpit SMTP appears in its web API" "subject not found"
@@ -105,7 +106,10 @@ else
 fi
 
 # FR-008: nothing is relayed off the machine.
-if docker compose config 2>/dev/null | grep -qi "MP_SMTP_RELAY"; then
+# Captured rather than piped straight into grep -q: under pipefail a SIGPIPE from the writer would
+# make a match look like a miss, and here that would wrongly report PASS.
+compose_config="$(docker compose config 2>/dev/null || true)"
+if printf '%s' "$compose_config" | grep -qi "MP_SMTP_RELAY"; then
   fail "Mailpit relays nowhere" "a relay is configured in docker-compose.yml"
 else
   pass "Mailpit relays nowhere, so local mail stays on the machine"
@@ -308,7 +312,7 @@ fi
 
 recovered=0
 for _ in $(seq 1 24); do
-  if registry_lists | grep -q "ECHO-SERVICE"; then
+  if printf "%s" "$(registry_lists)" | grep -q "ECHO-SERVICE"; then
     recovered=1
     break
   fi
@@ -391,7 +395,7 @@ if [ -f "$CONFIG_FILE" ]; then
   landed=0
   started=$SECONDS
   for _ in $(seq 1 20); do
-    if curl -s "$GW/api/v1/echo/ping" | grep -q "$new_greeting"; then
+    if curl -s "$GW/api/v1/echo/ping" 2>/dev/null | grep -q "$new_greeting" && true; then
       landed=$((SECONDS - started))
       break
     fi
@@ -431,7 +435,11 @@ if [ "$CONFIG_DOWN" -eq 1 ]; then
          "still '$state' after 60s"
   fi
 
-  if docker compose logs echo-service 2>&1 | grep -qiE "config|9888"; then
+  # Capture first, then match. Piping a long-running command into `grep -q` under `set -o pipefail`
+  # reports failure even on a match: grep exits at the first hit, the writer gets SIGPIPE, and its
+  # non-zero status becomes the pipeline's. That produced a false negative here.
+  echo_logs="$(docker compose logs echo-service 2>&1 || true)"
+  if printf '%s' "$echo_logs" | grep -qiE "config|9888"; then
     pass "the failure message names the configuration server"
   else
     fail "the failure message names the configuration server" "no mention in the logs"
