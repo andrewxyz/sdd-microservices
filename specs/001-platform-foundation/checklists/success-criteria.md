@@ -36,6 +36,10 @@ fix came from *running* rather than reading:
 - Config precedence was the reverse of what the spec assumed.
 - The shell scripts had no executable bit, so a fresh clone could not follow the README.
 - Four tests had been written but never executed; two of them could not have passed as written.
+- `set -o pipefail` plus `grep -q` silently inverted two smoke checks: grep exits at the first match,
+  the writer gets SIGPIPE, and its non-zero status becomes the pipeline's. One check reported a
+  missing log message that was plainly there; the other would have reported **PASS** for a Mailpit
+  relay that was actually configured — a false pass, which is the dangerous direction.
 
 The pattern worth carrying into the next spec: a test that is written but not run is not yet a test,
 and a criterion verified only on the machine that built it is not yet verified.
