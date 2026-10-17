@@ -15,6 +15,15 @@ made of microservices. There is no business domain yet. The goal is that a devel
 whole platform locally with one command, and every service we build later can plug in without extra
 setup."
 
+## Clarifications
+
+### Session 2026-10-17
+
+- Q: How should the entry point tell clients apart when it applies the rate limit, given that login
+  doesn't exist yet? → A: By the client's network (IP) address.
+- Q: How does a developer change a central setting during local development? → A: By editing a
+  settings file in the repo's central settings folder; it is picked up with no commit and no restart.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Start the whole platform with one command (Priority: P1)
@@ -94,8 +103,9 @@ the echo service while the configuration service is down.
 1. **Given** shared defaults, service-specific settings and an environment override exist, **When** a
    service starts, **Then** it receives all three, with the service-specific and environment values
    taking precedence over the shared defaults.
-2. **Given** a service is running, **When** a setting is changed centrally, **Then** the running
-   service uses the new value within about 10 seconds, with no rebuild or restart.
+2. **Given** a service is running, **When** a developer edits a setting in the central settings folder
+   (no commit needed), **Then** the running service uses the new value within about 10 seconds, with
+   no rebuild or restart.
 3. **Given** the configuration service is down, **When** a service starts, **Then** it retries for a
    short bounded period and then exits with a message stating that central configuration could not be
    reached.
@@ -185,8 +195,9 @@ configuration code. Serialize and read back a sample event in the standard wrapp
 - A client sends a correlation ID that is valid: it is reused, not replaced.
 - Database initialization is re-run on a restart or reset: it is safe to repeat and never fails because
   a database or login already exists.
-- Concurrent clients are each limited separately by the rate limit, so one noisy client does not
-  cause 429 for others.
+- Clients at different network addresses are each limited separately by the rate limit, so one noisy
+  address does not cause 429 for others; clients sharing one address (for example behind one proxy)
+  share a single limit.
 - A browser pre-check (preflight) request from an allowed origin is answered without needing a
   protected-route login.
 
@@ -233,8 +244,9 @@ configuration code. Serialize and read back a sample event in the standard wrapp
 
 - **FR-015**: All service settings MUST be held centrally, delivered to each service as shared defaults,
   service-specific settings and per-environment overrides, with more specific values taking precedence.
-- **FR-016**: A change to a central setting MUST take effect in a running service within about 10
-  seconds without a rebuild.
+- **FR-016**: A developer MUST be able to change a setting by editing a file in the central settings
+  folder (`backend/config-repo`), and the change MUST take effect in a running service within about
+  10 seconds without a commit, rebuild or restart.
 - **FR-017**: A service that cannot reach central configuration at startup MUST retry for a short bounded
   period and then fail with a clear message; it MUST NOT run with missing settings.
 - **FR-018**: Outside the local development environment, the registry dashboard and the configuration
@@ -252,7 +264,8 @@ configuration code. Serialize and read back a sample event in the standard wrapp
   5 seconds; clients exceeding the rate limit MUST receive 429; protected routes MUST return 401 for
   every request until authentication exists.
 - **FR-023**: Public routes MUST be listed explicitly, and every route not listed MUST be protected.
-- **FR-024**: Rate limits MUST come from central settings and apply per client.
+- **FR-024**: Rate limits MUST come from central settings and apply per client, where a client is
+  identified by its network (IP) address.
 - **FR-025**: Every error produced by the entry point MUST share one structure and include the
   correlation ID.
 
@@ -291,8 +304,8 @@ configuration code. Serialize and read back a sample event in the standard wrapp
   minutes, with every component reporting healthy.
 - **SC-002**: A started service appears in the registry dashboard within 30 seconds, and a stopped one
   disappears within 30 seconds, in 100% of trials.
-- **SC-003**: A changed central setting is in effect in a running service within 10 seconds, in 100% of
-  trials, with no rebuild or restart.
+- **SC-003**: A setting edited in the central settings folder is in effect in a running service within
+  10 seconds, in 100% of trials, with no commit, rebuild or restart.
 - **SC-004**: 100% of errors produced by the entry point (404, 401, 429, 503) share the same structure
   and include a correlation ID.
 - **SC-005**: A request for a service with no healthy copy receives its 503 response within 5 seconds.
@@ -318,7 +331,7 @@ configuration code. Serialize and read back a sample event in the standard wrapp
 - The echo service offers one public path (to prove routing) and one protected path (to prove the
   401 behavior), since no real routes exist yet.
 - Default rate limit values and the allowed-origin list are placeholders in central settings, to be
-  tuned by later specs.
+  tuned by later specs. A later authentication spec may switch the limit to per-user.
 - Container ports follow the constitution's port table (gateway 9080, registry 9761, configuration
   9888, echo 9099, database 9432, broker 9672/9673, email catcher 9025/9825); business service ports
   9001–9007 are reserved but no business service runs yet.
