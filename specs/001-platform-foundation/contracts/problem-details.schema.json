@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://learnhub.example/schemas/problem-details.schema.json",
+  "title": "LearnHub problem details (RFC 7807)",
+  "description": "Body of every HTTP error produced by the gateway and by services. Served as application/problem+json.",
+  "type": "object",
+  "required": ["type", "title", "status", "correlationId"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "description": "URI reference identifying the problem type; 'about:blank' when no more specific type exists.",
+      "default": "about:blank"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short, human-readable summary; stable per status."
+    },
+    "status": {
+      "type": "integer",
+      "enum": [401, 404, 429, 500, 503, 504],
+      "description": "HTTP status code. Services may add further 4xx/5xx values in later specs; the gateway produces these."
+    },
+    "detail": {
+      "type": "string",
+      "description": "Explanation specific to this occurrence. Must not expose internals or secrets."
+    },
+    "instance": {
+      "type": "string",
+      "description": "Request path that produced the error."
+    },
+    "correlationId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{8,64}$",
+      "description": "Same value as the X-Correlation-Id response header."
+    }
+  },
+  "additionalProperties": true,
+  "examples": [
+    {
+      "type": "about:blank",
+      "title": "Too Many Requests",
+      "status": 429,
+      "detail": "Rate limit exceeded for this client address.",
+      "instance": "/api/v1/echo/ping",
+      "correlationId": "6f1c2b7e-9d3a-4c55-8a10-2f4e7d9b1a33"
+    }
+  ]
+}

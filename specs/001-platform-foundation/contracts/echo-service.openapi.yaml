@@ -1,0 +1,99 @@
+openapi: 3.1.0
+info:
+  title: LearnHub echo service
+  version: 1.0.0
+  description: |
+    Placeholder service that proves registration, central configuration and gateway routing.
+    Clients always call it through the gateway (http://localhost:9080), never directly.
+    Authentication does not exist yet: the gateway answers 401 on every protected route.
+servers:
+  - url: http://localhost:9080
+    description: API gateway (only client entry point)
+paths:
+  /api/v1/echo/ping:
+    get:
+      operationId: ping
+      summary: Public ping
+      description: Public route. Returns which copy answered and the current greeting from central configuration.
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Echo response
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EchoResponse'
+        '429':
+          $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
+        '504':
+          $ref: '#/components/responses/Problem'
+  /api/v1/echo/secure/ping:
+    get:
+      operationId: securePing
+      summary: Protected ping
+      description: |
+        Protected route. Through the gateway it always returns 401 until the auth spec exists.
+        The echo service itself returns the same body as /ping when called directly, because it
+        performs no authentication.
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Only reachable by calling the service directly (not through the gateway).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EchoResponse'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/Problem'
+components:
+  parameters:
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: |
+        Optional. Reused only if it matches ^[A-Za-z0-9._-]{8,64}$; otherwise a new UUID is generated.
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9._-]{8,64}$'
+  headers:
+    CorrelationId:
+      description: Correlation ID of this request.
+      schema:
+        type: string
+  schemas:
+    EchoResponse:
+      type: object
+      required: [instanceId, port, correlationId, greeting]
+      properties:
+        instanceId:
+          type: string
+          description: Registry instance ID of the copy that answered (differs per copy).
+        port:
+          type: integer
+          description: Port the answering copy listens on.
+        correlationId:
+          type: string
+          description: Correlation ID seen by the service; equals the X-Correlation-Id response header.
+        greeting:
+          type: string
+          description: Refreshable greeting read from central configuration (echo.greeting).
+  responses:
+    Problem:
+      description: Error. Same structure for every status (RFC 7807, see problem-details.schema.json).
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'problem-details.schema.json'
