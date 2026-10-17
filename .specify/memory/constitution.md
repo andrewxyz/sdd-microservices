@@ -16,9 +16,12 @@ The repository root is `sdd-microservices` and MUST be organised as follows:
   build with its parent POM at `backend/pom.xml`. The shared libraries (`shared-events`,
   `platform-common`), the `config-repo` folder and the Docker build files MUST live inside
   `backend/`.
-- `frontend/` will hold the React app. It is empty until a frontend spec builds it.
+- `frontend/` will hold the React app. It is empty until a frontend spec builds it; a `.gitkeep`
+  placeholder MAY exist while it has no other content.
 - The repo root holds the Spec Kit folders (`.specify`, `specs`), the single `docker-compose.yml`,
-  `.env.example`, the README and CI configuration. Nothing else belongs at the root.
+  `.env.example`, the README, CI configuration, `scripts/` (repo-level helper scripts such as the
+  one-command startup script, smoke tests and script tests), and the repo hygiene files
+  `.gitignore`, `.dockerignore` and `.gitattributes`. Nothing else belongs at the root.
 
 Every spec MUST state whether it covers backend, frontend or both, and MUST name the folders it
 touches. Backend and frontend MUST be buildable, testable and deployable independently: neither
@@ -88,12 +91,18 @@ OpenAPI so the frontend can rely on it. The frontend MUST NOT call a service dir
   tokens.
 - Secrets MUST NOT be committed. Configuration uses environment variables, and a committed
   `.env.example` documents every variable with non-secret placeholder values.
-- Eureka and the config server MUST require basic auth in every profile other than `local`.
+- Eureka and the config server MUST require basic auth in every profile other than `local`. The
+  one exemption is the liveness and readiness health probe endpoints (`/actuator/health/**`), which
+  MAY be reachable without a login in every profile so container health checks work. Every other
+  endpoint of those two servers MUST require basic auth outside `local`.
 
 ### VIII. Errors and Observability
 
-- All HTTP errors MUST use RFC 7807 problem details and MUST include a `correlationId`, so the
-  frontend handles errors in one way.
+- All HTTP errors from APIs that clients can reach (the gateway, the business services and any
+  placeholder service behind the gateway) MUST use RFC 7807 problem details and MUST include a
+  `correlationId`, so the frontend handles errors in one way. The infrastructure servers (Eureka and
+  the config server) are not reachable by clients and MAY use their framework-default error
+  responses.
 - Every service MUST expose Actuator health with liveness and readiness probes.
 - Logs MUST be structured and MUST carry the correlation ID.
 
@@ -109,13 +118,18 @@ OpenAPI so the frontend can rely on it. The frontend MUST NOT call a service dir
 ### X. Simplicity
 
 The simplest design that meets the spec MUST be chosen. No extra service, library or technology
-may be introduced without amending this constitution.
+may be introduced without amending this constitution. The only approved test-scope-only library
+beyond JUnit 5 and Testcontainers is WireMock, used to stub HTTP upstreams in gateway tests.
 
 ## Technology Stack and Port Map
 
 **Backend**: Java 21; Maven multi-module; Spring Boot 3.5.15; Spring Cloud 2025.0.3; PostgreSQL 16;
 RabbitMQ 4.3; Mailpit (local email only). Spring Cloud components: Eureka, Config Server, Gateway,
 OpenFeign, LoadBalancer, Resilience4j.
+
+**Test tooling**: JUnit 5 and Testcontainers (PostgreSQL, RabbitMQ), plus WireMock as a
+test-scope-only library for stubbing HTTP upstreams in gateway tests. These are the only test tools
+named in this constitution; adding another requires an amendment.
 
 **Accepted risk**: Spring Boot 3.5.15 and Spring Cloud 2025.0.3 are the final open-source releases
 of their lines. A later spec MAY upgrade to Spring Boot 4 with Spring Cloud 2025.1.x.
@@ -168,4 +182,4 @@ wording. Adding a technology, service or the frontend stack is a MINOR amendment
 plan review and pull request MUST verify compliance with this constitution, and unjustified
 complexity MUST be rejected.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-17
+**Version**: 1.1.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-17
