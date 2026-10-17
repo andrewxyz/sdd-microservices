@@ -16,28 +16,30 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * FR-016 and SC-003: a changed central setting reaches a running service within ten seconds, with
  * no restart and no manual trigger.
  *
- * <p>WireMock plays the config server so the change can be made instantly and the clock measured
- * precisely. The watcher runs at its real five-second interval, so this measures the true path:
- * poll, notice the hash changed, refresh, rebind the properties.
+ * <p>WireMock plays the config server so the change lands instantly and the clock can be measured
+ * precisely. The watcher polls on its real schedule, so this exercises the whole path: poll, notice
+ * the hash changed, refresh the context, rebind the properties.
+ *
+ * <p>The port is fixed (see application-liveconfig.yml) because the config import must come from a
+ * file, and a file cannot reference a randomly chosen port.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@ActiveProfiles("liveconfig")
 class EchoLiveRefreshIT {
 
-    private static final String FIRST = body("first");
-    private static final String SECOND = body("second");
+    private static final int CONFIG_PORT = 18888;
 
     private static WireMockServer configServer;
 
     private static String body(String greeting) {
         return """
-                {"name":"echo-service","profiles":["default"],"version":"v-%s","state":null,
+                {"name":"echo-service","profiles":["liveconfig"],"version":"v-%s","state":null,
                  "propertySources":[{"name":"echo-service.yml","source":{"echo.greeting":"%s"}}]}
                 """.formatted(greeting, greeting);
     }
@@ -52,35 +54,38 @@ class EchoLiveRefreshIT {
 
     @BeforeAll
     static void startConfigServer() {
-        configServer = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        configServer = new WireMockServer(WireMockConfiguration.options().port(CONFIG_PORT));
         configServer.start();
-        serve(FIRST);
+        serve(body("first"));
     }
 
     @AfterAll
     static void stopConfigServer() {
-        configServer.stop();
-    }
-
-    @DynamicPropertySource
-    static void pointAtWireMock(DynamicPropertyRegistry registry) {
-        String url = "http://localhost:" + configServer.port();
-        registry.add("spring.config.import", () -> "configserver:" + url);
-        registry.add("spring.cloud.config.uri", () -> url);
-        registry.add("platform.config-watcher.uri", () -> url);
-        registry.add("eureka.client.enabled", () -> "false");
+        if (configServer != null) {
+            configServer.stop();
+        }
     }
 
     @Autowired
     private EchoProperties properties;
 
+    /**
+     * Both tests share one application context, so neither may assume it runs first. Each settles on
+     * a known value before measuring.
+     */
+    private void settleOn(String greeting) {
+        serve(body(greeting));
+        Awaitility.await().atMost(Duration.ofSeconds(15))
+                .untilAsserted(() -> assertThat(properties.getGreeting()).isEqualTo(greeting));
+    }
+
     @Test
     @DisplayName("a central change reaches the running service within 10 seconds")
     void changeArrivesWithinTenSeconds() {
-        assertThat(properties.getGreeting()).as("the value the service started with").isEqualTo("first");
+        settleOn("first");
 
         Instant changedAt = Instant.now();
-        serve(SECOND);
+        serve(body("second"));
 
         Awaitility.await()
                 .atMost(Duration.ofSeconds(10))
@@ -93,18 +98,18 @@ class EchoLiveRefreshIT {
     }
 
     @Test
-    @DisplayName("a config server outage keeps the last good value and recovers afterwards")
+    @DisplayName("a config server outage keeps the last good value, then recovers")
     void outageKeepsLastGoodValueThenRecovers() {
-        Awaitility.await().atMost(Duration.ofSeconds(10))
-                .untilAsserted(() -> assertThat(properties.getGreeting()).isEqualTo("second"));
+        settleOn("before-the-outage");
+        String lastGood = properties.getGreeting();
 
         // Every poll now fails. The service must keep serving the last good value, not blank it.
         configServer.resetAll();
         configServer.stubFor(get(urlPathMatching("/echo-service/.*"))
                 .willReturn(aResponse().withStatus(500)));
 
-        Awaitility.await().during(Duration.ofSeconds(7)).atMost(Duration.ofSeconds(9))
-                .untilAsserted(() -> assertThat(properties.getGreeting()).isEqualTo("second"));
+        Awaitility.await().during(Duration.ofSeconds(6)).atMost(Duration.ofSeconds(8))
+                .untilAsserted(() -> assertThat(properties.getGreeting()).isEqualTo(lastGood));
 
         serve(body("third"));
 

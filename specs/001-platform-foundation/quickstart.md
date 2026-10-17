@@ -10,6 +10,10 @@ of these; this guide is the manual version.
 
 - A container runtime with Docker Compose v2 running, and a bash shell (Git Bash or WSL on Windows) for the
   scripts. No local JDK or Maven is needed.
+- **A healthy platform is not instantly routable.** Services register a few seconds after they report
+  healthy, and the gateway refreshes its view of the registry every five seconds, so a call through the
+  gateway can answer 503 for up to about 30 seconds after `scripts/up.sh` finishes. Wait and retry before
+  treating it as a failure; every scenario below assumes routing has settled.
 - Free host ports: 9080, 9761, 9888, 9099, 9432, 9672, 9673, 9025, 9825.
 - `cp .env.example .env` and replace the placeholder values (names are listed in
   [data-model.md](data-model.md#environment-settings-envexample)).
@@ -82,7 +86,7 @@ Expected statuses for `http://localhost:9080` (every error body is `application/
 | Unknown path | `curl -i http://localhost:9080/nope` | 404 |
 | Protected route | `curl -i http://localhost:9080/api/v1/echo/secure/ping` | 401 |
 | No healthy copy | `docker compose stop echo-service`, then call `/ping` | 503 in under 5 seconds |
-| Rate limit | fire a concurrent burst of 400 calls to `/ping` (a serial loop will not outpace the 100/s refill) | 429 problem details once the 200-token capacity empties; recovers after refill |
+| Rate limit | fire a parallel burst of 400 calls to `/ping`, e.g. `seq 40 \| xargs -P 40 -I{} curl -s -o /dev/null -w '%{http_code}\n' $(yes http://localhost:9080/api/v1/echo/ping \| head -10)` | 429 problem details once the 200-token capacity empties; recovers within a few seconds. A serial loop will **not** trip it: at 100 tokens/s the bucket refills faster than one shell loop can drain it |
 | Preflight allowed | `curl -i -X OPTIONS -H 'Origin: <allowed origin>' -H 'Access-Control-Request-Method: GET' .../api/v1/echo/secure/ping` | 200 with CORS headers, never 401 |
 | Preflight refused | same with an origin not in the allowed list | 403 |
 | Log carries ID | `docker compose logs api-gateway echo-service` | structured (ECS) lines containing the correlation ID of a request you made |

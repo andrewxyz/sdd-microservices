@@ -40,6 +40,15 @@ spring:
               predicates:
                 - Path=/api/v1/echo/**
 
+            # Added by the SC-007 walkthrough; removed with the throwaway service.
+            - id: probe
+              uri: lb://probe-service
+              order: 1
+              predicates:
+                - Path=/api/v1/probe/**
+              metadata:
+                public: true
+
   # Needed for the correlation ID to survive across reactive operators and reach log lines.
   reactor:
     context-propagation: auto

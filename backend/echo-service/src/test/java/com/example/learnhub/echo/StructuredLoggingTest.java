@@ -13,7 +13,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 /**
  * FR-020: logs are structured and carry the correlation ID.
@@ -22,21 +21,11 @@ import org.springframework.test.context.ActiveProfiles;
  * appears somewhere in the text. A plain-text line containing the ID would satisfy a substring check
  * while being useless to a log aggregator.
  */
-@SpringBootTest(classes = StructuredLoggingTest.LoggingOnlyApp.class,
-        webEnvironment = SpringBootTest.WebEnvironment.NONE,
-        properties = {
-                "logging.structured.format.console=ecs",
-                "spring.application.name=echo-service",
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false",
-                "platform.config-watcher.enabled=false"
-        })
-@ActiveProfiles("test")
+// Boots the real application: a second @SpringBootApplication declared here would make the
+// configuration class ambiguous for every other test in this package.
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
+        properties = "logging.structured.format.console=ecs")
 class StructuredLoggingTest {
-
-    @org.springframework.boot.autoconfigure.SpringBootApplication
-    static class LoggingOnlyApp {
-    }
 
     @Test
     @DisplayName("a log line is ECS JSON carrying correlationId in its own field")

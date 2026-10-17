@@ -14,11 +14,13 @@ cd "$REPO_ROOT"
 LIFECYCLE=0
 SCALE=0
 CONFIG_DOWN=0
+AUTH_PROFILE=0
 for arg in "$@"; do
   case "$arg" in
     --lifecycle) LIFECYCLE=1 ;;
     --scale) SCALE=1 ;;
     --config-down) CONFIG_DOWN=1 ;;
+    --auth-profile) AUTH_PROFILE=1 ;;
     *) echo "unknown option: $arg" >&2; exit 2 ;;
   esac
 done
@@ -406,6 +408,78 @@ if [ -f "$CONFIG_FILE" ]; then
   else
     fail "a central config edit reaches the running service within 10s" "never arrived within 20s"
   fi
+fi
+
+# ------------------------------------------ config server unreachable (FR-017)
+if [ "$CONFIG_DOWN" -eq 1 ]; then
+  docker compose stop config-server >/dev/null 2>&1
+
+  # Recreate echo-service with --no-deps so Compose does not pull the config server back up first.
+  docker compose up -d --no-deps --force-recreate echo-service >/dev/null 2>&1
+
+  exited=0
+  for _ in $(seq 1 20); do
+    state="$(docker inspect --format '{{.State.Status}}' "$(docker compose ps -aq echo-service)" 2>/dev/null)"
+    [ "$state" = "exited" ] && { exited=1; break; }
+    sleep 3
+  done
+
+  if [ "$exited" = "1" ]; then
+    pass "a service exits rather than starting without its central settings"
+  else
+    fail "a service exits rather than starting without its central settings" \
+         "still '$state' after 60s"
+  fi
+
+  if docker compose logs echo-service 2>&1 | grep -qiE "config|9888"; then
+    pass "the failure message names the configuration server"
+  else
+    fail "the failure message names the configuration server" "no mention in the logs"
+  fi
+
+  scripts/up.sh >/tmp/learnhub-config-restore.log 2>&1
+  wait_for_routable || true
+fi
+
+# ------------------------------------- login required outside local (FR-018)
+if [ "$AUTH_PROFILE" -eq 1 ]; then
+  SPRING_PROFILES_ACTIVE=dev scripts/up.sh >/tmp/learnhub-auth-up.log 2>&1 || true
+
+  registry_anon="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:9761/eureka/apps)"
+  config_anon="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:9888/echo-service/dev)"
+  if [ "$registry_anon" = "401" ] && [ "$config_anon" = "401" ]; then
+    pass "outside local, the registry and config server refuse anonymous access"
+  else
+    fail "outside local, the registry and config server refuse anonymous access" \
+         "registry=$registry_anon config=$config_anon"
+  fi
+
+  registry_auth="$(curl -s -o /dev/null -w '%{http_code}' \
+    -u "${EUREKA_USER}:${EUREKA_PASSWORD}" http://localhost:9761/eureka/apps)"
+  config_auth="$(curl -s -o /dev/null -w '%{http_code}' \
+    -u "${CONFIG_USER}:${CONFIG_PASSWORD}" http://localhost:9888/echo-service/dev)"
+  if [ "$registry_auth" = "200" ] && [ "$config_auth" = "200" ]; then
+    pass "the configured credentials are accepted"
+  else
+    fail "the configured credentials are accepted" "registry=$registry_auth config=$config_auth"
+  fi
+
+  # Health probes stay open in every profile, or the container health checks could not work.
+  probe="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:9761/actuator/health/readiness)"
+  if [ "$probe" = "200" ]; then
+    pass "health probes stay open outside local, so health checks keep working"
+  else
+    fail "health probes stay open outside local" "got $probe"
+  fi
+
+  # Services must still start: their own client credentials have to work against a protected server.
+  if wait_for_routable; then
+    pass "services still register and load settings under a protected profile"
+  else
+    fail "services still register and load settings under a protected profile" "gateway cannot route"
+  fi
+
+  scripts/up.sh >/tmp/learnhub-local-restore.log 2>&1
 fi
 
 # ----------------------------------------------------------------- lifecycle

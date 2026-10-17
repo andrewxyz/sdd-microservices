@@ -86,6 +86,19 @@ beyond those already listed.
 scheduled to be amended only after the code that relied on them, which inverts Principle X. The constitution
 was therefore amended to v1.1.0 **before** implementation starts, and this table reflects the amended text.
 
+**Post-implementation re-check (2026-10-17)**: verified against the finished code with the constitution still
+at v1.1.0. Every row holds, and D3, D4 and D5 remain as recorded. Two points worth noting for the next spec:
+
+- **Principle VI (test-first)** held, but three tests written early were only *executed* late and two of them
+  could never have passed as written (a config import that cannot be overridden by a property, a nested
+  `@SpringBootApplication` that made the configuration class ambiguous). Writing a test first only pays off
+  if it is also *run* first; the red step was skipped for those. Later specs should run each test the moment
+  it is written, not at the end of the phase.
+- **Principle X (simplicity)** was respected in one place at a cost worth reviewing: validating JSON bodies
+  against the published contracts is done by a hand-written `JsonSchemaCheck` (duplicated in three test
+  source trees) because a real JSON Schema validator would need an amendment. If a fourth module needs it,
+  amend the constitution rather than copy it again.
+
 ## Project Structure
 
 ### Documentation (this feature)

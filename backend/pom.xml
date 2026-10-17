@@ -33,6 +33,8 @@
     <module>config-server</module>
     <module>echo-service</module>
     <module>api-gateway</module>
+    <!-- Throwaway service for the SC-007 walkthrough; removed once the walkthrough is recorded. -->
+    <module>probe-service</module>
     <module>infra-tests</module>
   </modules>
 

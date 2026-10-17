@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: probe-service
+  config:
+    import: "configserver:${CONFIG_SERVER_URL}"
+  cloud:
+    config:
+      username: ${CONFIG_USER}
+      password: ${CONFIG_PASSWORD}
+      fail-fast: true
+server:
+  port: 9001
