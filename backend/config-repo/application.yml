@@ -1,0 +1,56 @@
+# Shared defaults delivered to every config client (the gateway and every business service).
+#
+# A new service gets registration, health probes, structured logging and live config updates from
+# this file alone: that is what lets FR-029 and SC-007 hold with no service-specific code.
+# Precedence, lowest to highest: this file, then <service-name>.yml, then application-<profile>.yml.
+# So a service can override a shared default, and a profile (such as application-local.yml) can in turn
+# override a service's own value.
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL}
+    # Short intervals so a started service shows up and a stopped one disappears well inside the
+    # 30 seconds SC-002 allows for a graceful stop.
+    registry-fetch-interval-seconds: 5
+    healthcheck:
+      enabled: true
+  instance:
+    lease-renewal-interval-in-seconds: 10
+    # Eureka doubles this in practice (research R5), so a crashed instance is evicted after roughly
+    # 65 seconds. SC-002 allows 90 seconds for a crash.
+    lease-expiration-duration-in-seconds: 30
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${HOSTNAME:${random.uuid}}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+logging:
+  structured:
+    format:
+      console: ecs
+
+spring:
+  cloud:
+    config:
+      # Never start with settings missing: fail fast after a bounded retry instead (FR-017, 30s cap).
+      fail-fast: true
+      retry:
+        max-attempts: 6
+        initial-interval: 1000
+        multiplier: 1.5
+        max-interval: 6000

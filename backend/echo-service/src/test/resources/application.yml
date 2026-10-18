@@ -1,0 +1,28 @@
+# Test defaults, replacing the service's own application.yml on the test classpath.
+#
+# The real file imports settings from the config server. That import is declared *inside* the file,
+# so it is processed while the file loads and an external property cannot cancel it; the only way to
+# run without a config server is to replace the file here. Tests that do want the import declare it
+# in their own profile-specific file (see application-liveconfig.yml).
+
+spring:
+  application:
+    name: echo-service
+  cloud:
+    config:
+      enabled: false
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+platform:
+  config-watcher:
+    enabled: false
+
+logging:
+  structured:
+    format:
+      console: ecs

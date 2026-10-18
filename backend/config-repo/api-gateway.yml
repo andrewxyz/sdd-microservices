@@ -1,0 +1,54 @@
+# Gateway routes and policy. Edited here, picked up by the running gateway within about ten seconds.
+#
+# Two routes for one service: metadata.public applies to a whole route, and echo has one public path
+# and one protected path. The narrow public route is matched first; the catch-all behind it is
+# protected, so any echo path not listed as public stays protected by default.
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                # Placeholders until the frontend spec assigns its real 9xxx port.
+                allowed-origins:
+                  - "http://localhost:9000"
+                  - "http://localhost:5173"
+                allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+                allowed-headers: "*"
+                allow-credentials: true
+                max-age: 3600
+
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 5s
+
+          routes:
+            - id: echo-public
+              uri: lb://echo-service
+              order: 0
+              predicates:
+                - Path=/api/v1/echo/ping
+              metadata:
+                public: true
+
+            - id: echo
+              uri: lb://echo-service
+              order: 1
+              predicates:
+                - Path=/api/v1/echo/**
+
+  # Needed for the correlation ID to survive across reactive operators and reach log lines.
+  reactor:
+    context-propagation: auto
+
+platform:
+  gateway:
+    rate-limit:
+      # Chosen in research R8: high enough that the 100-call smoke checks pass, low enough that a
+      # concurrent burst of 400 trips it.
+      capacity: 200
+      refill-per-second: 100
+      idle-eviction: PT10M

@@ -1,0 +1,21 @@
+# Profile for EchoLiveRefreshIT: a real config-server import plus the watcher, pointed at the
+# WireMock stand-in on a fixed port.
+#
+# The port is fixed rather than random because a config import has to be declared in a file (an
+# import supplied as a test property is not re-read on refresh, research R1), and a file cannot
+# reference a port chosen at runtime.
+
+spring:
+  config:
+    import: "configserver:http://localhost:18888"
+  cloud:
+    config:
+      enabled: true
+      uri: "http://localhost:18888"
+      fail-fast: false
+
+platform:
+  config-watcher:
+    enabled: true
+    uri: "http://localhost:18888"
+    interval: 2s

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://learnhub.example/schemas/event-envelope.schema.json",
+  "title": "LearnHub event envelope",
+  "description": "Common wrapper for every message published to the 'learning.events' topic exchange. The 'type' equals the routing key.",
+  "type": "object",
+  "required": ["eventId", "type", "version", "occurredAt", "correlationId", "payload"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique per event; consumers use it for idempotency."
+    },
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*\\.[a-z][a-z0-9_]*$",
+      "description": "<domain>.<event>, for example 'payment.succeeded'. Equals the routing key."
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Version of the event's schema, starting at 1."
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the event happened, UTC (ISO-8601, ends with 'Z')."
+    },
+    "correlationId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{8,64}$",
+      "description": "Correlation ID of the request or event that caused this event."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-specific content; defined by the owning domain, opaque to the envelope."
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "eventId": "0b8f5c1e-3a42-4d1e-9c77-5a2d6e8f0b19",
+      "type": "payment.succeeded",
+      "version": 1,
+      "occurredAt": "2026-10-17T09:30:00Z",
+      "correlationId": "6f1c2b7e-9d3a-4c55-8a10-2f4e7d9b1a33",
+      "payload": {}
+    }
+  ]
+}

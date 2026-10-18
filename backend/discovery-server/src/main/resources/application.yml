@@ -1,0 +1,46 @@
+# The registry's own settings are local on purpose: it starts before the config server exists, so it
+# cannot fetch them (constitution Principle III). There is deliberately no spring.config.import here.
+
+spring:
+  application:
+    name: discovery-server
+  security:
+    user:
+      name: ${EUREKA_USER:eureka}
+      password: ${EUREKA_PASSWORD:eureka}
+
+server:
+  port: 9761
+
+eureka:
+  client:
+    # It is the registry; it neither registers with itself nor fetches a registry.
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    # Sweep for expired leases every 5s so a stopped instance disappears quickly.
+    eviction-interval-timer-in-ms: 5000
+    # Off deliberately: self-preservation would stop eviction during a mass outage and make the
+    # "disappears within 30 seconds" behaviour in SC-002 untestable.
+    enable-self-preservation: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+platform:
+  config-watcher:
+    # Nothing to watch: this service has no central configuration.
+    enabled: false
+
+logging:
+  structured:
+    format:
+      console: ecs

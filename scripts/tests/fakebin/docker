@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Fake docker, used only by scripts/tests/up-preflight.test.sh.
+#
+# It lets the preflight test drive up.sh through failure paths without starting containers, and it
+# records any `docker compose up` call so the test can prove preflight stopped before that point.
+#
+# Controlled by:
+#   FAKE_DOCKER_DOWN=1   `docker info` fails, as if the container runtime were not running
+#   FAKE_OWN_PORTS       space-separated host ports this project's own containers already publish
+#   FAKE_DOCKER_LOG      file to append invocations to
+set -u
+
+log() {
+  [ -n "${FAKE_DOCKER_LOG:-}" ] && echo "$*" >>"$FAKE_DOCKER_LOG"
+  return 0
+}
+
+case "${1:-}" in
+  info)
+    log "info"
+    if [ "${FAKE_DOCKER_DOWN:-0}" = "1" ]; then
+      echo "Cannot connect to the Docker daemon. Is the docker daemon running?" >&2
+      exit 1
+    fi
+    echo "Server Version: 29.1.3"
+    ;;
+  compose)
+    # The subcommand is not always $2: up.sh passes global flags first, as in
+    # `docker compose --env-file .env up`. Find the first argument that is a subcommand.
+    subcommand=""
+    for arg in "$@"; do
+      case "$arg" in
+        up|ps|version|down|logs) subcommand="$arg"; break ;;
+      esac
+    done
+    case "$subcommand" in
+      version)
+        log "compose version"
+        if [ "${FAKE_DOCKER_DOWN:-0}" = "1" ]; then
+          exit 1
+        fi
+        echo "Docker Compose version v2.40.3"
+        ;;
+      ps)
+        log "compose ps"
+        # Emit one line per port this project is said to already own, in the format up.sh parses.
+        for port in ${FAKE_OWN_PORTS:-}; do
+          echo "0.0.0.0:${port}->${port}/tcp"
+        done
+        ;;
+      up)
+        log "compose up $*"
+        echo "fake docker compose up called"
+        ;;
+      *)
+        log "compose ${subcommand:-unknown}"
+        ;;
+    esac
+    ;;
+  *)
+    log "${1:-}"
+    ;;
+esac
+exit 0

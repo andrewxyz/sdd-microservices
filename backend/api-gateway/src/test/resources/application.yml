@@ -1,0 +1,28 @@
+# Test defaults.
+#
+# The config client is switched off here: with it enabled, Spring Cloud insists on a
+# "configserver:" entry in spring.config.import and fails the context without one. Tests supply
+# their settings from a local file instead, through a profile-specific file below.
+#
+# That import has to live in a config file rather than @SpringBootTest(properties = ...): research
+# R1 found a test-property import is not re-read on refresh, which would make the refresh test pass
+# for the wrong reason.
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    config:
+      enabled: false
+  main:
+    allow-bean-definition-overriding: true
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+platform:
+  config-watcher:
+    enabled: false

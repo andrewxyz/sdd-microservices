@@ -1,0 +1,5 @@
+# Settings file for RateLimitRefreshIT, which rewrites it mid-test to prove a refresh clears the
+# rate-limit buckets rather than merely rebinding the capacity number.
+spring:
+  config:
+    import: "file:./target/ratelimit-refresh-it/config.yml"

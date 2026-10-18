@@ -1,0 +1,24 @@
+# The minimum a service declares itself: who it is, where to bootstrap its configuration from, and the
+# credentials to do so. Everything else (registry, probes, logging, retry) arrives from the config
+# server's shared defaults. This is configuration, not code, so FR-029 still holds.
+
+spring:
+  application:
+    name: echo-service
+  config:
+    # Non-optional on purpose: no "optional:" prefix, so a missing config server stops startup rather
+    # than letting the service run with missing settings (constitution Principle III, FR-017).
+    import: "configserver:${CONFIG_SERVER_URL}"
+  cloud:
+    config:
+      username: ${CONFIG_USER}
+      password: ${CONFIG_PASSWORD}
+      fail-fast: true
+      retry:
+        max-attempts: 6
+        initial-interval: 1000
+        multiplier: 1.5
+        max-interval: 6000
+
+server:
+  port: 9099

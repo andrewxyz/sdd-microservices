@@ -1,0 +1,220 @@
+# The whole LearnHub platform, started with one command from the repo root (FR-001).
+#
+# Start:   scripts/up.sh
+# Stop:    docker compose down          (data is kept)
+# Reset:   docker compose down -v       (data is wiped)
+#
+# Required settings use ${VAR:?message}. The colon form rejects an empty value as well as a missing
+# one, so a blank password cannot slip through. scripts/up.sh checks the same list first and reports
+# every problem at once; this is the safety net for anyone running docker compose directly.
+
+name: learnhub
+
+services:
+  # ---------------------------------------------------------------- infrastructure
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required; copy .env.example to .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required; copy .env.example to .env}
+      POSTGRES_DB: postgres
+    ports:
+      - "9432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # One-shot: creates the seven empty service databases and logins, then exits. Safe to repeat.
+  db-init:
+    image: postgres:16
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}
+      COURSE_DB_PASSWORD: ${COURSE_DB_PASSWORD:?COURSE_DB_PASSWORD is required}
+      ENROLLMENT_DB_PASSWORD: ${ENROLLMENT_DB_PASSWORD:?ENROLLMENT_DB_PASSWORD is required}
+      PAYMENT_DB_PASSWORD: ${PAYMENT_DB_PASSWORD:?PAYMENT_DB_PASSWORD is required}
+      CERTIFICATE_DB_PASSWORD: ${CERTIFICATE_DB_PASSWORD:?CERTIFICATE_DB_PASSWORD is required}
+      REVIEW_DB_PASSWORD: ${REVIEW_DB_PASSWORD:?REVIEW_DB_PASSWORD is required}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?NOTIFICATION_DB_PASSWORD is required}
+    volumes:
+      - ./backend/docker/db-init:/db-init:ro
+    entrypoint: ["sh", "/db-init/provision.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  rabbitmq:
+    image: rabbitmq:4.3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:?RABBITMQ_DEFAULT_USER is required}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?RABBITMQ_DEFAULT_PASS is required}
+    ports:
+      - "9672:5672"
+      - "9673:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # Catches outgoing mail locally. No relay is configured, so nothing leaves the machine (FR-008).
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "9025:1025"
+      - "9825:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # ------------------------------------------------------------- platform services
+  # Starts first: everything else finds its neighbours through it.
+  discovery-server:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: discovery-server
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?SPRING_PROFILES_ACTIVE is required}
+      EUREKA_USER: ${EUREKA_USER:?EUREKA_USER is required}
+      EUREKA_PASSWORD: ${EUREKA_PASSWORD:?EUREKA_PASSWORD is required}
+    ports:
+      - "9761:9761"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9761/actuator/health/readiness"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # Starts second: it registers with the registry, and every other service reads its settings here.
+  config-server:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: config-server
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?SPRING_PROFILES_ACTIVE is required}
+      CONFIG_USER: ${CONFIG_USER:?CONFIG_USER is required}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:?CONFIG_PASSWORD is required}
+      CONFIG_REPO_PATH: /config-repo
+      # Built here rather than taken from .env, so credentials live in exactly one place.
+      EUREKA_URL: http://${EUREKA_USER:?EUREKA_USER is required}:${EUREKA_PASSWORD:?EUREKA_PASSWORD is required}@discovery-server:9761/eureka/
+    ports:
+      - "9888:9888"
+    volumes:
+      # Read-only and bind-mounted from the working tree: an edit is visible with no commit and no
+      # rebuild (FR-016), and no service can rewrite the settings.
+      - ./backend/config-repo:/config-repo:ro
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9888/actuator/health/readiness"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  echo-service:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: echo-service
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?SPRING_PROFILES_ACTIVE is required}
+      CONFIG_SERVER_URL: http://config-server:9888
+      CONFIG_USER: ${CONFIG_USER:?CONFIG_USER is required}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:?CONFIG_PASSWORD is required}
+      EUREKA_URL: http://${EUREKA_USER:?EUREKA_USER is required}:${EUREKA_PASSWORD:?EUREKA_PASSWORD is required}@discovery-server:9761/eureka/
+    ports:
+      - "9099:9099"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9099/actuator/health/readiness"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # The only entry point for clients, including the future frontend (constitution Principle IV).
+  api-gateway:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: api-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?SPRING_PROFILES_ACTIVE is required}
+      CONFIG_SERVER_URL: http://config-server:9888
+      CONFIG_USER: ${CONFIG_USER:?CONFIG_USER is required}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:?CONFIG_PASSWORD is required}
+      EUREKA_URL: http://${EUREKA_USER:?EUREKA_USER is required}:${EUREKA_PASSWORD:?EUREKA_PASSWORD is required}@discovery-server:9761/eureka/
+    ports:
+      - "9080:9080"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9080/actuator/health/readiness"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # A second copy of the echo service, for checking that calls spread across instances.
+  # Started on demand:  docker compose --profile scale up -d echo-service-b
+  # No host port: it is reached only through the gateway, by service name.
+  echo-service-b:
+    profiles: ["scale"]
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: echo-service
+    hostname: echo-service-b
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?SPRING_PROFILES_ACTIVE is required}
+      CONFIG_SERVER_URL: http://config-server:9888
+      CONFIG_USER: ${CONFIG_USER:?CONFIG_USER is required}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:?CONFIG_PASSWORD is required}
+      EUREKA_URL: http://${EUREKA_USER:?EUREKA_USER is required}:${EUREKA_PASSWORD:?EUREKA_PASSWORD is required}@discovery-server:9761/eureka/
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9099/actuator/health/readiness"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  postgres-data:
+  rabbitmq-data:

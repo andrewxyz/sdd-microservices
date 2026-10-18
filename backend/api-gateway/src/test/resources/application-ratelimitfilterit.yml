@@ -1,0 +1,4 @@
+# Settings file for RateLimitFilterIT.
+spring:
+  config:
+    import: "file:./target/ratelimit-filter-it/config.yml"

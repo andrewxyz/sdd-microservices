@@ -1,0 +1,14 @@
+# Image builds use backend/ as their context; everything below is irrelevant to them.
+.git
+.github
+specs
+frontend
+scripts
+.env
+**/target
+**/*.iml
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+*.log
