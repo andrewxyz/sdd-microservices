@@ -76,7 +76,7 @@ mapped into that range; the Spring services use the same port inside and outside
 | api-gateway | 9080 | 9080 |
 | discovery-server (Eureka) | 9761 | 9761 |
 | config-server | 9888 | 9888 |
-| auth-service | 9001 | reserved, not yet built |
+| auth-service | 9001 | 9001 |
 | course-service | 9002 | reserved, not yet built |
 | enrollment-service | 9003 | reserved, not yet built |
 | payment-service | 9004 | reserved, not yet built |
@@ -130,6 +130,23 @@ Secrets never go in `backend/config-repo`. They come from environment variables 
 That is all. Registration with the registry, central configuration, health probes, structured logging
 and correlation IDs all arrive from `platform-common` and the shared config; you write no code for
 them. `NoWiringCodeTest` enforces that no service adds its own.
+
+A service with its own database (like `auth-service`, the first one) additionally needs
+`SPRING_DATASOURCE_URL`/`USERNAME`/`PASSWORD` environment variables in its Compose entry, pointing at
+its own database (already created, empty, by `db-init`), and a Flyway migration under
+`src/main/resources/db/migration/` for its schema.
+
+## Accounts and login
+
+`auth-service` (port 9001, behind the gateway at `/api/v1/auth/**`) owns accounts and sessions.
+`register`, `login` and `refresh` are public; every other path — including changing another account's
+role, restricted to administrators — requires a valid access token, which the gateway verifies and
+replaces with `X-User-Id`/`X-User-Role` headers before forwarding the request. See
+`specs/002-user-auth/contracts/auth-service.openapi.yaml` for the full endpoint contract and
+`specs/002-user-auth/quickstart.md` for a curl walkthrough of the whole flow.
+
+The first administrator is created automatically at startup from `ADMIN_EMAIL`/`ADMIN_PASSWORD`; the
+HS256 token-signing secret is `JWT_SIGNING_SECRET` (at least 32 bytes). All three are in `.env.example`.
 
 ## Building and testing
 
