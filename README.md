@@ -77,7 +77,7 @@ mapped into that range; the Spring services use the same port inside and outside
 | discovery-server (Eureka) | 9761 | 9761 |
 | config-server | 9888 | 9888 |
 | auth-service | 9001 | 9001 |
-| course-service | 9002 | reserved, not yet built |
+| course-service | 9002 | 9002 |
 | enrollment-service | 9003 | reserved, not yet built |
 | payment-service | 9004 | reserved, not yet built |
 | certificate-service | 9005 | reserved, not yet built |
@@ -147,6 +147,20 @@ replaces with `X-User-Id`/`X-User-Role` headers before forwarding the request. S
 
 The first administrator is created automatically at startup from `ADMIN_EMAIL`/`ADMIN_PASSWORD`; the
 HS256 token-signing secret is `JWT_SIGNING_SECRET` (at least 32 bytes). All three are in `.env.example`.
+
+## Course catalog
+
+`course-service` (port 9002, behind the gateway at `/api/v1/courses/**`, `/api/v1/my/courses` and
+`/api/v1/categories/**`) owns courses, lessons and categories. Listing and viewing a published course
+are public; everything else — creating and managing a course and its lessons, publishing, archiving,
+and category administration — requires a valid token, with course ownership enforced by the service
+itself (the gateway only tells it "this caller is authenticated," plus an administrator-only rule for
+category mutations). Every mutating request needs an `If-Match` header carrying the resource's current
+version, so two concurrent edits can never silently overwrite each other — the service responds `409`
+to a stale one instead. A separate, gateway-unreachable endpoint
+(`GET /api/v1/internal/courses/{id}`) lets other backend services look up a course directly. See
+`specs/003-course-catalog/contracts/course-service.openapi.yaml` for the full endpoint contract and
+`specs/003-course-catalog/quickstart.md` for a curl walkthrough of the whole flow.
 
 ## Building and testing
 
