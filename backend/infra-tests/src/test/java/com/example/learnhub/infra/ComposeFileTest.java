@@ -79,13 +79,15 @@ class ComposeFileTest {
     @Test
     @DisplayName("no service binds a port reserved for a future business service (9001-9007)")
     void reservedPortsAreNotUsed() {
-        // 9001 is now auth-service's real port (specs/002-user-auth); 9002-9007 are still reserved
-        // for business services not yet built.
+        // 9001 is auth-service's real port (specs/002-user-auth); 9002 is course-service's real port
+        // (specs/003-course-catalog); 9003-9007 are still reserved for business services not yet built.
         for (String name : services.keySet()) {
             for (String mapping : ports(name)) {
                 int hostPort = Integer.parseInt(mapping.split(":")[0].replace("\"", "").trim());
                 boolean isAuthServiceOnItsOwnPort = hostPort == 9001 && "auth-service".equals(name);
-                assertThat(isAuthServiceOnItsOwnPort || hostPort < 9002 || hostPort > 9007)
+                boolean isCourseServiceOnItsOwnPort = hostPort == 9002 && "course-service".equals(name);
+                assertThat(isAuthServiceOnItsOwnPort || isCourseServiceOnItsOwnPort
+                                || hostPort < 9003 || hostPort > 9007)
                         .as("%s uses port %d, which is reserved for a future business service",
                                 name, hostPort)
                         .isTrue();

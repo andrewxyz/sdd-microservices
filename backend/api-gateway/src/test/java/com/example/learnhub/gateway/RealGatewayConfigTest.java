@@ -122,6 +122,50 @@ class RealGatewayConfigTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("courses-public-list and courses-public-detail are public, ahead of the protected courses-manage catch-all (specs/003-course-catalog)")
+    void coursesPublicRoutes() {
+        Map<String, Object> list = routeById("courses-public-list");
+        Map<String, Object> detail = routeById("courses-public-detail");
+        Map<String, Object> catchAll = routeById("courses-manage");
+
+        assertThat(list.get("uri")).isEqualTo("lb://course-service");
+        assertThat((Map<String, Object>) list.get("metadata")).containsEntry("public", true);
+        assertThat((List<String>) list.get("predicates")).contains("Method=GET");
+
+        assertThat((List<String>) detail.get("predicates")).containsExactly("Path=/api/v1/courses/*", "Method=GET");
+        assertThat((Map<String, Object>) detail.get("metadata")).containsEntry("public", true);
+
+        assertThat((Integer) list.get("order")).isLessThan((Integer) catchAll.get("order"));
+        assertThat((Integer) detail.get("order")).isLessThan((Integer) catchAll.get("order"));
+        assertThat(catchAll.get("metadata")).as("courses-manage must not be public").isNull();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("categories-admin restricts mutation to ADMINISTRATOR, ahead of no catch-all needed (specs/003-course-catalog)")
+    void categoriesAdminRoute() {
+        Map<String, Object> adminRoute = routeById("categories-admin");
+        Map<String, Object> publicList = routeById("categories-public-list");
+
+        Map<String, Object> metadata = (Map<String, Object>) adminRoute.get("metadata");
+        assertThat(metadata).as("categories-admin must declare metadata.roles").isNotNull();
+        assertThat((List<String>) metadata.get("roles")).containsExactly("ADMINISTRATOR");
+
+        assertThat((Integer) publicList.get("order")).isLessThan((Integer) adminRoute.get("order"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("my-courses has no overlap with the public single-course-detail route (specs/003-course-catalog research.md R2)")
+    void myCoursesRouteIsStructurallyDistinct() {
+        Map<String, Object> myCourses = routeById("my-courses");
+
+        assertThat((List<String>) myCourses.get("predicates")).containsExactly("Path=/api/v1/my/courses");
+        assertThat(myCourses.get("metadata")).as("my-courses must not be public").isNull();
+    }
+
+    @Test
     @DisplayName("connect and response timeouts match the research R8 decision")
     void timeouts() {
         Map<String, Object> httpclient = path(root, "spring", "cloud", "gateway", "server", "webflux")

@@ -54,6 +54,7 @@ NAME                          STATUS
 learnhub-api-gateway-1        Up (healthy)
 learnhub-auth-service-1       Up (healthy)
 learnhub-config-server-1      Up (healthy)
+learnhub-course-service-1     Up (healthy)
 learnhub-discovery-server-1   Up (healthy)
 learnhub-echo-service-1       Up (healthy)
 learnhub-mailpit-1            Up (healthy)
@@ -88,11 +89,12 @@ startup finishes. That's the registry doing its job, not a failure — wait a mo
 ### What's running, and what isn't (yet)
 
 The platform now has the **platform foundation** (registry, config server, gateway, a placeholder
-echo service) plus **auth-service**: real accounts, login, refresh/logout, roles, and the gateway's
-real JWT enforcement at the entry point. The remaining six business services (course, enrollment,
-payment, certificate, review, notification) each already have an **empty database and login**
-provisioned (step 3.8 below), ready for their own specs to fill in — but none of their code exists
-yet, so there's nothing to call for them.
+echo service), **auth-service** (real accounts, login, refresh/logout, roles, and the gateway's real
+JWT enforcement at the entry point), and **course-service** (the course catalog: browsing, authoring,
+publishing, categories). The remaining five business services (enrollment, payment, certificate,
+review, notification) each already have an **empty database and login** provisioned (step 3.12 below),
+ready for their own specs to fill in — but none of their code exists yet, so there's nothing to call
+for them.
 
 | Component | Host port | What it's for |
 |-----------|-----------|----------------|
@@ -100,8 +102,9 @@ yet, so there's nothing to call for them.
 | discovery-server (Eureka) | 9761 | Service registry dashboard |
 | config-server | 9888 | Serves central settings from `backend/config-repo` |
 | **auth-service** | 9001 | Accounts, login, roles — reached through the gateway at `/api/v1/auth/**` |
+| **course-service** | 9002 | Courses, lessons, categories — reached through the gateway at `/api/v1/courses/**`, `/api/v1/my/courses`, `/api/v1/categories/**` |
 | echo-service | 9099 | Placeholder service (also reachable directly, for comparison) |
-| PostgreSQL | 9432 | One database per business service; `auth` has real tables now, the rest are still empty |
+| PostgreSQL | 9432 | One database per business service; `auth` and `course` have real tables now, the rest are still empty |
 | RabbitMQ (AMQP / management) | 9672 / 9673 | Message broker (no queues defined yet) |
 | Mailpit (SMTP / web UI) | 9025 / 9825 | Catches outgoing mail locally; nothing leaves the machine |
 
@@ -285,7 +288,134 @@ The role-change route is itself gateway-enforced (`metadata.roles: [ADMINISTRATO
 that call. The change applies the next time that account logs in; a token already issued before the
 change keeps acting on the old role until it expires (at most 15 minutes).
 
-### 3.8 Hit an unknown path
+### 3.8 Create a category, as an administrator
+
+Categories are administrator-only; everyone else sees `403`.
+
+```bash
+source .env   # for ADMIN_EMAIL / ADMIN_PASSWORD
+
+ADMIN_ACCESS=$(curl -s -X POST http://localhost:9080/api/v1/auth/login -H 'Content-Type: application/json' \
+  -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
+
+CAT=$(curl -s -X POST http://localhost:9080/api/v1/categories -H "Authorization: Bearer $ADMIN_ACCESS" \
+  -H 'Content-Type: application/json' -d '{"name":"Web Development"}')
+echo "$CAT"
+CATEGORY_ID=$(echo "$CAT" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
+
+echo "--- same name again (case-insensitive) ---"
+curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:9080/api/v1/categories \
+  -H "Authorization: Bearer $ADMIN_ACCESS" -H 'Content-Type: application/json' -d '{"name":"web development"}'
+# 409
+```
+
+```json
+{"id":"54011ab3-485d-4e6d-84d4-c18e54c5e3b4","name":"Web Development","version":0}
+```
+
+### 3.9 Create a draft course, add a lesson, and publish it
+
+You'll need an INSTRUCTOR account — register one and promote it the same way §3.7 promoted a student to
+INSTRUCTOR. Publishing a draft missing a lesson is refused with a `422` naming exactly what's missing.
+
+```bash
+INSTR_ACCESS=$(curl -s -X POST http://localhost:9080/api/v1/auth/login -H 'Content-Type: application/json' \
+  -d '{"email":"instructor1@example.com","password":"correct-horse-1"}' | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
+
+DRAFT=$(curl -s -X POST http://localhost:9080/api/v1/courses -H "Authorization: Bearer $INSTR_ACCESS" \
+  -H 'Content-Type: application/json' \
+  -d "{\"title\":\"Intro to LearnHub\",\"description\":\"A starter course.\",\"categoryId\":\"$CATEGORY_ID\",\"priceCents\":0}")
+echo "$DRAFT"
+COURSE_ID=$(echo "$DRAFT" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
+
+get_etag() {
+  curl -s -i "http://localhost:9080/api/v1/courses/$COURSE_ID/full" -H "Authorization: Bearer $INSTR_ACCESS" \
+    | grep -i '^etag:' | sed 's/[Ee][Tt][Aa][Gg]: *//' | tr -d '\r'
+}
+
+echo "--- publish before any lesson exists ---"
+curl -s -X PATCH "http://localhost:9080/api/v1/courses/$COURSE_ID/publish" \
+  -H "Authorization: Bearer $INSTR_ACCESS" -H "If-Match: $(get_etag)"
+```
+
+```json
+{"type":"about:blank","title":"Unprocessable Entity","status":422,"detail":"Not ready to publish: at least one lesson is required","instance":"...","correlationId":"..."}
+```
+
+```bash
+curl -s -X POST "http://localhost:9080/api/v1/courses/$COURSE_ID/lessons" -H "Authorization: Bearer $INSTR_ACCESS" \
+  -H "If-Match: $(get_etag)" -H 'Content-Type: application/json' \
+  -d '{"title":"Welcome","durationMinutes":5,"content":"Full lesson text."}'
+
+curl -s -X PATCH "http://localhost:9080/api/v1/courses/$COURSE_ID/publish" \
+  -H "Authorization: Bearer $INSTR_ACCESS" -H "If-Match: $(get_etag)"
+```
+
+The response's `status` is now `PUBLISHED` and `publishedAt` is set.
+
+### 3.10 Browse the public catalog — no lesson content anywhere
+
+```bash
+curl -s "http://localhost:9080/api/v1/courses?q=LearnHub"
+curl -s "http://localhost:9080/api/v1/courses/$COURSE_ID"
+```
+
+```json
+{"items":[{"id":"e4473c03-...","title":"Intro to LearnHub", ... ,"lessons":[{"title":"Welcome","position":0,"durationMinutes":5}]}],"page":0,"size":20,"totalItems":1}
+```
+
+Note there is no `content` field anywhere — only the owner/administrator view (`.../full`) includes it.
+
+### 3.11 Ownership and the concurrency guard
+
+Every mutating request needs an `If-Match` with the resource's current version (from the `ETag` header
+on any read of `.../full`); a different caller, or a stale version, is refused.
+
+```bash
+echo "--- a student can't edit someone else's course ---"
+STUDENT_ACCESS=$(curl -s -X POST http://localhost:9080/api/v1/auth/login -H 'Content-Type: application/json' \
+  -d '{"email":"student2@example.com","password":"correct-horse-1"}' | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
+curl -s -o /dev/null -w '%{http_code}\n' -X PUT "http://localhost:9080/api/v1/courses/$COURSE_ID" \
+  -H "Authorization: Bearer $STUDENT_ACCESS" -H 'If-Match: "0"' -H 'Content-Type: application/json' \
+  -d '{"title":"Hacked"}'
+# 403
+
+echo "--- a stale If-Match is refused even for the real owner ---"
+curl -s -o /dev/null -w '%{http_code}\n' -X PUT "http://localhost:9080/api/v1/courses/$COURSE_ID" \
+  -H "Authorization: Bearer $INSTR_ACCESS" -H 'If-Match: "0"' -H 'Content-Type: application/json' \
+  -d '{"title":"Edited"}'
+# 409
+```
+
+### 3.12 Archive, and confirm a non-draft can't be deleted
+
+```bash
+curl -s -X PATCH "http://localhost:9080/api/v1/courses/$COURSE_ID/archive" \
+  -H "Authorization: Bearer $INSTR_ACCESS" -H "If-Match: $(get_etag)"
+
+echo "--- gone from the public catalog, but still intact for the owner ---"
+curl -s "http://localhost:9080/api/v1/courses?q=LearnHub"
+# {"items":[],"page":0,"size":20,"totalItems":0}
+
+echo "--- archived is not draft, so delete is still refused ---"
+curl -s -o /dev/null -w '%{http_code}\n' -X DELETE "http://localhost:9080/api/v1/courses/$COURSE_ID" \
+  -H "Authorization: Bearer $INSTR_ACCESS"
+# 409
+```
+
+### 3.13 The service-to-service lookup has no gateway route
+
+```bash
+echo "--- through the gateway: no route exists ---"
+curl -s -i "http://localhost:9080/api/v1/internal/courses/$COURSE_ID" | head -1
+# HTTP/1.1 404 Not Found
+
+echo "--- directly on course-service's own port: works ---"
+curl -s "http://localhost:9002/api/v1/internal/courses/$COURSE_ID"
+# {"courseId":"...","status":"ARCHIVED","priceCents":0,"currency":"USD","instructorId":"...","lessonCount":1}
+```
+
+### 3.14 Hit an unknown path
 
 ```bash
 curl -i http://localhost:9080/nope
@@ -296,7 +426,7 @@ HTTP/1.1 404 Not Found
 {"type":"about:blank","title":"Not Found","status":404,"detail":"No route matches this path.","instance":"/nope","correlationId":"..."}
 ```
 
-### 3.9 Trigger the rate limit
+### 3.15 Trigger the rate limit
 
 The gateway allows 200 requests per client address before refilling at 100/second, so a normal curl
 loop won't trip it — you need a real burst, fired in parallel so it outpaces the refill:
@@ -314,7 +444,7 @@ seq 1 600 | xargs -P 100 -I{} curl -s -o /dev/null -w '%{http_code}\n' \
 A `429` response carries a `Retry-After` header telling you how long to wait. The exact split
 depends on your machine's speed; what matters is that some requests are refused.
 
-### 3.10 Change a central setting and watch it take effect live
+### 3.16 Change a central setting and watch it take effect live
 
 ```bash
 # Before:
@@ -332,16 +462,16 @@ The new greeting appears within about 10 seconds — the service polls the confi
 seconds and refreshes itself when something actually changed. Put the original line back afterwards
 if you want to leave the repo as you found it.
 
-### 3.11 Look at the registry dashboard
+### 3.17 Look at the registry dashboard
 
 ```bash
 curl -s -H "Accept: application/json" http://localhost:9761/eureka/apps | python3 -m json.tool | head -30
 ```
 
 Or just open <http://localhost:9761> in a browser. You'll see `API-GATEWAY`, `CONFIG-SERVER`,
-`AUTH-SERVICE` and `ECHO-SERVICE` listed, each with its instance ID and status.
+`AUTH-SERVICE`, `COURSE-SERVICE` and `ECHO-SERVICE` listed, each with its instance ID and status.
 
-### 3.12 Confirm the business-service databases
+### 3.18 Confirm the business-service databases
 
 ```bash
 source .env
@@ -349,11 +479,12 @@ docker compose exec postgres psql -U "$POSTGRES_USER" -d postgres -c '\l' \
   | grep -E 'auth|course|enrollment|payment|certificate|review|notification'
 ```
 
-Every service has its own database, owned by a role of the same name. `auth` now has real tables —
-check with:
+Every service has its own database, owned by a role of the same name. `auth` and `course` now have
+real tables — check with:
 
 ```bash
 docker compose exec postgres psql -U auth -d auth -c '\dt'
+docker compose exec postgres psql -U course -d course -c '\dt'
 ```
 
 ```
@@ -365,10 +496,20 @@ docker compose exec postgres psql -U auth -d auth -c '\dt'
  public | refresh_tokens         | table | auth
 ```
 
-The other six (`course`, `enrollment`, `payment`, `certificate`, `review`, `notification`) are still
-empty, waiting for their own specs.
+```
+                List of relations
+ Schema |         Name          | Type  | Owner
+--------+-----------------------+-------+--------
+ public | categories            | table | course
+ public | courses               | table | course
+ public | flyway_schema_history | table | course
+ public | lessons               | table | course
+```
 
-### 3.13 Send and view a test email
+The other five (`enrollment`, `payment`, `certificate`, `review`, `notification`) are still empty,
+waiting for their own specs.
+
+### 3.19 Send and view a test email
 
 ```bash
 printf 'From: demo@learnhub.test\r\nTo: inbox@learnhub.test\r\nSubject: Hello\r\n\r\nTest message.\r\n' \
@@ -378,7 +519,7 @@ printf 'From: demo@learnhub.test\r\nTo: inbox@learnhub.test\r\nSubject: Hello\r\
 Then open <http://localhost:9825> — your message is sitting in the Mailpit inbox. Nothing is ever
 actually delivered outside the machine.
 
-### 3.14 Run two copies of the echo service and watch traffic spread across them
+### 3.20 Run two copies of the echo service and watch traffic spread across them
 
 ```bash
 docker compose --profile scale up -d echo-service-b
@@ -401,9 +542,9 @@ mvn -f backend/pom.xml verify
 ```
 
 This builds and tests every module (shared libraries, registry, config server, echo service,
-**auth-service**, gateway, and the infrastructure checks) — around 240 tests in total. `verify` (not
-`test`) is needed because several tests spin up real PostgreSQL and RabbitMQ containers via
-Testcontainers.
+**auth-service**, **course-service**, gateway, and the infrastructure checks) — around 280 tests in
+total. `verify` (not `test`) is needed because several tests spin up real PostgreSQL and RabbitMQ
+containers via Testcontainers.
 
 To run just one module, e.g. the gateway:
 
@@ -459,6 +600,8 @@ docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:stable -S warning \
 | `mvn verify` fails with a Docker connection error | Maven is running outside WSL while Docker is only inside WSL | Run Maven from inside WSL too |
 | `api-gateway` or `auth-service` crash-loops on startup, logs `Could not resolve placeholder 'JWT_SIGNING_SECRET'` | `.env` is missing `JWT_SIGNING_SECRET` (or `ADMIN_EMAIL`/`ADMIN_PASSWORD` for auth-service) | Add it to `.env` (at least 32 characters), then `scripts/up.sh` again |
 | Login/refresh/role-change return `401`/`403` unexpectedly | A stale access token (15-minute lifetime) or a role change that hasn't been picked up yet | Log in again for a fresh token; role changes apply on next login, not to a token already issued |
+| A course edit/publish/archive/lesson/category change returns `409` with "If-Match" in the message | The request is missing the `If-Match` header, or it's stale | `GET .../full` (or the category) again to read its current `ETag`, then resend with that exact value |
+| A course action returns `403` even though you're logged in | The caller is neither the course's owning instructor nor an administrator | Only the owner or an administrator can edit/publish/archive/delete a given course |
 
 ## 6. See also
 
@@ -470,3 +613,7 @@ docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:stable -S warning \
   [contracts/auth-service.openapi.yaml](specs/002-user-auth/contracts/auth-service.openapi.yaml) and
   [checklists/success-criteria.md](specs/002-user-auth/checklists/success-criteria.md) — the auth
   feature's own validation guide, endpoint contract, and measured results
+- [specs/003-course-catalog/quickstart.md](specs/003-course-catalog/quickstart.md),
+  [contracts/course-service.openapi.yaml](specs/003-course-catalog/contracts/course-service.openapi.yaml)
+  and [checklists/success-criteria.md](specs/003-course-catalog/checklists/success-criteria.md) — the
+  course catalog's own validation guide, endpoint contract, and measured results

@@ -196,6 +196,39 @@ services:
       retries: 20
       start_period: 30s
 
+  # Owns courses, lessons and categories in its own database (constitution Principle II). Like
+  # auth-service, needs postgres and db-init to have already provisioned its role and database.
+  course-service:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: course-service
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?SPRING_PROFILES_ACTIVE is required}
+      CONFIG_SERVER_URL: http://config-server:9888
+      CONFIG_USER: ${CONFIG_USER:?CONFIG_USER is required}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:?CONFIG_PASSWORD is required}
+      EUREKA_URL: http://${EUREKA_USER:?EUREKA_USER is required}:${EUREKA_PASSWORD:?EUREKA_PASSWORD is required}@discovery-server:9761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/course
+      SPRING_DATASOURCE_USERNAME: course
+      SPRING_DATASOURCE_PASSWORD: ${COURSE_DB_PASSWORD:?COURSE_DB_PASSWORD is required}
+    ports:
+      - "9002:9002"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9002/actuator/health/readiness"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
   # The only entry point for clients, including the future frontend (constitution Principle IV).
   api-gateway:
     build:

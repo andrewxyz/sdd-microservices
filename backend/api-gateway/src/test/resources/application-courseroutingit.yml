@@ -1,0 +1,4 @@
+# Settings file for CourseRoutingIT: six routes pointing at its WireMock upstream.
+spring:
+  config:
+    import: "file:./target/course-routing-it/config.yml"
