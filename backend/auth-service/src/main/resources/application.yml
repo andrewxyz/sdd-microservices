@@ -1,0 +1,34 @@
+# The minimum a service declares itself: who it is, where to bootstrap its configuration from, and the
+# credentials to do so. Everything else (registry, probes, logging, retry) arrives from the config
+# server's shared defaults, same as every other service. Datasource credentials are supplied directly
+# as environment variables by docker-compose.yml (SPRING_DATASOURCE_*), not through config-server,
+# matching how EUREKA_URL/CONFIG_USER/CONFIG_PASSWORD are supplied to every other service: a deployment
+# secret, not shared application configuration.
+
+spring:
+  application:
+    name: auth-service
+  config:
+    # Non-optional on purpose: no "optional:" prefix, so a missing config server stops startup rather
+    # than letting the service run with missing settings (constitution Principle III).
+    import: "configserver:${CONFIG_SERVER_URL}"
+  cloud:
+    config:
+      username: ${CONFIG_USER}
+      password: ${CONFIG_PASSWORD}
+      fail-fast: true
+      retry:
+        max-attempts: 6
+        initial-interval: 1000
+        multiplier: 1.5
+        max-interval: 6000
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema (constitution Principle IX); Hibernate must never change it itself.
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+server:
+  port: 9001

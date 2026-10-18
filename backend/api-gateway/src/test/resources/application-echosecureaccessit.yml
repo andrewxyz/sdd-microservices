@@ -1,0 +1,4 @@
+# Settings file for EchoSecureAccessIT: a single route pointing at its WireMock upstream.
+spring:
+  config:
+    import: "file:./target/echo-secure-access-it/config.yml"

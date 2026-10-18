@@ -32,6 +32,7 @@
     <module>discovery-server</module>
     <module>config-server</module>
     <module>echo-service</module>
+    <module>auth-service</module>
     <module>api-gateway</module>
     <module>infra-tests</module>
   </modules>
@@ -45,6 +46,8 @@
     <spring-cloud.version>2025.0.3</spring-cloud.version>
     <!-- Test-scope only; approved by constitution v1.1.0 Principle X. Exact version, never a range. -->
     <wiremock.version>3.13.2</wiremock.version>
+    <!-- Not managed by spring-boot-starter-parent (no oauth2 starter pulls it in); pinned explicitly. -->
+    <nimbus-jose-jwt.version>10.10</nimbus-jose-jwt.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -63,6 +66,17 @@
         <artifactId>wiremock-standalone</artifactId>
         <version>${wiremock.version}</version>
         <scope>test</scope>
+      </dependency>
+
+      <!--
+        spring-boot-starter-data-jpa, flyway-core, org.postgresql:postgresql and
+        spring-security-crypto are already version-managed by spring-boot-starter-parent above; only
+        nimbus-jose-jwt needs a pin here (research.md R9, specs/002-user-auth).
+      -->
+      <dependency>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>nimbus-jose-jwt</artifactId>
+        <version>${nimbus-jose-jwt.version}</version>
       </dependency>
 
       <!-- Internal modules: children depend on these without a version. -->

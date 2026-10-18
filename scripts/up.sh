@@ -14,12 +14,13 @@ cd "$REPO_ROOT"
 ENV_FILE="${LEARNHUB_ENV_FILE:-$REPO_ROOT/.env}"
 WAIT_TIMEOUT="${LEARNHUB_WAIT_TIMEOUT:-300}"
 
-# Host port -> the component that needs it, from the constitution's port table. 9001-9007 are
-# reserved for business services and nothing binds them yet.
+# Host port -> the component that needs it, from the constitution's port table. 9002-9007 are
+# still reserved for business services and nothing binds them yet.
 PORTS=(
   "9080:api-gateway"
   "9761:discovery-server"
   "9888:config-server"
+  "9001:auth-service"
   "9099:echo-service"
   "9432:postgres"
   "9672:rabbitmq"
@@ -36,6 +37,7 @@ REQUIRED_SETTINGS=(
   AUTH_DB_PASSWORD COURSE_DB_PASSWORD ENROLLMENT_DB_PASSWORD PAYMENT_DB_PASSWORD
   CERTIFICATE_DB_PASSWORD REVIEW_DB_PASSWORD NOTIFICATION_DB_PASSWORD
   RABBITMQ_DEFAULT_USER RABBITMQ_DEFAULT_PASS
+  JWT_SIGNING_SECRET ADMIN_EMAIL ADMIN_PASSWORD
 )
 
 die() {

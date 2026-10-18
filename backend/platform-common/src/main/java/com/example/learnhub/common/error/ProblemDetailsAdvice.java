@@ -30,8 +30,15 @@ public class ProblemDetailsAdvice extends ResponseEntityExceptionHandler {
     public ResponseEntity<ProblemDetail> handleResponseStatus(ResponseStatusException exception,
             WebRequest request) {
         HttpStatusCode status = exception.getStatusCode();
-        return ResponseEntity.status(status)
-                .body(problem(status, HttpStatus.valueOf(status.value()).getReasonPhrase(), request));
+        String title = HttpStatus.valueOf(status.value()).getReasonPhrase();
+        // The exception's own reason becomes the problem's detail when the caller supplied one (for
+        // example, which part of a validation rule failed, specs/002-user-auth FR-003); otherwise detail
+        // falls back to the generic title, same as before this feature.
+        ProblemDetail problem = problem(status, title, request);
+        if (exception.getReason() != null) {
+            problem.setDetail(exception.getReason());
+        }
+        return ResponseEntity.status(status).body(problem);
     }
 
     @ExceptionHandler(Exception.class)

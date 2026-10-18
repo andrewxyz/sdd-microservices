@@ -91,6 +91,37 @@ class RealGatewayConfigTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("auth-public is the narrow public route, ahead of the protected auth catch-all (specs/002-user-auth)")
+    void authPublicRoute() {
+        Map<String, Object> route = routeById("auth-public");
+
+        assertThat(route.get("uri")).isEqualTo("lb://auth-service");
+        Map<String, Object> metadata = (Map<String, Object>) route.get("metadata");
+        assertThat(metadata).as("auth-public must declare metadata.public").isNotNull();
+        assertThat(metadata.get("public")).isEqualTo(true);
+
+        Map<String, Object> catchAll = routeById("auth");
+        assertThat((Integer) route.get("order")).as("auth-public must be ordered before the auth catch-all")
+                .isLessThan((Integer) catchAll.get("order"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("auth-admin restricts role changes to ADMINISTRATOR, ahead of the auth catch-all")
+    void authAdminRoute() {
+        Map<String, Object> route = routeById("auth-admin");
+
+        Map<String, Object> metadata = (Map<String, Object>) route.get("metadata");
+        assertThat(metadata).as("auth-admin must declare metadata.roles").isNotNull();
+        assertThat((List<String>) metadata.get("roles")).containsExactly("ADMINISTRATOR");
+
+        Map<String, Object> catchAll = routeById("auth");
+        assertThat((Integer) route.get("order")).as("auth-admin must be ordered before the auth catch-all")
+                .isLessThan((Integer) catchAll.get("order"));
+    }
+
+    @Test
     @DisplayName("connect and response timeouts match the research R8 decision")
     void timeouts() {
         Map<String, Object> httpclient = path(root, "spring", "cloud", "gateway", "server", "webflux")

@@ -30,6 +30,7 @@ public final class GatewayProblem {
     private static String detailFor(HttpStatus status) {
         return switch (status) {
             case UNAUTHORIZED -> "This route requires authentication.";
+            case FORBIDDEN -> "Your role does not meet this route's access requirement.";
             case NOT_FOUND -> "No route matches this path.";
             case TOO_MANY_REQUESTS -> "Rate limit exceeded for this client address.";
             case SERVICE_UNAVAILABLE -> "No healthy instance of the target service is available.";
