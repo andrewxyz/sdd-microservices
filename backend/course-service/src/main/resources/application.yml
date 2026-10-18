@@ -19,12 +19,42 @@ spring:
         initial-interval: 1000
         multiplier: 1.5
         max-interval: 6000
+    openfeign:
+      circuitbreaker:
+        enabled: true
+        # Without this, Resilience4j names each breaker/timelimiter per Feign method signature rather
+        # than by the @FeignClient name, so the resilience4j.*.instances.enrollment-service config
+        # below would silently never apply (004-checkout-enrollment research.md R4).
+        group:
+          enabled: true
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate
   flyway:
     enabled: true
+
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 2000
+        read-timeout: 2000
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      enrollment-service:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+  timelimiter:
+    instances:
+      enrollment-service:
+        timeout-duration: 3s
+        cancel-running-future: true
 
 server:
   port: 9002

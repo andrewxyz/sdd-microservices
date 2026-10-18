@@ -1,0 +1,71 @@
+# The minimum a service declares itself: who it is, where to bootstrap its configuration from, and the
+# credentials to do so. Everything else (registry, probes, logging, retry) arrives from the config
+# server's shared defaults, same as every other service. Datasource and RabbitMQ credentials are
+# supplied directly as environment variables by docker-compose.yml (SPRING_DATASOURCE_*,
+# SPRING_RABBITMQ_*), the same pattern auth-service and course-service already use.
+#
+# The Feign timeout, circuit breaker and publisher-confirm settings below are code defaults (not
+# secrets, not deployment-specific), so they live here rather than in config-repo (research.md R1, R4).
+
+spring:
+  application:
+    name: payment-service
+  config:
+    import: "configserver:${CONFIG_SERVER_URL}"
+  cloud:
+    config:
+      username: ${CONFIG_USER}
+      password: ${CONFIG_PASSWORD}
+      fail-fast: true
+      retry:
+        max-attempts: 6
+        initial-interval: 1000
+        multiplier: 1.5
+        max-interval: 6000
+    openfeign:
+      circuitbreaker:
+        enabled: true
+        # Without this, Resilience4j names each breaker/timelimiter per Feign method signature (e.g.
+        # "CourseLookupClientsummaryUUID"), so a config keyed by the @FeignClient name below would
+        # silently never apply and every call would fall back to Resilience4j's own 1s default timeout.
+        group:
+          enabled: true
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  rabbitmq:
+    publisher-confirm-type: correlated
+
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 2000
+        read-timeout: 2000
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      course-service:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+  # Spring Cloud CircuitBreaker wraps every call in its own TimeLimiter, separate from Feign's own
+  # connect/read timeout above; it must allow enough headroom for that timeout to fire first, or a
+  # perfectly healthy call can spuriously trip on the TimeLimiter's own default (1s) instead.
+  timelimiter:
+    instances:
+      course-service:
+        timeout-duration: 3s
+        # Without this, a call that times out keeps running on its executor thread in the background;
+        # under the default small shared pool, one slow call can starve every call queued behind it,
+        # making them appear to time out too even though course-service would have answered instantly.
+        cancel-running-future: true
+
+server:
+  port: 9004

@@ -116,14 +116,49 @@ spring:
               predicates:
                 - Path=/api/v1/my/courses
 
+            # Reading a course's full lesson content (004-checkout-enrollment, research.md R5): gated by
+            # ownership, admin role, or confirmed enrollment, all enforced inside course-service itself.
+            # A narrower, two-segment shape than courses-manage below, so it is matched first regardless
+            # of relative order — kept lower anyway for the same discipline 002/003 established.
+            - id: course-content
+              uri: lb://course-service
+              order: 10
+              predicates:
+                - Path=/api/v1/courses/*/content
+                - Method=GET
+
             # Everything else: create, edit, delete, publish, archive, the owner/admin full detail
             # view, and all lesson management. Protected (any authenticated caller); ownership and role
             # nuance are enforced inside course-service itself (research.md R9).
             - id: courses-manage
               uri: lb://course-service
-              order: 10
+              order: 15
               predicates:
                 - Path=/api/v1/courses/**
+
+            # 004-checkout-enrollment: check out a published course (research.md R7). Protected;
+            # instructor-self-checkout and already-enrolled refusals are enforced inside payment-service.
+            - id: checkout
+              uri: lb://payment-service
+              order: 16
+              predicates:
+                - Path=/api/v1/checkouts
+                - Method=POST
+
+            # A user's own payment history and a single payment's status (FR-017, FR-019). Protected;
+            # ownership is enforced inside payment-service (identical 404 for someone else's payment).
+            - id: payments
+              uri: lb://payment-service
+              order: 17
+              predicates:
+                - Path=/api/v1/payments/**
+
+            # A user's own enrollments (FR-018). Protected; scoped to the caller inside enrollment-service.
+            - id: enrollments
+              uri: lb://enrollment-service
+              order: 18
+              predicates:
+                - Path=/api/v1/enrollments
 
   # Needed for the correlation ID to survive across reactive operators and reach log lines.
   reactor:

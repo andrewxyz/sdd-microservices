@@ -78,8 +78,8 @@ mapped into that range; the Spring services use the same port inside and outside
 | config-server | 9888 | 9888 |
 | auth-service | 9001 | 9001 |
 | course-service | 9002 | 9002 |
-| enrollment-service | 9003 | reserved, not yet built |
-| payment-service | 9004 | reserved, not yet built |
+| enrollment-service | 9003 | 9003 |
+| payment-service | 9004 | 9004 |
 | certificate-service | 9005 | reserved, not yet built |
 | review-service | 9006 | reserved, not yet built |
 | notification-service | 9007 | reserved, not yet built |
@@ -161,6 +161,26 @@ to a stale one instead. A separate, gateway-unreachable endpoint
 (`GET /api/v1/internal/courses/{id}`) lets other backend services look up a course directly. See
 `specs/003-course-catalog/contracts/course-service.openapi.yaml` for the full endpoint contract and
 `specs/003-course-catalog/quickstart.md` for a curl walkthrough of the whole flow.
+
+## Checkout and enrollment
+
+`payment-service` (port 9004, behind the gateway at `POST /api/v1/checkouts` and `/api/v1/payments/**`)
+checks out a published course: free courses succeed immediately, paid ones go through an in-process
+simulated payment provider driven by a caller-supplied test token (`sim-success`, `sim-decline`,
+`sim-unavailable`). Every checkout carries a client-supplied idempotency key, so resending the same
+request — including many times at once — never charges twice, and reusing the key with a different
+request is refused. A successful payment is recorded durably (a transactional outbox) before it is ever
+announced, so it is never lost even if the broker is briefly unreachable.
+
+`enrollment-service` (port 9003, behind the gateway at `GET /api/v1/enrollments`) consumes the resulting
+`payment.succeeded` event and creates the enrollment, idempotently and within a few seconds; a message
+that cannot be processed is retried three times and then set aside in a dead-letter queue rather than
+blocking the messages behind it. `course-service` gains one new, additive endpoint,
+`GET /api/v1/courses/{id}/content`, which serves full lesson content to the owning instructor, an
+administrator, or a confirmed-enrolled student — and refuses with a temporary error, never the content
+itself, if enrollment status cannot be confirmed. See
+`specs/004-checkout-enrollment/contracts/` for the full endpoint contracts and
+`specs/004-checkout-enrollment/quickstart.md` for a curl walkthrough of the whole flow.
 
 ## Building and testing
 

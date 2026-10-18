@@ -1,0 +1,62 @@
+openapi: 3.0.3
+info:
+  title: LearnHub course-service — lesson content addendum (004-checkout-enrollment)
+  version: "1.0.0"
+  description: >
+    One new endpoint added to course-service by this feature. 003's existing
+    specs/003-course-catalog/contracts/course-service.openapi.yaml is unchanged; this file documents
+    only the addition (research.md R5). Reached through the gateway at /api/v1/courses/*/content,
+    which requires a valid access token.
+servers:
+  - url: /api/v1
+paths:
+  /courses/{courseId}/content:
+    get:
+      summary: Read a course's full lesson content, gated by ownership, admin role, or enrollment
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: >
+            Returned to the owning instructor or an administrator unconditionally (FR-023), or to any
+            other caller only once they are confirmed enrolled (FR-021)
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/CourseContentView" } }
+        "403":
+          description: The caller is confirmed not enrolled, and is neither the owner nor an admin (FR-022)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "404":
+          description: The course does not exist, or is not published and the caller is not its owner/admin
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "503":
+          description: >
+            Enrollment status could not be confirmed (enrollment-service unreachable or the circuit is
+            open); content is never shown on an unconfirmed basis (FR-024)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    CourseContentView:
+      type: object
+      properties:
+        courseId: { type: string, format: uuid }
+        title: { type: string }
+        lessons:
+          type: array
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              position: { type: integer }
+              durationMinutes: { type: integer }
+              content: { type: string }
+    ProblemDetail:
+      $ref: "../../001-platform-foundation/contracts/problem-details.schema.json"

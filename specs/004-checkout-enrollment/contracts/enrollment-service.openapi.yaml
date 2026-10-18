@@ -1,0 +1,72 @@
+openapi: 3.0.3
+info:
+  title: LearnHub enrollment-service
+  version: "1.0.0"
+  description: >
+    Reached through the gateway at /api/v1/enrollments. Requires a valid access token (research.md R7).
+    GET /api/v1/internal/enrollments/{courseId}/{userId} has no gateway route at all (research.md R4,
+    following 003's R6 precedent) and is reached only by course-service, directly, via Feign. Every
+    error response uses the shared problem-details.schema.json shape
+    (specs/001-platform-foundation/contracts/).
+servers:
+  - url: /api/v1
+paths:
+  /enrollments:
+    get:
+      summary: List the caller's own enrollments (FR-018)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0, minimum: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: A page of the caller's own enrollments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/EnrollmentView" }
+                  page: { type: integer }
+                  size: { type: integer }
+                  totalItems: { type: integer }
+  /internal/enrollments/{courseId}/{userId}:
+    get:
+      summary: Service-to-service enrollment check (no gateway route; research.md R4, R5)
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Whether this user is enrolled in this course, regardless of either id's validity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enrolled: { type: boolean }
+                  enrolledAt: { type: string, format: date-time, nullable: true }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    EnrollmentView:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        enrolledAt: { type: string, format: date-time }
+    ProblemDetail:
+      $ref: "../../001-platform-foundation/contracts/problem-details.schema.json"
