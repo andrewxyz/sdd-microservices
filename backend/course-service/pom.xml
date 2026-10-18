@@ -68,6 +68,15 @@
       <groupId>com.example.learnhub</groupId>
       <artifactId>platform-common</artifactId>
     </dependency>
+    <!-- First use in this module: EnrollmentLookupClient (004-checkout-enrollment, research.md R4). -->
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-openfeign</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -82,6 +91,11 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

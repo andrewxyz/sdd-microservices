@@ -1,0 +1,28 @@
+# Test defaults, replacing the service's own application.yml on the test classpath.
+#
+# The real file imports settings from the config server; that import is declared inside the file and
+# is processed while the file loads, so only replacing the file (not an external property) can cancel
+# it. Datasource and RabbitMQ settings come from each test class's @DynamicPropertySource, pointed at
+# Testcontainers instances (constitution Principle VI: Testcontainers, never H2, and never a mocked
+# broker).
+
+spring:
+  application:
+    name: enrollment-service
+  cloud:
+    config:
+      enabled: false
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+platform:
+  config-watcher:
+    enabled: false

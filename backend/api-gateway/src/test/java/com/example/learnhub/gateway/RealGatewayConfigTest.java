@@ -166,6 +166,39 @@ class RealGatewayConfigTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("checkout, payments, enrollments and course-content are all protected, with no roles metadata (specs/004-checkout-enrollment research.md R7)")
+    void checkoutEnrollmentRoutes() {
+        Map<String, Object> checkout = routeById("checkout");
+        Map<String, Object> payments = routeById("payments");
+        Map<String, Object> enrollments = routeById("enrollments");
+        Map<String, Object> content = routeById("course-content");
+        Map<String, Object> catchAll = routeById("courses-manage");
+
+        assertThat(checkout.get("uri")).isEqualTo("lb://payment-service");
+        assertThat((List<String>) checkout.get("predicates")).contains("Method=POST");
+        assertThat(payments.get("uri")).isEqualTo("lb://payment-service");
+        assertThat(enrollments.get("uri")).isEqualTo("lb://enrollment-service");
+        assertThat(content.get("uri")).isEqualTo("lb://course-service");
+
+        for (Map<String, Object> route : List.of(checkout, payments, enrollments, content)) {
+            assertThat(route.get("metadata"))
+                    .as("%s must not be public", route.get("id"))
+                    .satisfiesAnyOf(
+                            metadata -> assertThat(metadata).isNull(),
+                            metadata -> assertThat(((Map<String, Object>) metadata).get("public")).isNotEqualTo(true));
+            assertThat(route.get("metadata"))
+                    .as("%s must not carry roles metadata (research.md R7)", route.get("id"))
+                    .satisfiesAnyOf(
+                            metadata -> assertThat(metadata).isNull(),
+                            metadata -> assertThat((Map<String, Object>) metadata).doesNotContainKey("roles"));
+        }
+
+        assertThat((Integer) content.get("order")).as("course-content must be ordered before courses-manage")
+                .isLessThan((Integer) catchAll.get("order"));
+    }
+
+    @Test
     @DisplayName("connect and response timeouts match the research R8 decision")
     void timeouts() {
         Map<String, Object> httpclient = path(root, "spring", "cloud", "gateway", "server", "webflux")

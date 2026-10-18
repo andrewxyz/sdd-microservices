@@ -229,6 +229,85 @@ services:
       retries: 20
       start_period: 30s
 
+  # Owns enrollments in its own database (constitution Principle II). Consumes payment.succeeded
+  # events from RabbitMQ (research.md R6), so it also needs rabbitmq to be healthy before it starts.
+  enrollment-service:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: enrollment-service
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?SPRING_PROFILES_ACTIVE is required}
+      CONFIG_SERVER_URL: http://config-server:9888
+      CONFIG_USER: ${CONFIG_USER:?CONFIG_USER is required}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:?CONFIG_PASSWORD is required}
+      EUREKA_URL: http://${EUREKA_USER:?EUREKA_USER is required}:${EUREKA_PASSWORD:?EUREKA_PASSWORD is required}@discovery-server:9761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/enrollment
+      SPRING_DATASOURCE_USERNAME: enrollment
+      SPRING_DATASOURCE_PASSWORD: ${ENROLLMENT_DB_PASSWORD:?ENROLLMENT_DB_PASSWORD is required}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:?RABBITMQ_DEFAULT_USER is required}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:?RABBITMQ_DEFAULT_PASS is required}
+    ports:
+      - "9003:9003"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9003/actuator/health/readiness"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # Owns checkout and payment history in its own database (constitution Principle II). Calls
+  # course-service synchronously (Feign) and publishes to RabbitMQ via a transactional outbox
+  # (research.md R1, R4), so it needs rabbitmq healthy too.
+  payment-service:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: payment-service
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?SPRING_PROFILES_ACTIVE is required}
+      CONFIG_SERVER_URL: http://config-server:9888
+      CONFIG_USER: ${CONFIG_USER:?CONFIG_USER is required}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:?CONFIG_PASSWORD is required}
+      EUREKA_URL: http://${EUREKA_USER:?EUREKA_USER is required}:${EUREKA_PASSWORD:?EUREKA_PASSWORD is required}@discovery-server:9761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/payment
+      SPRING_DATASOURCE_USERNAME: payment
+      SPRING_DATASOURCE_PASSWORD: ${PAYMENT_DB_PASSWORD:?PAYMENT_DB_PASSWORD is required}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:?RABBITMQ_DEFAULT_USER is required}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:?RABBITMQ_DEFAULT_PASS is required}
+    ports:
+      - "9004:9004"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9004/actuator/health/readiness"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
   # The only entry point for clients, including the future frontend (constitution Principle IV).
   api-gateway:
     build:
