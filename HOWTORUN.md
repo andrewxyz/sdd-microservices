@@ -90,11 +90,13 @@ startup finishes. That's the registry doing its job, not a failure — wait a mo
 
 The platform now has the **platform foundation** (registry, config server, gateway, a placeholder
 echo service), **auth-service** (real accounts, login, refresh/logout, roles, and the gateway's real
-JWT enforcement at the entry point), and **course-service** (the course catalog: browsing, authoring,
-publishing, categories). The remaining five business services (enrollment, payment, certificate,
-review, notification) each already have an **empty database and login** provisioned (step 3.12 below),
-ready for their own specs to fill in — but none of their code exists yet, so there's nothing to call
-for them.
+JWT enforcement at the entry point), **course-service** (the course catalog: browsing, authoring,
+publishing, categories, and a new lesson-content reading endpoint gated by enrollment), and the
+**checkout-and-enrollment pair**: **payment-service** (checkout, a simulated payment provider, payment
+history) and **enrollment-service** (consuming successful payments into enrollments, reliably). The
+remaining three business services (certificate, review, notification) each already have an **empty
+database and login** provisioned (step 3.18 below), ready for their own specs to fill in — but none of
+their code exists yet, so there's nothing to call for them.
 
 | Component | Host port | What it's for |
 |-----------|-----------|----------------|
@@ -102,10 +104,12 @@ for them.
 | discovery-server (Eureka) | 9761 | Service registry dashboard |
 | config-server | 9888 | Serves central settings from `backend/config-repo` |
 | **auth-service** | 9001 | Accounts, login, roles — reached through the gateway at `/api/v1/auth/**` |
-| **course-service** | 9002 | Courses, lessons, categories — reached through the gateway at `/api/v1/courses/**`, `/api/v1/my/courses`, `/api/v1/categories/**` |
+| **course-service** | 9002 | Courses, lessons, categories, lesson content — reached through the gateway at `/api/v1/courses/**`, `/api/v1/my/courses`, `/api/v1/categories/**` |
+| **enrollment-service** | 9003 | Enrollments — reached through the gateway at `/api/v1/enrollments` |
+| **payment-service** | 9004 | Checkout, payment history — reached through the gateway at `/api/v1/checkouts`, `/api/v1/payments/**` |
 | echo-service | 9099 | Placeholder service (also reachable directly, for comparison) |
-| PostgreSQL | 9432 | One database per business service; `auth` and `course` have real tables now, the rest are still empty |
-| RabbitMQ (AMQP / management) | 9672 / 9673 | Message broker (no queues defined yet) |
+| PostgreSQL | 9432 | One database per business service; `auth`, `course`, `enrollment` and `payment` have real tables now, the rest are still empty |
+| RabbitMQ (AMQP / management) | 9672 / 9673 | Message broker; carries `payment.succeeded` from payment-service to enrollment-service on the `learning.events` exchange |
 | Mailpit (SMTP / web UI) | 9025 / 9825 | Catches outgoing mail locally; nothing leaves the machine |
 
 ## 3. Try it: curl walkthrough
@@ -533,6 +537,103 @@ done | sort | uniq -c
 docker compose --profile scale rm -sf echo-service-b
 ```
 
+### 3.21 Check out a free course and read it
+
+Needs a published free course (§3.9) and a STUDENT account other than its instructor.
+
+```bash
+STUDENT_ACCESS=$(curl -s -X POST http://localhost:9080/api/v1/auth/login -H 'Content-Type: application/json' \
+  -d '{"email":"student1@example.com","password":"correct-horse-1"}' | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
+
+curl -s -X POST http://localhost:9080/api/v1/checkouts -H "Authorization: Bearer $STUDENT_ACCESS" \
+  -H 'Content-Type: application/json' \
+  -d "{\"courseId\":\"$COURSE_ID\",\"idempotencyKey\":\"howto-free-1\"}"
+```
+
+```json
+{"id":"...","courseId":"...","amountCents":0,"currency":"USD","status":"SUCCEEDED","failureReason":null,"message":"Enrollment will follow shortly.","createdAt":"...","updatedAt":"..."}
+```
+
+Wait a few seconds for the event to be consumed, then read the course's full content — not just the
+public outline §3.10 showed:
+
+```bash
+sleep 5
+curl -s "http://localhost:9080/api/v1/courses/$COURSE_ID/content" -H "Authorization: Bearer $STUDENT_ACCESS"
+curl -s http://localhost:9080/api/v1/enrollments -H "Authorization: Bearer $STUDENT_ACCESS"
+```
+
+### 3.22 Check out a paid course with the simulated payment provider
+
+Needs a published course with `priceCents` greater than zero. The payment token selects the outcome:
+`sim-success`, `sim-decline`, or `sim-unavailable` (never a real card number anywhere).
+
+```bash
+curl -s -X POST http://localhost:9080/api/v1/checkouts -H "Authorization: Bearer $STUDENT_ACCESS" \
+  -H 'Content-Type: application/json' \
+  -d "{\"courseId\":\"$PAID_COURSE_ID\",\"idempotencyKey\":\"howto-paid-1\",\"paymentToken\":\"sim-success\"}"
+
+curl -s -i -X POST http://localhost:9080/api/v1/checkouts -H "Authorization: Bearer $STUDENT_ACCESS" \
+  -H 'Content-Type: application/json' \
+  -d "{\"courseId\":\"$PAID_COURSE_ID\",\"idempotencyKey\":\"howto-decline-1\",\"paymentToken\":\"sim-decline\"}"
+```
+
+The decline response is still `201` — the *checkout* succeeded in the sense that it was fully
+processed — but `status` is `DECLINED` with a `failureReason`, and no enrollment ever follows.
+
+### 3.23 Safe retries: the same idempotency key never double-charges
+
+```bash
+curl -s -X POST http://localhost:9080/api/v1/checkouts -H "Authorization: Bearer $STUDENT_ACCESS" \
+  -H 'Content-Type: application/json' -d '{"courseId":"'"$COURSE_ID"'","idempotencyKey":"howto-retry-1"}'
+curl -s -X POST http://localhost:9080/api/v1/checkouts -H "Authorization: Bearer $STUDENT_ACCESS" \
+  -H 'Content-Type: application/json' -d '{"courseId":"'"$COURSE_ID"'","idempotencyKey":"howto-retry-1"}'
+# Expect the identical "id" both times (200 the second time, not 201).
+
+curl -s -i -X POST http://localhost:9080/api/v1/checkouts -H "Authorization: Bearer $STUDENT_ACCESS" \
+  -H 'Content-Type: application/json' \
+  -d "{\"courseId\":\"$PAID_COURSE_ID\",\"idempotencyKey\":\"howto-retry-1\",\"paymentToken\":\"sim-success\"}"
+# Expect 409: "howto-retry-1" was already used for a different request.
+```
+
+### 3.24 Payment history is private
+
+```bash
+curl -s http://localhost:9080/api/v1/payments -H "Authorization: Bearer $STUDENT_ACCESS"
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:9080/api/v1/payments/$(uuidgen) \
+  -H "Authorization: Bearer $STUDENT_ACCESS"
+# Expect 404 for a payment id that isn't yours (identical to one that doesn't exist at all).
+```
+
+### 3.25 A non-enrolled user can never read lesson content
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' "http://localhost:9080/api/v1/courses/$PAID_COURSE_ID/content" \
+  -H "Authorization: Bearer $(curl -s -X POST http://localhost:9080/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"student2@example.com","password":"correct-horse-1"}' | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)"
+```
+
+```text
+403
+```
+
+### 3.26 Reliability: stop enrollment-service, check out anyway, see it catch up
+
+```bash
+docker compose stop enrollment-service
+curl -s -X POST http://localhost:9080/api/v1/checkouts -H "Authorization: Bearer $STUDENT_ACCESS" \
+  -H 'Content-Type: application/json' \
+  -d "{\"courseId\":\"$PAID_COURSE_ID\",\"idempotencyKey\":\"howto-resilience-1\",\"paymentToken\":\"sim-success\"}"
+# Still 201, SUCCEEDED — checkout never depends on enrollment-service being up.
+
+docker compose start enrollment-service
+sleep 10
+curl -s http://localhost:9080/api/v1/enrollments -H "Authorization: Bearer $STUDENT_ACCESS"
+# The enrollment for $PAID_COURSE_ID is there, created once enrollment-service came back.
+```
+
+See `specs/004-checkout-enrollment/quickstart.md` for the complete walkthrough, including the
+instructor-self-checkout and already-enrolled refusals.
+
 ## 4. Automated tests
 
 ### 4.1 Unit and integration tests (needs Docker, for Testcontainers)
@@ -542,9 +643,9 @@ mvn -f backend/pom.xml verify
 ```
 
 This builds and tests every module (shared libraries, registry, config server, echo service,
-**auth-service**, **course-service**, gateway, and the infrastructure checks) — around 280 tests in
-total. `verify` (not `test`) is needed because several tests spin up real PostgreSQL and RabbitMQ
-containers via Testcontainers.
+**auth-service**, **course-service**, **payment-service**, **enrollment-service**, gateway, and the
+infrastructure checks) — around 340 tests in total. `verify` (not `test`) is needed because several
+tests spin up real PostgreSQL and RabbitMQ containers via Testcontainers.
 
 To run just one module, e.g. the gateway:
 
@@ -602,6 +703,10 @@ docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:stable -S warning \
 | Login/refresh/role-change return `401`/`403` unexpectedly | A stale access token (15-minute lifetime) or a role change that hasn't been picked up yet | Log in again for a fresh token; role changes apply on next login, not to a token already issued |
 | A course edit/publish/archive/lesson/category change returns `409` with "If-Match" in the message | The request is missing the `If-Match` header, or it's stale | `GET .../full` (or the category) again to read its current `ETag`, then resend with that exact value |
 | A course action returns `403` even though you're logged in | The caller is neither the course's owning instructor nor an administrator | Only the owner or an administrator can edit/publish/archive/delete a given course |
+| A checkout returns `409` "already used for a different request" | The same idempotency key was sent with a different course or payment token | Use a new, unique idempotency key for each distinct checkout attempt |
+| A checkout returns `409` "already enrolled" | A successful payment for that course already exists for this user | Expected — a user cannot pay for the same course twice |
+| `GET .../courses/{id}/content` returns `503` | enrollment-service could not be reached to confirm enrollment status | Check `docker compose ps enrollment-service`; the request is safe to retry once it recovers |
+| An enrollment doesn't appear a few seconds after a successful checkout | Normal — enrollment is created asynchronously, usually within 5 seconds | Wait and re-check `GET /api/v1/enrollments`; if it never appears, check `docker compose logs enrollment-service` and the `enrollment-service.payment-succeeded.dlq` queue in the RabbitMQ management UI (<http://localhost:9673>) |
 
 ## 6. See also
 
@@ -617,3 +722,7 @@ docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:stable -S warning \
   [contracts/course-service.openapi.yaml](specs/003-course-catalog/contracts/course-service.openapi.yaml)
   and [checklists/success-criteria.md](specs/003-course-catalog/checklists/success-criteria.md) — the
   course catalog's own validation guide, endpoint contract, and measured results
+- [specs/004-checkout-enrollment/quickstart.md](specs/004-checkout-enrollment/quickstart.md),
+  [contracts/](specs/004-checkout-enrollment/contracts/) and
+  [checklists/success-criteria.md](specs/004-checkout-enrollment/checklists/success-criteria.md) — the
+  checkout-and-enrollment feature's own validation guide, endpoint contracts, and measured results
