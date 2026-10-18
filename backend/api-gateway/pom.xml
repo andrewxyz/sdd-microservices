@@ -48,6 +48,11 @@
       <groupId>io.micrometer</groupId>
       <artifactId>context-propagation</artifactId>
     </dependency>
+    <!-- Verifies access tokens issued by auth-service (specs/002-user-auth research.md R1, R9). -->
+    <dependency>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>nimbus-jose-jwt</artifactId>
+    </dependency>
     <!--
       The gateway is a WebFlux application. platform-common's servlet half is guarded by
       @ConditionalOnWebApplication(SERVLET) and its servlet dependencies are optional, so depending

@@ -3,12 +3,13 @@ package com.example.learnhub.gateway;
 import com.example.learnhub.common.correlation.CorrelationIds;
 import com.example.learnhub.gateway.error.GatewayErrorHandler;
 import com.example.learnhub.gateway.filter.CorrelationIdGlobalFilter;
-import com.example.learnhub.gateway.filter.RouteAccessGlobalFilter;
+import com.example.learnhub.gateway.filter.JwtAuthenticationGlobalFilter;
 import com.example.learnhub.gateway.ratelimit.ClientAddressResolver;
 import com.example.learnhub.gateway.ratelimit.RateLimitGlobalFilter;
 import com.example.learnhub.gateway.ratelimit.RateLimiterProperties;
 import com.example.learnhub.gateway.ratelimit.RemoteAddressClientResolver;
 import com.example.learnhub.gateway.ratelimit.TokenBucketRateLimiter;
+import com.example.learnhub.gateway.security.JwtVerifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.context.ContextRegistry;
 import io.micrometer.context.integration.Slf4jThreadLocalAccessor;
@@ -56,8 +57,8 @@ public class GatewayConfiguration {
     }
 
     @Bean
-    RouteAccessGlobalFilter routeAccessGlobalFilter() {
-        return new RouteAccessGlobalFilter(ROUTE_ACCESS_ORDER);
+    JwtAuthenticationGlobalFilter jwtAuthenticationGlobalFilter(JwtVerifier verifier) {
+        return new JwtAuthenticationGlobalFilter(verifier, ROUTE_ACCESS_ORDER);
     }
 
     @Bean

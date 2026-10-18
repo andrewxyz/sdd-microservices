@@ -17,7 +17,7 @@
     },
     "status": {
       "type": "integer",
-      "enum": [401, 404, 429, 500, 503, 504],
+      "enum": [401, 403, 404, 429, 500, 503, 504],
       "description": "HTTP status code. Services may add further 4xx/5xx values in later specs; the gateway produces these."
     },
     "detail": {

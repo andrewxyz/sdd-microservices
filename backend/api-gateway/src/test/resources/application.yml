@@ -26,3 +26,7 @@ eureka:
 platform:
   config-watcher:
     enabled: false
+
+# A fixed, 32-byte-plus test secret shared with auth-service's own test fixtures where a test needs a
+# token signed and verified with the same key; otherwise irrelevant to a given test.
+JWT_SIGNING_SECRET: test-only-signing-secret-at-least-32-bytes-long

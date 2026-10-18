@@ -1,0 +1,35 @@
+# Test defaults, replacing the service's own application.yml on the test classpath.
+#
+# The real file imports settings from the config server; that import is declared inside the file and
+# is processed while the file loads, so only replacing the file (not an external property) can cancel
+# it. Datasource settings come from each test class's @DynamicPropertySource, pointed at a Testcontainers
+# PostgreSQL instance (constitution Principle VI: Testcontainers, never H2).
+
+spring:
+  application:
+    name: auth-service
+  cloud:
+    config:
+      enabled: false
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+platform:
+  config-watcher:
+    enabled: false
+
+# A fixed, 32-byte-plus test secret; never used outside tests (FR-024 does not apply to test fixtures).
+JWT_SIGNING_SECRET: test-only-signing-secret-at-least-32-bytes-long
+
+# BootstrapAdministrator (T054) needs these on every context start; fixed here since they are not
+# secrets in a test context. Individual tests may override via @DynamicPropertySource if they need to.
+ADMIN_EMAIL: admin@test.learnhub.example
+ADMIN_PASSWORD: admin-test-password-1

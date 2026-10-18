@@ -40,6 +40,32 @@ spring:
               predicates:
                 - Path=/api/v1/echo/**
 
+            # register/login/refresh stay open; everything else under /api/v1/auth/** is protected by
+            # default (specs/002-user-auth research.md R5), same echo-public/echo pattern as above.
+            - id: auth-public
+              uri: lb://auth-service
+              order: 2
+              predicates:
+                - Path=/api/v1/auth/register,/api/v1/auth/login,/api/v1/auth/refresh
+              metadata:
+                public: true
+
+            # Narrower than the general auth route below, so only this path carries the role
+            # restriction (FR-019, research.md R5).
+            - id: auth-admin
+              uri: lb://auth-service
+              order: 3
+              predicates:
+                - Path=/api/v1/auth/accounts/**
+              metadata:
+                roles: [ADMINISTRATOR]
+
+            - id: auth
+              uri: lb://auth-service
+              order: 4
+              predicates:
+                - Path=/api/v1/auth/**
+
   # Needed for the correlation ID to survive across reactive operators and reach log lines.
   reactor:
     context-propagation: auto
