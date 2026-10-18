@@ -33,6 +33,7 @@
     <module>config-server</module>
     <module>echo-service</module>
     <module>auth-service</module>
+    <module>course-service</module>
     <module>api-gateway</module>
     <module>infra-tests</module>
   </modules>
