@@ -48,7 +48,7 @@ run_up() {
 
   local started=$SECONDS
   (
-    cd "$REPO_ROOT"
+    cd "$REPO_ROOT" || exit 1
     PATH="$FAKEBIN:$PATH" \
     LEARNHUB_ENV_FILE="$env_file" \
     FAKE_DOCKER_LOG="$WORK/docker-calls.txt" \

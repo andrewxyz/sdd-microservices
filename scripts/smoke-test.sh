@@ -9,7 +9,7 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$REPO_ROOT"
+cd "$REPO_ROOT" || exit 1
 
 LIFECYCLE=0
 SCALE=0
@@ -329,11 +329,18 @@ fi
 if [ "$SCALE" -eq 1 ]; then
   docker compose --profile scale up -d echo-service-b >/dev/null 2>&1
 
+  # How many distinct echo instances the gateway is actually routing to right now, judged by the
+  # gateway's own cached view (which is what SC-002 cares about), not by text-matching Eureka's raw
+  # JSON: the app-level "ECHO-SERVICE" key appears exactly once regardless of instance count, so
+  # counting its occurrences cannot distinguish one copy from two.
+  distinct_routed_instances() {
+    for _ in $(seq 1 10); do curl -s "$GW/api/v1/echo/ping"; done 2>/dev/null \
+      | grep -o '"instanceId":"[^"]*"' | sort -u | wc -l
+  }
+
   registered_two=0
   for _ in $(seq 1 24); do
-    if [ "$(registry_lists | grep -o 'ECHO-SERVICE' | wc -l)" -ge 1 ] &&
-       [ "$(curl -s "$GW/api/v1/echo/ping" >/dev/null; for _ in 1 2 3 4 5 6 7 8 9 10; do
-              curl -s "$GW/api/v1/echo/ping"; done | grep -o '"instanceId":"[^"]*"' | sort -u | wc -l)" -ge 2 ]; then
+    if [ "$(distinct_routed_instances)" -ge 2 ]; then
       registered_two=1
       break
     fi
@@ -361,7 +368,27 @@ if [ "$SCALE" -eq 1 ]; then
     fail "100 calls spread across both copies, each at least 40" "$(echo "$counts" | tr '\n' ' ')"
   fi
 
-  # A crashed instance: 503 rather than a hang, then eviction inside the 90s SC-002 allows.
+  # SC-002, graceful stop: gone from routing within 30 seconds.
+  docker compose --profile scale stop echo-service-b >/dev/null 2>&1
+  gone_in=-1
+  started=$SECONDS
+  for _ in $(seq 1 10); do
+    [ "$(distinct_routed_instances)" -le 1 ] && { gone_in=$((SECONDS - started)); break; }
+    sleep 3
+  done
+  if [ "$gone_in" -ge 0 ] && [ "$gone_in" -le 30 ]; then
+    pass "a gracefully stopped copy is gone from routing within ${gone_in}s (SC-002 allows 30s)"
+  else
+    fail "a gracefully stopped copy is gone from routing within 30s" "still routed to after ${gone_in}s"
+  fi
+
+  docker compose --profile scale start echo-service-b >/dev/null 2>&1
+  for _ in $(seq 1 12); do
+    [ "$(distinct_routed_instances)" -ge 2 ] && break
+    sleep 5
+  done
+
+  # SC-002, crash: 503 rather than a hang while the lease is still live, then gone within 90s.
   crashed="$(docker compose ps -q echo-service-b)"
   docker kill "$crashed" >/dev/null 2>&1
   bad=0
@@ -376,6 +403,18 @@ if [ "$SCALE" -eq 1 ]; then
     pass "a crashed copy produces 200 or 503, never a hang or a 500"
   else
     fail "a crashed copy produces 200 or 503, never a hang or a 500" "saw an unexpected status"
+  fi
+
+  evicted_in=-1
+  started=$SECONDS
+  for _ in $(seq 1 18); do
+    [ "$(distinct_routed_instances)" -le 1 ] && { evicted_in=$((SECONDS - started)); break; }
+    sleep 5
+  done
+  if [ "$evicted_in" -ge 0 ] && [ "$evicted_in" -le 90 ]; then
+    pass "a crashed copy is evicted from routing within ${evicted_in}s (SC-002 allows 90s)"
+  else
+    fail "a crashed copy is evicted from routing within 90s" "still routed to after 90s"
   fi
 
   docker compose --profile scale rm -sf echo-service-b >/dev/null 2>&1
