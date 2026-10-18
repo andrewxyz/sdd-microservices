@@ -1,0 +1,474 @@
+openapi: 3.0.3
+info:
+  title: LearnHub course-service
+  version: "1.0.0"
+  description: >
+    Reached through the gateway at /api/v1/courses/**, /api/v1/my/courses and /api/v1/categories/**.
+    GET /api/v1/courses, GET /api/v1/courses/{courseId} and GET /api/v1/categories are public; every
+    other path requires a valid access token, and category mutations additionally require the
+    ADMINISTRATOR role, both enforced by the gateway (research.md R2, R9) before the request reaches
+    this service. GET /api/v1/internal/courses/{courseId} has no gateway route at all (research.md R6)
+    and is reached only by other backend services directly. Every error response uses the shared
+    problem-details.schema.json shape (specs/001-platform-foundation/contracts/).
+servers:
+  - url: /api/v1
+paths:
+  /courses:
+    get:
+      summary: List and search the public catalog (published courses only)
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0, minimum: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [newest, title, price_asc, price_desc], default: newest }
+        - name: category
+          in: query
+          schema: { type: string, format: uuid }
+        - name: level
+          in: query
+          schema: { type: string, enum: [BEGINNER, INTERMEDIATE, ADVANCED] }
+        - name: free
+          in: query
+          description: "true for price = 0 only, false for price > 0 only, omitted for both"
+          schema: { type: boolean }
+        - name: q
+          in: query
+          description: Keyword matched case-insensitively against title or description
+          schema: { type: string }
+      responses:
+        "200":
+          description: A page of published courses (never a draft or an archived one, FR-005)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/CoursePublicView" }
+                  page: { type: integer }
+                  size: { type: integer }
+                  totalItems: { type: integer }
+    post:
+      summary: Create a course as a draft
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CourseCreateRequest" }
+      responses:
+        "201":
+          description: Draft created, owned by the caller (FR-008)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseFullView" }
+        "403":
+          description: Caller is a student (FR-009)
+
+  /courses/{courseId}:
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: View a published course's public detail
+      responses:
+        "200":
+          description: Public detail (no lesson content, FR-006)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoursePublicView" }
+        "404":
+          description: >
+            Draft, archived, or no such course — identical for all three to anyone who is not the
+            owner or an administrator (FR-007)
+    put:
+      summary: Edit a course's details
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          description: The course's current version (research.md R1)
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CourseEditRequest" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseFullView" }
+        "403":
+          description: Caller is neither the owning instructor nor an administrator (FR-011)
+        "409":
+          description: >
+            If-Match missing or stale (FR-025), or the edit would leave a published course no longer
+            meeting the publish-readiness check (FR-018)
+    delete:
+      summary: Delete a draft course
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Caller is neither the owning instructor nor an administrator (FR-011)
+        "409":
+          description: The course is not a draft (FR-013)
+
+  /courses/{courseId}/full:
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: View a course's full detail, including lesson content (owner or administrator only)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Full detail, every lesson's content included (FR-024)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseFullView" }
+        "403":
+          description: Caller is neither the owning instructor nor an administrator
+
+  /courses/{courseId}/publish:
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      summary: Publish a draft or republish an archived course
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Now published; publishedAt refreshed (research.md R5)
+        "403":
+          description: Caller is neither the owning instructor nor an administrator
+        "422":
+          description: Not yet publish-ready; body names every missing part (FR-014)
+
+  /courses/{courseId}/archive:
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      summary: Archive a published course
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Now archived; no longer in the public catalog, but intact (FR-016)
+        "403":
+          description: Caller is neither the owning instructor nor an administrator
+
+  /courses/{courseId}/lessons:
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Add a lesson
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LessonWriteRequest" }
+      responses:
+        "201":
+          description: Lesson added at the end of the course's current order
+        "403":
+          description: Caller is neither the owning instructor nor an administrator
+
+  /courses/{courseId}/lessons/{lessonId}:
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: lessonId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    put:
+      summary: Edit a lesson (title, duration, or content)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LessonWriteRequest" }
+      responses:
+        "200":
+          description: Saved
+        "403":
+          description: Caller is neither the owning instructor nor an administrator
+    delete:
+      summary: Remove a lesson
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Removed; remaining lessons keep contiguous positions
+        "409":
+          description: Would leave a published course with zero lessons (FR-018)
+
+  /courses/{courseId}/lessons/reorder:
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      summary: Reorder a course's lessons
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lessonIdsInOrder]
+              properties:
+                lessonIdsInOrder:
+                  type: array
+                  items: { type: string, format: uuid }
+      responses:
+        "200":
+          description: New order applied
+        "422":
+          description: The list doesn't name exactly the course's current lessons, once each (spec.md Edge Cases)
+
+  /my/courses:
+    get:
+      summary: List the caller's own courses, in every status
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Every course owned by the caller, including drafts (FR-012)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CourseFullView" }
+
+  /categories:
+    get:
+      summary: List categories
+      responses:
+        "200":
+          description: Every category
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Category" }
+    post:
+      summary: Create a category (administrator only)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+      responses:
+        "201":
+          description: Created
+        "409":
+          description: Name already in use, case-insensitively (FR-020)
+
+  /categories/{categoryId}:
+    parameters:
+      - name: categoryId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      summary: Rename a category (administrator only)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          description: The category's current version (research.md R1; FR-025 covers category changes too)
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+      responses:
+        "200":
+          description: Renamed; every course in it keeps the (renamed) category
+        "409":
+          description: Name already in use, case-insensitively (FR-020), or If-Match missing/stale (FR-025)
+    delete:
+      summary: Delete a category (administrator only)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Deleted
+        "409":
+          description: At least one course still references it (FR-021), or If-Match missing/stale (FR-025)
+
+  /internal/courses/{courseId}:
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: >
+        Service-to-service lookup (FR-023). No gateway route exists for this path (research.md R6);
+        reached only by other backend services directly via lb://course-service.
+      responses:
+        "200":
+          description: Course summary, regardless of status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseSummary" }
+        "404":
+          description: No such course
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Documented for completeness; in practice the caller never reaches this service without the
+        gateway already having verified the token and replaced it with X-User-Id / X-User-Role headers.
+  schemas:
+    CoursePublicView:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        categoryId: { type: string, format: uuid }
+        level: { type: string, enum: [BEGINNER, INTERMEDIATE, ADVANCED] }
+        language: { type: string }
+        priceCents: { type: integer }
+        currency: { type: string, enum: [USD] }
+        instructorId: { type: string, format: uuid }
+        publishedAt: { type: string, format: date-time }
+        lessons:
+          type: array
+          description: Outline only — no lesson's content field
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              position: { type: integer }
+              durationMinutes: { type: integer }
+    CourseFullView:
+      allOf:
+        - $ref: "#/components/schemas/CoursePublicView"
+        - type: object
+          properties:
+            status: { type: string, enum: [DRAFT, PUBLISHED, ARCHIVED] }
+            version: { type: string, description: "Echoed as the ETag header too (research.md R1)" }
+            lessons:
+              type: array
+              items: { $ref: "#/components/schemas/Lesson" }
+    Lesson:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        position: { type: integer }
+        durationMinutes: { type: integer }
+        content: { type: string }
+    LessonWriteRequest:
+      type: object
+      required: [title, durationMinutes, content]
+      properties:
+        title: { type: string }
+        durationMinutes: { type: integer, minimum: 0 }
+        content: { type: string }
+    CourseCreateRequest:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        categoryId: { type: string, format: uuid }
+        level: { type: string, enum: [BEGINNER, INTERMEDIATE, ADVANCED] }
+        language: { type: string }
+        priceCents: { type: integer, minimum: 0 }
+    CourseEditRequest:
+      allOf:
+        - $ref: "#/components/schemas/CourseCreateRequest"
+    Category:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        version: { type: string, description: "Echoed as the ETag header too (research.md R1)" }
+    CourseSummary:
+      type: object
+      properties:
+        courseId: { type: string, format: uuid }
+        status: { type: string, enum: [DRAFT, PUBLISHED, ARCHIVED] }
+        priceCents: { type: integer }
+        currency: { type: string, enum: [USD] }
+        instructorId: { type: string, format: uuid }
+        lessonCount: { type: integer }
