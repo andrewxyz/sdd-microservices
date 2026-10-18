@@ -1,0 +1,133 @@
+openapi: 3.0.3
+info:
+  title: LearnHub payment-service
+  version: "1.0.0"
+  description: >
+    Reached through the gateway at /api/v1/checkouts and /api/v1/payments/**. Every path requires a
+    valid access token (research.md R7); ownership of a payment is enforced inside this service, not
+    by the gateway. Every error response uses the shared problem-details.schema.json shape
+    (specs/001-platform-foundation/contracts/).
+servers:
+  - url: /api/v1
+paths:
+  /checkouts:
+    post:
+      summary: Check out a published course (free or paid)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [courseId, idempotencyKey]
+              properties:
+                courseId: { type: string, format: uuid }
+                idempotencyKey:
+                  type: string
+                  description: Client-supplied; unique per caller (research.md R9)
+                paymentToken:
+                  type: string
+                  description: >
+                    Required when the course's price is greater than zero; selects the simulated
+                    provider's outcome (research.md R2). Ignored for a free course.
+      responses:
+        "201":
+          description: Checkout processed (payment resolved to SUCCEEDED, DECLINED or FAILED)
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/PaymentView" } }
+        "200":
+          description: >
+            The same idempotency key was already used for this exact request; the original result is
+            returned unchanged (FR-011)
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/PaymentView" } }
+        "403":
+          description: The caller is the course's own instructor (FR-003)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "404":
+          description: The course does not exist
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "409":
+          description: >
+            The course is not published; the caller already has a succeeded payment for this course
+            (FR-004); or the idempotency key was reused with different request content (FR-012)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "422":
+          description: A paid course's checkout was submitted without a paymentToken
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "503":
+          description: course-service could not be reached to confirm the course's price and status
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+  /payments:
+    get:
+      summary: List the caller's own payment history (FR-019)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0, minimum: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: A page of the caller's own payments, never anyone else's (FR-020)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/PaymentView" }
+                  page: { type: integer }
+                  size: { type: integer }
+                  totalItems: { type: integer }
+  /payments/{paymentId}:
+    get:
+      summary: Get the status of one of the caller's own payments (FR-017)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The payment, only if it belongs to the caller
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/PaymentView" } }
+        "404":
+          description: >
+            No such payment, or it belongs to someone else — identical response either way, so
+            existence of another user's payment is never revealed (FR-020)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    PaymentView:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        amountCents: { type: integer, minimum: 0 }
+        currency: { type: string, enum: [USD] }
+        status: { type: string, enum: [PENDING, SUCCEEDED, DECLINED, FAILED] }
+        failureReason: { type: string, nullable: true }
+        message:
+          type: string
+          description: >
+            Set to a note that enrollment will follow shortly when status is SUCCEEDED (FR-016);
+            otherwise omitted
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ProblemDetail:
+      $ref: "../../001-platform-foundation/contracts/problem-details.schema.json"
