@@ -8,6 +8,10 @@
 #   FAKE_DOCKER_DOWN=1   `docker info` fails, as if the container runtime were not running
 #   FAKE_OWN_PORTS       space-separated host ports this project's own containers already publish
 #   FAKE_DOCKER_LOG      file to append invocations to
+#
+# The long-running services a healthy platform reports; keep this in step with docker-compose.yml.
+FAKE_SERVICES="discovery-server config-server api-gateway echo-service postgres rabbitmq mailpit"
+
 set -u
 
 log() {
@@ -42,11 +46,28 @@ case "${1:-}" in
         echo "Docker Compose version v2.40.3"
         ;;
       ps)
-        log "compose ps"
-        # Emit one line per port this project is said to already own, in the format up.sh parses.
-        for port in ${FAKE_OWN_PORTS:-}; do
-          echo "0.0.0.0:${port}->${port}/tcp"
-        done
+        log "compose ps $*"
+        case " $* " in
+          *" -aq db-init "*)
+            # up.sh looks up db-init's container id next, to feed docker inspect.
+            echo "fake-db-init-container-id"
+            ;;
+          *"{{.Service}}"*|*"Health"*)
+            # The post-up health check (up.sh's --wait exit-code workaround, research R12): report
+            # every long-running service healthy, so a successful fake "up" reads as a healthy
+            # platform rather than failing the verification that follows it.
+            for service in $FAKE_SERVICES; do
+              printf '%s\trunning\thealthy\n' "$service"
+            done
+            ;;
+          *)
+            # Plain `ps` and the Publishers-format call: one line per port this project is said to
+            # already own, in the format up.sh parses for both.
+            for port in ${FAKE_OWN_PORTS:-}; do
+              echo "0.0.0.0:${port}->${port}/tcp"
+            done
+            ;;
+        esac
         ;;
       up)
         log "compose up $*"
@@ -56,6 +77,11 @@ case "${1:-}" in
         log "compose ${subcommand:-unknown}"
         ;;
     esac
+    ;;
+  inspect)
+    log "inspect $*"
+    # Only ever asked about the fake db-init container id; it "exited" cleanly.
+    echo "0"
     ;;
   *)
     log "${1:-}"

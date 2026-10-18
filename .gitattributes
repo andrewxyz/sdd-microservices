@@ -1,5 +1,10 @@
 # Shell scripts and container files must keep LF endings: CRLF breaks them inside Linux containers.
+# This includes extensionless scripts (e.g. scripts/tests/fakebin/docker), which *.sh does not match
+# and which a CRLF checkout on Windows silently breaks: the shebang becomes "#!/usr/bin/env bash\r",
+# and env reports "bash\r: No such file or directory" rather than anything that looks like a line-
+# ending problem.
 *.sh text eol=lf
+scripts/tests/fakebin/* text eol=lf
 backend/docker/** text eol=lf
 Dockerfile text eol=lf
 *.yml text eol=lf
