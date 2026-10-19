@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * (FR-024). The defaults come from research R8.
  */
 @ConfigurationProperties("platform.gateway.rate-limit")
-public class RateLimiterProperties {
+public class RateLimiterProperties implements RateLimitSettings {
 
     /**
      * Burst size per client address. 200 is high enough that the smoke checks, which make 100 calls

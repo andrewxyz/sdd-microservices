@@ -36,6 +36,8 @@
     <module>course-service</module>
     <module>payment-service</module>
     <module>enrollment-service</module>
+    <module>certificate-service</module>
+    <module>notification-service</module>
     <module>api-gateway</module>
     <module>infra-tests</module>
   </modules>

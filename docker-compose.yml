@@ -308,6 +308,87 @@ services:
       retries: 20
       start_period: 30s
 
+  # Owns certificates in its own database (constitution Principle II). Consumes course.completed and
+  # publishes certificate.issued via a transactional outbox (research.md R6, R7), so it needs rabbitmq
+  # healthy too.
+  certificate-service:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: certificate-service
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?SPRING_PROFILES_ACTIVE is required}
+      CONFIG_SERVER_URL: http://config-server:9888
+      CONFIG_USER: ${CONFIG_USER:?CONFIG_USER is required}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:?CONFIG_PASSWORD is required}
+      EUREKA_URL: http://${EUREKA_USER:?EUREKA_USER is required}:${EUREKA_PASSWORD:?EUREKA_PASSWORD is required}@discovery-server:9761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/certificate
+      SPRING_DATASOURCE_USERNAME: certificate
+      SPRING_DATASOURCE_PASSWORD: ${CERTIFICATE_DB_PASSWORD:?CERTIFICATE_DB_PASSWORD is required}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:?RABBITMQ_DEFAULT_USER is required}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:?RABBITMQ_DEFAULT_PASS is required}
+    ports:
+      - "9005:9005"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9005/actuator/health/readiness"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # Owns notification bookkeeping in its own database (constitution Principle II). Consumes
+  # enrollment.created and certificate.issued and sends mail through Mailpit (research.md R6, R7).
+  notification-service:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: notification-service
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?SPRING_PROFILES_ACTIVE is required}
+      CONFIG_SERVER_URL: http://config-server:9888
+      CONFIG_USER: ${CONFIG_USER:?CONFIG_USER is required}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:?CONFIG_PASSWORD is required}
+      EUREKA_URL: http://${EUREKA_USER:?EUREKA_USER is required}:${EUREKA_PASSWORD:?EUREKA_PASSWORD is required}@discovery-server:9761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notification
+      SPRING_DATASOURCE_USERNAME: notification
+      SPRING_DATASOURCE_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?NOTIFICATION_DB_PASSWORD is required}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:?RABBITMQ_DEFAULT_USER is required}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:?RABBITMQ_DEFAULT_PASS is required}
+    ports:
+      - "9007:9007"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9007/actuator/health/readiness"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
   # The only entry point for clients, including the future frontend (constitution Principle IV).
   api-gateway:
     build:

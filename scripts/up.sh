@@ -14,8 +14,8 @@ cd "$REPO_ROOT"
 ENV_FILE="${LEARNHUB_ENV_FILE:-$REPO_ROOT/.env}"
 WAIT_TIMEOUT="${LEARNHUB_WAIT_TIMEOUT:-300}"
 
-# Host port -> the component that needs it, from the constitution's port table. 9005-9007 are
-# still reserved for business services and nothing binds them yet.
+# Host port -> the component that needs it, from the constitution's port table. 9006 is still reserved
+# for review-service and nothing binds it yet.
 PORTS=(
   "9080:api-gateway"
   "9761:discovery-server"
@@ -24,6 +24,8 @@ PORTS=(
   "9002:course-service"
   "9003:enrollment-service"
   "9004:payment-service"
+  "9005:certificate-service"
+  "9007:notification-service"
   "9099:echo-service"
   "9432:postgres"
   "9672:rabbitmq"

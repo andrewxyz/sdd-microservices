@@ -2,8 +2,10 @@ package com.example.learnhub.course.application;
 
 import com.example.learnhub.course.api.CourseSummaryView;
 import com.example.learnhub.course.domain.Course;
+import com.example.learnhub.course.domain.Lesson;
 import com.example.learnhub.course.infrastructure.CourseRepository;
 import com.example.learnhub.course.infrastructure.LessonRepository;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class CourseLookupService {
     public CourseSummaryView summarize(UUID courseId) {
         Course course = courses.findById(courseId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No such course."));
-        return CourseSummaryView.of(course, lessons.countByCourseId(courseId));
+        List<Lesson> orderedLessons = lessons.findByCourseIdOrderByPosition(courseId);
+        return CourseSummaryView.of(course, orderedLessons.size(), orderedLessons);
     }
 }

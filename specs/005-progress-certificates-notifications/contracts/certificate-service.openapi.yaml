@@ -1,0 +1,77 @@
+openapi: 3.0.3
+info:
+  title: LearnHub certificate-service
+  version: "1.0.0"
+  description: >
+    Reached through the gateway at /api/v1/certificates/mine (protected) and
+    /api/v1/certificates/verify/{code} (public, stricter rate limit, research.md R8). Every error
+    response uses the shared problem-details.schema.json shape (specs/001-platform-foundation/contracts/).
+servers:
+  - url: /api/v1
+paths:
+  /certificates/mine:
+    get:
+      summary: List the caller's own certificates (FR-013)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0, minimum: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: A page of the caller's own certificates, never anyone else's (FR-014)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/CertificateView" }
+                  page: { type: integer }
+                  size: { type: integer }
+                  totalItems: { type: integer }
+  /certificates/verify/{code}:
+    get:
+      summary: Publicly check a certificate by its verification code (FR-015 to FR-018)
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The code is valid — course title and completion date only, nothing about the holder
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/VerificationView" } }
+        "404":
+          description: The code does not correspond to any certificate (reported as "not valid", not an error body beyond the standard 404 shape)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "429":
+          description: The stricter, route-specific rate limit for this public endpoint was exceeded
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    CertificateView:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        courseTitle: { type: string }
+        verificationCode: { type: string }
+        issuedAt: { type: string, format: date-time }
+    VerificationView:
+      type: object
+      properties:
+        valid: { type: boolean, enum: [true] }
+        courseTitle: { type: string }
+        issuedAt: { type: string, format: date-time }
+    ProblemDetail:
+      $ref: "../../001-platform-foundation/contracts/problem-details.schema.json"

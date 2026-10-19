@@ -1,0 +1,98 @@
+openapi: 3.0.3
+info:
+  title: LearnHub enrollment-service — lesson progress addendum (005-progress-certificates-notifications)
+  version: "1.0.0"
+  description: >
+    New endpoints added to enrollment-service by this feature; 004's existing contract for
+    /api/v1/enrollments and /api/v1/internal/enrollments/** is unchanged. All three paths here fall
+    under the gateway's existing protected enrollments route (research.md R9) — no new gateway route.
+servers:
+  - url: /api/v1
+paths:
+  /enrollments/{courseId}/lessons/{lessonId}/complete:
+    put:
+      summary: Mark a lesson of an enrolled course complete (idempotent)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: lessonId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Marked complete (or already was) — response is the resulting progress
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/ProgressView" } }
+        "403":
+          description: The caller is not enrolled in this course (FR-003)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "404":
+          description: The lesson does not belong to this course, or does not exist (FR-006)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "503":
+          description: course-service could not be reached to validate the lesson (fail-closed, research.md R1)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+    delete:
+      summary: Unmark a lesson (idempotent)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: lessonId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Unmarked (or already wasn't) — response is the resulting progress
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/ProgressView" } }
+        "403":
+          description: The caller is not enrolled in this course
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+  /enrollments/{courseId}/progress:
+    get:
+      summary: View the caller's own progress for an enrolled course (FR-007)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The caller's progress for this course
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/ProgressView" } }
+        "403":
+          description: The caller is not enrolled in this course
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "503":
+          description: course-service could not be reached to compute the total lesson count
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    ProgressView:
+      type: object
+      properties:
+        courseId: { type: string, format: uuid }
+        completedLessons: { type: integer, minimum: 0 }
+        totalLessons: { type: integer, minimum: 0 }
+        percentComplete: { type: number, minimum: 0, maximum: 100 }
+        courseCompletedAt: { type: string, format: date-time, nullable: true }
+    ProblemDetail:
+      $ref: "../../001-platform-foundation/contracts/problem-details.schema.json"

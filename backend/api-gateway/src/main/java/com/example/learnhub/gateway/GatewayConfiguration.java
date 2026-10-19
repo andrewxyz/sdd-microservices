@@ -8,6 +8,7 @@ import com.example.learnhub.gateway.ratelimit.ClientAddressResolver;
 import com.example.learnhub.gateway.ratelimit.RateLimitGlobalFilter;
 import com.example.learnhub.gateway.ratelimit.RateLimiterProperties;
 import com.example.learnhub.gateway.ratelimit.RemoteAddressClientResolver;
+import com.example.learnhub.gateway.ratelimit.StrictRateLimiterProperties;
 import com.example.learnhub.gateway.ratelimit.TokenBucketRateLimiter;
 import com.example.learnhub.gateway.security.JwtVerifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +20,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.Ordered;
 
@@ -27,7 +29,7 @@ import org.springframework.core.Ordered;
  * access, then the rate limiter.
  */
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(RateLimiterProperties.class)
+@EnableConfigurationProperties({RateLimiterProperties.class, StrictRateLimiterProperties.class})
 public class GatewayConfiguration {
 
     /** Access next: an unauthorised caller should not spend rate-limit tokens. */
@@ -36,9 +38,11 @@ public class GatewayConfiguration {
     private static final int RATE_LIMIT_ORDER = Ordered.HIGHEST_PRECEDENCE + 20;
 
     private final TokenBucketRateLimiter rateLimiter;
+    private final TokenBucketRateLimiter strictRateLimiter;
 
-    public GatewayConfiguration(RateLimiterProperties properties) {
+    public GatewayConfiguration(RateLimiterProperties properties, StrictRateLimiterProperties strictProperties) {
         this.rateLimiter = new TokenBucketRateLimiter(properties, Instant::now);
+        this.strictRateLimiter = new TokenBucketRateLimiter(strictProperties, Instant::now);
     }
 
     /**
@@ -66,14 +70,25 @@ public class GatewayConfiguration {
         return new RemoteAddressClientResolver();
     }
 
+    /**
+     * {@code @Primary} so the existing {@code @Autowired TokenBucketRateLimiter limiter} (no
+     * qualifier) in prior tests keeps resolving to the general bucket unambiguously now that a second
+     * bean of this type exists (research.md R8).
+     */
     @Bean
+    @Primary
     TokenBucketRateLimiter tokenBucketRateLimiter() {
         return rateLimiter;
     }
 
     @Bean
+    TokenBucketRateLimiter strictTokenBucketRateLimiter() {
+        return strictRateLimiter;
+    }
+
+    @Bean
     RateLimitGlobalFilter rateLimitGlobalFilter(ClientAddressResolver resolver) {
-        return new RateLimitGlobalFilter(rateLimiter, resolver, RATE_LIMIT_ORDER);
+        return new RateLimitGlobalFilter(rateLimiter, strictRateLimiter, resolver, RATE_LIMIT_ORDER);
     }
 
     @Bean
@@ -93,5 +108,6 @@ public class GatewayConfiguration {
     @EventListener(EnvironmentChangeEvent.class)
     void onConfigurationRefresh(EnvironmentChangeEvent event) {
         rateLimiter.reset();
+        strictRateLimiter.reset();
     }
 }

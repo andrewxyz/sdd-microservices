@@ -16,6 +16,8 @@ COPY api-gateway/pom.xml api-gateway/
 COPY infra-tests/pom.xml infra-tests/
 COPY payment-service/pom.xml payment-service/
 COPY enrollment-service/pom.xml enrollment-service/
+COPY certificate-service/pom.xml certificate-service/
+COPY notification-service/pom.xml notification-service/
 
 # Warm the dependency cache in its own layer, so editing source does not re-download the world.
 # The cache mount is shared across module builds, which is what keeps the cold build inside the

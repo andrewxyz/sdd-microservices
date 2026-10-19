@@ -1,0 +1,67 @@
+# The minimum a service declares itself: who it is, where to bootstrap its configuration from, and the
+# credentials to do so. Everything else (registry, probes, logging, retry) arrives from the config
+# server's shared defaults, same as every other service. Datasource and RabbitMQ credentials are
+# supplied directly as environment variables by docker-compose.yml.
+#
+# The Feign timeout/circuit-breaker settings below are code defaults (not secrets), so they live here
+# rather than in config-repo (research.md R5).
+
+spring:
+  application:
+    name: certificate-service
+  config:
+    import: "configserver:${CONFIG_SERVER_URL}"
+  cloud:
+    config:
+      username: ${CONFIG_USER}
+      password: ${CONFIG_PASSWORD}
+      fail-fast: true
+      retry:
+        max-attempts: 6
+        initial-interval: 1000
+        multiplier: 1.5
+        max-interval: 6000
+    openfeign:
+      circuitbreaker:
+        enabled: true
+        # Without this, Resilience4j names each breaker/timelimiter per Feign method signature rather
+        # than by the @FeignClient name, so the resilience4j.*.instances.course-service config below
+        # would silently never apply (004 research.md R4's own discovered gotcha).
+        group:
+          enabled: true
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  rabbitmq:
+    publisher-confirm-type: correlated
+
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 2000
+        read-timeout: 2000
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      course-service:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+  timelimiter:
+    instances:
+      course-service:
+        timeout-duration: 3s
+        # Without this, a timed-out call keeps running on its executor thread in the background,
+        # starving later calls under the default shared pool (004 research.md R4's own discovered
+        # gotcha).
+        cancel-running-future: true
+
+server:
+  port: 9005

@@ -3,6 +3,7 @@ package com.example.learnhub.enrollment;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 
 /**
  * Registration with the registry, central configuration, health probes and structured logging all
@@ -10,6 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan
+@EnableFeignClients
 public class EnrollmentServiceApplication {
 
     public static void main(String[] args) {

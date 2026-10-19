@@ -80,9 +80,9 @@ mapped into that range; the Spring services use the same port inside and outside
 | course-service | 9002 | 9002 |
 | enrollment-service | 9003 | 9003 |
 | payment-service | 9004 | 9004 |
-| certificate-service | 9005 | reserved, not yet built |
+| certificate-service | 9005 | 9005 |
 | review-service | 9006 | reserved, not yet built |
-| notification-service | 9007 | reserved, not yet built |
+| notification-service | 9007 | 9007 |
 | echo-service | 9099 | 9099 |
 | PostgreSQL | 9432 | 5432 |
 | RabbitMQ (AMQP) | 9672 | 5672 |
@@ -181,6 +181,32 @@ administrator, or a confirmed-enrolled student — and refuses with a temporary 
 itself, if enrollment status cannot be confirmed. See
 `specs/004-checkout-enrollment/contracts/` for the full endpoint contracts and
 `specs/004-checkout-enrollment/quickstart.md` for a curl walkthrough of the whole flow.
+
+## Progress, certificates, and notifications
+
+`enrollment-service` (still port 9003, now also behind the gateway at
+`PUT`/`DELETE /api/v1/enrollments/{courseId}/lessons/{lessonId}/complete` and
+`GET /api/v1/enrollments/{courseId}/progress`) lets an enrolled student mark or unmark a lesson complete
+and see completed/total lessons and a percentage; a non-enrolled caller is refused, and marking the same
+lesson twice changes nothing. Completing a course's last lesson flips the enrollment to completed exactly
+once, permanently — even under ten concurrent completions of its last few lessons, and even if lessons are
+later unmarked and remarked.
+
+`certificate-service` (port 9005, behind the gateway at `GET /api/v1/certificates/mine` and the public
+`GET /api/v1/certificates/verify/{code}`) consumes the resulting `course.completed` event and issues
+exactly one certificate per student per course, normally within a few seconds, carrying a 16-character
+verification code, the course title, and the completion date. A student can list their own certificates;
+anyone can check a certificate by its code and see whether it is valid, the course title, and the date —
+nothing about who holds it. The verification endpoint has its own, stricter rate limit, since it is
+public and its code is guessable at scale.
+
+`notification-service` (port 9007) consumes `enrollment.created` and `certificate.issued` and sends a
+plain-text email for each, captured locally by Mailpit (`http://localhost:9825`) and never delivered
+anywhere else. A redelivered event never sends a second email; a notification that keeps failing, or a
+message that cannot even be parsed, is retried three times and then set aside in a dead-letter queue
+rather than blocking the messages behind it. See
+`specs/005-progress-certificates-notifications/contracts/` for the full endpoint contracts and
+`specs/005-progress-certificates-notifications/quickstart.md` for a curl walkthrough of the whole flow.
 
 ## Building and testing
 

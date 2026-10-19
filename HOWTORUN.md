@@ -91,12 +91,15 @@ startup finishes. That's the registry doing its job, not a failure — wait a mo
 The platform now has the **platform foundation** (registry, config server, gateway, a placeholder
 echo service), **auth-service** (real accounts, login, refresh/logout, roles, and the gateway's real
 JWT enforcement at the entry point), **course-service** (the course catalog: browsing, authoring,
-publishing, categories, and a new lesson-content reading endpoint gated by enrollment), and the
+publishing, categories, and a new lesson-content reading endpoint gated by enrollment), the
 **checkout-and-enrollment pair**: **payment-service** (checkout, a simulated payment provider, payment
-history) and **enrollment-service** (consuming successful payments into enrollments, reliably). The
-remaining three business services (certificate, review, notification) each already have an **empty
-database and login** provisioned (step 3.18 below), ready for their own specs to fill in — but none of
-their code exists yet, so there's nothing to call for them.
+history) and **enrollment-service** (consuming successful payments into enrollments, reliably, plus
+lesson progress and one-time course completion), and the **progress-certificates-notifications trio**:
+**certificate-service** (automatic, exactly-once certificate issuance and public verification) and
+**notification-service** (enrollment and certificate emails, captured locally by Mailpit). The one
+remaining business service (review) already has an **empty database and login** provisioned (step 3.18
+below), ready for its own spec to fill in — but its code doesn't exist yet, so there's nothing to call
+for it.
 
 | Component | Host port | What it's for |
 |-----------|-----------|----------------|
@@ -105,11 +108,13 @@ their code exists yet, so there's nothing to call for them.
 | config-server | 9888 | Serves central settings from `backend/config-repo` |
 | **auth-service** | 9001 | Accounts, login, roles — reached through the gateway at `/api/v1/auth/**` |
 | **course-service** | 9002 | Courses, lessons, categories, lesson content — reached through the gateway at `/api/v1/courses/**`, `/api/v1/my/courses`, `/api/v1/categories/**` |
-| **enrollment-service** | 9003 | Enrollments — reached through the gateway at `/api/v1/enrollments` |
+| **enrollment-service** | 9003 | Enrollments, lesson progress, course completion — reached through the gateway at `/api/v1/enrollments/**` |
 | **payment-service** | 9004 | Checkout, payment history — reached through the gateway at `/api/v1/checkouts`, `/api/v1/payments/**` |
+| **certificate-service** | 9005 | Certificates — reached through the gateway at `/api/v1/certificates/mine` and the public `/api/v1/certificates/verify/{code}` |
+| **notification-service** | 9007 | Enrollment and certificate emails, captured by Mailpit — no gateway route, nothing to call directly |
 | echo-service | 9099 | Placeholder service (also reachable directly, for comparison) |
-| PostgreSQL | 9432 | One database per business service; `auth`, `course`, `enrollment` and `payment` have real tables now, the rest are still empty |
-| RabbitMQ (AMQP / management) | 9672 / 9673 | Message broker; carries `payment.succeeded` from payment-service to enrollment-service on the `learning.events` exchange |
+| PostgreSQL | 9432 | One database per business service; `auth`, `course`, `enrollment`, `payment`, `certificate` and `notification` have real tables now, `review` is still empty |
+| RabbitMQ (AMQP / management) | 9672 / 9673 | Message broker; carries `payment.succeeded`, `enrollment.created`, `course.completed` and `certificate.issued` on the `learning.events` exchange |
 | Mailpit (SMTP / web UI) | 9025 / 9825 | Catches outgoing mail locally; nothing leaves the machine |
 
 ## 3. Try it: curl walkthrough
@@ -483,12 +488,14 @@ docker compose exec postgres psql -U "$POSTGRES_USER" -d postgres -c '\l' \
   | grep -E 'auth|course|enrollment|payment|certificate|review|notification'
 ```
 
-Every service has its own database, owned by a role of the same name. `auth` and `course` now have
-real tables — check with:
+Every service has its own database, owned by a role of the same name. `auth`, `course`, `enrollment`,
+`payment`, `certificate` and `notification` now have real tables — check any of them with:
 
 ```bash
 docker compose exec postgres psql -U auth -d auth -c '\dt'
 docker compose exec postgres psql -U course -d course -c '\dt'
+docker compose exec postgres psql -U certificate -d certificate -c '\dt'
+docker compose exec postgres psql -U notification -d notification -c '\dt'
 ```
 
 ```
@@ -510,8 +517,7 @@ docker compose exec postgres psql -U course -d course -c '\dt'
  public | lessons               | table | course
 ```
 
-The other five (`enrollment`, `payment`, `certificate`, `review`, `notification`) are still empty,
-waiting for their own specs.
+Only `review` is still empty, waiting for its own spec.
 
 ### 3.19 Send and view a test email
 
@@ -634,6 +640,107 @@ curl -s http://localhost:9080/api/v1/enrollments -H "Authorization: Bearer $STUD
 See `specs/004-checkout-enrollment/quickstart.md` for the complete walkthrough, including the
 instructor-self-checkout and already-enrolled refusals.
 
+### 3.27 Mark a lesson complete and watch progress change (User Story 1)
+
+Needs the free course and enrollment from §3.21 (`$COURSE_ID`, `$STUDENT_ACCESS`). Find the lesson id
+first — the student-facing `/content` endpoint doesn't include it, so fetch it from the instructor's own
+`/full` view:
+
+```bash
+LESSON_ID=$(curl -s "http://localhost:9080/api/v1/courses/$COURSE_ID/full" -H "Authorization: Bearer $INSTR_ACCESS" \
+  | grep -o '"id":"[^"]*"' | sed -n '2p' | cut -d'"' -f4)
+
+curl -s -X PUT "http://localhost:9080/api/v1/enrollments/$COURSE_ID/lessons/$LESSON_ID/complete" \
+  -H "Authorization: Bearer $STUDENT_ACCESS"
+```
+
+```json
+{"courseId":"...","completedLessons":1,"totalLessons":1,"percentComplete":100.0,"courseCompletedAt":"..."}
+```
+
+The course from §3.9 has exactly one lesson, so completing it also completes the course in the same call
+— `courseCompletedAt` is set immediately (User Story 2). Marking the same lesson again changes nothing:
+
+```bash
+curl -s -X PUT "http://localhost:9080/api/v1/enrollments/$COURSE_ID/lessons/$LESSON_ID/complete" \
+  -H "Authorization: Bearer $STUDENT_ACCESS"
+# Identical response — marking twice is a no-op (FR-004).
+
+curl -s -i -X PUT "http://localhost:9080/api/v1/enrollments/$COURSE_ID/lessons/$(uuidgen)/complete" \
+  -H "Authorization: Bearer $STUDENT_ACCESS"
+# 404: that lesson id does not belong to this course (FR-006).
+```
+
+### 3.28 Unmark and remark — completion never resets (User Story 2)
+
+```bash
+curl -s -X DELETE "http://localhost:9080/api/v1/enrollments/$COURSE_ID/lessons/$LESSON_ID/complete" \
+  -H "Authorization: Bearer $STUDENT_ACCESS"
+# completedLessons back to 0, but courseCompletedAt is still set — completion is sticky (FR-009).
+
+curl -s -X PUT "http://localhost:9080/api/v1/enrollments/$COURSE_ID/lessons/$LESSON_ID/complete" \
+  -H "Authorization: Bearer $STUDENT_ACCESS"
+# courseCompletedAt is identical to before — never a second completion.
+```
+
+### 3.29 Exactly one certificate appears, and anyone can verify it (User Stories 3 and 4)
+
+```bash
+sleep 10
+curl -s "http://localhost:9080/api/v1/certificates/mine" -H "Authorization: Bearer $STUDENT_ACCESS"
+```
+
+```json
+{"items":[{"id":"...","courseId":"...","courseTitle":"Intro to LearnHub","verificationCode":"...","issuedAt":"..."}],"page":0,"size":20,"totalItems":1}
+```
+
+```bash
+CODE=$(curl -s "http://localhost:9080/api/v1/certificates/mine" -H "Authorization: Bearer $STUDENT_ACCESS" \
+  | grep -o '"verificationCode":"[^"]*"' | cut -d'"' -f4)
+
+curl -s "http://localhost:9080/api/v1/certificates/verify/$CODE"
+# 200: valid true, the course title, the issued date — no userId, no email, nothing about the holder.
+
+curl -s -i "http://localhost:9080/api/v1/certificates/verify/NOTAREALCODE0000"
+# 404: a clear "not valid" result, not a 500 (FR-018).
+```
+
+### 3.30 Two emails are visible in the local catcher (User Story 6)
+
+```bash
+curl -s http://localhost:9825/api/v1/messages | grep -o '"Subject":"[^"]*"'
+# Two distinct subjects for $STUDENT_ACCESS's address: one for enrollment, one for the certificate.
+```
+
+### 3.31 Trigger the certificate verification endpoint's own, stricter rate limit
+
+```bash
+for i in $(seq 1 15); do
+  curl -s -o /dev/null -w '%{http_code}\n' "http://localhost:9080/api/v1/certificates/verify/$CODE"
+done | sort | uniq -c
+# A handful of 200s, then 429s — this endpoint's bucket (capacity 10, refill 2/s) is much smaller than
+# the platform's general one (§3.15), since it is public and its code is guessable at scale.
+```
+
+### 3.32 Reliability: stop certificate-service mid-completion (User Story 7)
+
+Needs a second free, single-lesson course the student is enrolled in but hasn't completed yet.
+
+```bash
+docker compose stop certificate-service
+curl -s -X PUT "http://localhost:9080/api/v1/enrollments/$COURSE2_ID/lessons/$COURSE2_LESSON_ID/complete" \
+  -H "Authorization: Bearer $STUDENT_ACCESS"
+# Still 200, courseCompletedAt set — certificate-service being down never blocks progress or completion.
+
+docker compose start certificate-service
+sleep 15
+curl -s "http://localhost:9080/api/v1/certificates/mine" -H "Authorization: Bearer $STUDENT_ACCESS" \
+  | grep -o "\"courseId\":\"$COURSE2_ID\"" | wc -l
+# Exactly 1, created once certificate-service came back (FR-025).
+```
+
+See `specs/005-progress-certificates-notifications/quickstart.md` for the complete walkthrough.
+
 ## 4. Automated tests
 
 ### 4.1 Unit and integration tests (needs Docker, for Testcontainers)
@@ -643,9 +750,10 @@ mvn -f backend/pom.xml verify
 ```
 
 This builds and tests every module (shared libraries, registry, config server, echo service,
-**auth-service**, **course-service**, **payment-service**, **enrollment-service**, gateway, and the
-infrastructure checks) — around 340 tests in total. `verify` (not `test`) is needed because several
-tests spin up real PostgreSQL and RabbitMQ containers via Testcontainers.
+**auth-service**, **course-service**, **payment-service**, **enrollment-service**, **certificate-service**,
+**notification-service**, gateway, and the infrastructure checks) — around 390 tests in total. `verify`
+(not `test`) is needed because several tests spin up real PostgreSQL, RabbitMQ and Mailpit containers via
+Testcontainers.
 
 To run just one module, e.g. the gateway:
 
@@ -707,6 +815,10 @@ docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:stable -S warning \
 | A checkout returns `409` "already enrolled" | A successful payment for that course already exists for this user | Expected — a user cannot pay for the same course twice |
 | `GET .../courses/{id}/content` returns `503` | enrollment-service could not be reached to confirm enrollment status | Check `docker compose ps enrollment-service`; the request is safe to retry once it recovers |
 | An enrollment doesn't appear a few seconds after a successful checkout | Normal — enrollment is created asynchronously, usually within 5 seconds | Wait and re-check `GET /api/v1/enrollments`; if it never appears, check `docker compose logs enrollment-service` and the `enrollment-service.payment-succeeded.dlq` queue in the RabbitMQ management UI (<http://localhost:9673>) |
+| Marking a lesson complete returns `404` | The lesson id doesn't belong to that course — check the id against `GET /api/v1/courses/{id}/full` (instructor/admin) or `/content` (enrolled student) | Use a lesson id actually returned for that course; a typo'd or foreign lesson id is always refused, never silently accepted |
+| `GET /api/v1/certificates/verify/{code}` returns `429` quickly, well before the platform's general rate limit would trip | Expected — this public, guessable-code endpoint has its own, much stricter bucket (capacity 10, refill 2/s, research.md R8), independent of the general one | Wait a few seconds for the bucket to refill, or use a real certificate's code from `GET /api/v1/certificates/mine` instead of guessing |
+| A certificate doesn't appear a few seconds after a course completes | Normal — certificate issuance is asynchronous, usually within 10 seconds | Wait and re-check `GET /api/v1/certificates/mine`; if it never appears, check `docker compose logs certificate-service` and the `certificate.q.dlq` queue in the RabbitMQ management UI |
+| No enrollment or certificate email appears in Mailpit | Normal if sent moments ago — notification processing is asynchronous | Wait a few seconds and recheck <http://localhost:9825>; if it never appears, check `docker compose logs notification-service` and the `notification.q.dlq` queue |
 
 ## 6. See also
 
@@ -726,3 +838,8 @@ docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:stable -S warning \
   [contracts/](specs/004-checkout-enrollment/contracts/) and
   [checklists/success-criteria.md](specs/004-checkout-enrollment/checklists/success-criteria.md) — the
   checkout-and-enrollment feature's own validation guide, endpoint contracts, and measured results
+- [specs/005-progress-certificates-notifications/quickstart.md](specs/005-progress-certificates-notifications/quickstart.md),
+  [contracts/](specs/005-progress-certificates-notifications/contracts/) and
+  [checklists/success-criteria.md](specs/005-progress-certificates-notifications/checklists/success-criteria.md)
+  — the progress, certificates and notifications feature's own validation guide, endpoint contracts, and
+  measured results
