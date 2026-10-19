@@ -1,8 +1,46 @@
+<!--
+Sync Impact Report (temporary; remove before committing the amended constitution)
+
+Version change: 1.1.0 → 1.2.0
+Bump rationale: MINOR. Three principles added and several sections materially expanded. No
+principle was removed, and no existing rule was redefined in a backward-incompatible way.
+
+Modified principles:
+- I. Monorepo Layout and Independent Deployability → unchanged title; `frontend/` is now defined
+  as its own application root with its own package.json instead of an empty placeholder
+- X. Simplicity → unchanged title; Vitest and Testing Library added to the approved
+  test-scope-only libraries alongside WireMock
+
+Added sections:
+- XI. Frontend Stack and Conventions
+- XII. Frontend Session and Security
+- XIII. Frontend-Backend Boundary
+
+Removed sections: none
+
+Other updates:
+- Preamble: the frontend is no longer described as "later"; its rules now live in this document
+- Technology Stack and Port Map: the "Frontend (future)" placeholder is replaced with the decided
+  stack; test tooling is split into backend and frontend; the frontend host port is fixed at 9100
+  (internal 80, nginx) in place of "9xxx (TBD)"
+- Development Workflow: specs 001-005 recorded complete, review-service recorded as deferred, the
+  student web app named as the next spec, instructor/admin/review UI deferred
+
+Templates reviewed:
+- .specify/templates/plan-template.md - no change needed (its Constitution Check is generic)
+- .specify/templates/spec-template.md - no change needed
+- .specify/templates/tasks-template.md - no change needed
+- .specify/templates/checklist-template.md - no change needed
+
+Follow-up TODOs (deferred code changes, out of scope for this command):
+- scripts/up.sh: the PORTS list does not yet include "9100:frontend"; add it with the frontend spec
+- docker-compose.yml: no frontend service yet; add it with the frontend spec
+-->
+
 # LearnHub Constitution
 
 LearnHub is an online learning platform built as a monorepo: a Spring Cloud microservices backend
-now, and a React frontend later. This constitution governs both; frontend-specific detail is added
-by amendment when the first frontend spec is written.
+and a React frontend. This constitution governs both.
 
 ## Core Principles
 
@@ -16,8 +54,10 @@ The repository root is `sdd-microservices` and MUST be organised as follows:
   build with its parent POM at `backend/pom.xml`. The shared libraries (`shared-events`,
   `platform-common`), the `config-repo` folder and the Docker build files MUST live inside
   `backend/`.
-- `frontend/` will hold the React app. It is empty until a frontend spec builds it; a `.gitkeep`
-  placeholder MAY exist while it has no other content.
+- `frontend/` holds the React app and is its own application root, with its own `package.json`,
+  its own lockfile and its own build. It MUST NOT be a Maven module and MUST NOT appear in
+  `backend/pom.xml`. A `.gitkeep` placeholder MAY exist until the first frontend spec creates the
+  app.
 - The repo root holds the Spec Kit folders (`.specify`, `specs`), the single `docker-compose.yml`,
   `.env.example`, the README, CI configuration, `scripts/` (repo-level helper scripts such as the
   one-command startup script, smoke tests and script tests), and the repo hygiene files
@@ -53,7 +93,7 @@ The backend consists of three infrastructure services (`discovery-server`, `conf
 
 ### IV. Gateway as the Only Entry Point
 
-The `api-gateway` is the only entry point for clients, including the future frontend. It MUST:
+The `api-gateway` is the only entry point for clients, including the frontend. It MUST:
 
 - validate JWTs, add a correlation ID to every request, apply CORS and apply rate limits;
 - pass the authenticated user identity to services as HTTP headers;
@@ -118,8 +158,48 @@ OpenAPI so the frontend can rely on it. The frontend MUST NOT call a service dir
 ### X. Simplicity
 
 The simplest design that meets the spec MUST be chosen. No extra service, library or technology
-may be introduced without amending this constitution. The only approved test-scope-only library
-beyond JUnit 5 and Testcontainers is WireMock, used to stub HTTP upstreams in gateway tests.
+may be introduced without amending this constitution. The approved test-scope-only libraries beyond
+JUnit 5 and Testcontainers are WireMock (stubbing HTTP upstreams in backend tests) and, on the
+frontend, Vitest and Testing Library.
+
+### XI. Frontend Stack and Conventions
+
+- The frontend MUST be a React 19 single-page app, written in TypeScript with `strict` mode
+  enabled, built with Vite and routed with React Router.
+- Styling MUST be plain CSS. A UI component framework MUST NOT be added.
+- A state-management library MUST NOT be added. React's own state and context, plus the router's
+  own data APIs, are sufficient for the screens in scope.
+- Every new runtime dependency MUST carry a one-line justification in the plan that introduces it.
+  A dependency that only saves a small amount of code MUST be rejected.
+- Frontend tests MUST use Vitest with Testing Library, and MUST cover logic — the API client,
+  session handling and checkout above all — rather than rendered output. Snapshot tests MUST NOT be
+  the primary assertion for any behaviour.
+- The backend smoke tests remain the platform's integration gate. Frontend unit and component tests
+  are additional, and a green frontend test run alone MUST NOT be treated as integration evidence.
+
+### XII. Frontend Session and Security
+
+- The access token MUST be held in memory only. The refresh token MUST be held in `sessionStorage`.
+  Neither token may be written to `localStorage`, to a script-readable cookie, or to a URL.
+- Text received from the server MUST be rendered as text. `dangerouslySetInnerHTML`, or any
+  equivalent that turns server-provided content into markup, MUST NOT be used.
+- Token refresh MUST be single-flight: concurrent requests that meet a 401 MUST await one shared
+  refresh call. The backend rotates refresh tokens and treats reuse of a spent one as theft by
+  revoking the whole session, so a second concurrent refresh would log the user out.
+- Every error shown to a user MUST include the `correlationId` from the problem-details response as
+  a reference code, so a user's report can be traced to the backend logs.
+
+### XIII. Frontend-Backend Boundary
+
+- The frontend MUST reach the backend only through the gateway, and only through the same-origin
+  path prefix `/api/`. An absolute URL to the gateway or to any service MUST NOT appear in frontend
+  code.
+- Both the Vite dev server and the production container MUST proxy `/api/` to the gateway. Because
+  every call is therefore same-origin, the frontend MUST NOT depend on CORS, and no browser origin
+  needs to be added to the gateway's CORS configuration for it.
+- Frontend API types MUST be generated from the backend contract OpenAPI files under
+  `specs/*/contracts/`, not hand-written, so that a contract change surfaces as a type error rather
+  than a runtime surprise.
 
 ## Technology Stack and Port Map
 
@@ -127,19 +207,20 @@ beyond JUnit 5 and Testcontainers is WireMock, used to stub HTTP upstreams in ga
 RabbitMQ 4.3; Mailpit (local email only). Spring Cloud components: Eureka, Config Server, Gateway,
 OpenFeign, LoadBalancer, Resilience4j.
 
-**Test tooling**: JUnit 5 and Testcontainers (PostgreSQL, RabbitMQ), plus WireMock as a
-test-scope-only library for stubbing HTTP upstreams in gateway tests. These are the only test tools
-named in this constitution; adding another requires an amendment.
+**Frontend**: React 19; TypeScript in strict mode; Vite; React Router; plain CSS. No UI component
+framework and no state-management library. Served in production by nginx inside the frontend
+container.
+
+**Test tooling**: backend — JUnit 5 and Testcontainers (PostgreSQL, RabbitMQ), plus WireMock as a
+test-scope-only library for stubbing HTTP upstreams. Frontend — Vitest and Testing Library. These
+are the only test tools named in this constitution; adding another requires an amendment.
 
 **Accepted risk**: Spring Boot 3.5.15 and Spring Cloud 2025.0.3 are the final open-source releases
 of their lines. A later spec MAY upgrade to Spring Boot 4 with Spring Cloud 2025.1.x.
 
-**Frontend (future)**: React. Language, build tool, state management and testing stack are
-deliberately undecided and MUST be set by a later amendment before the first frontend spec. The
-gateway-only and OpenAPI-contract rules in Principle IV already apply.
-
 **Port map**: All host ports are in the 9xxx range. Third-party images keep their internal ports,
-and containers talk to each other on internal ports only.
+and containers talk to each other on internal ports only. The port check in `scripts/up.sh` MUST
+cover every host port in this table.
 
 | Component | Host port | Notes |
 |-----------|-----------|-------|
@@ -151,23 +232,28 @@ and containers talk to each other on internal ports only.
 | enrollment-service | 9003 | |
 | payment-service | 9004 | |
 | certificate-service | 9005 | |
-| review-service | 9006 | |
+| review-service | 9006 | Deferred, not started |
 | notification-service | 9007 | |
 | echo-service | 9099 | Platform verification service |
+| frontend | 9100 | Internal 80 (nginx); the Vite dev server also uses 9100 |
 | PostgreSQL | 9432 | Internal 5432 |
 | RabbitMQ AMQP | 9672 | Internal 5672 |
 | RabbitMQ management | 9673 | Internal 15672 |
 | Mailpit SMTP | 9025 | Internal 1025 |
 | Mailpit web UI | 9825 | Internal 8025 |
-| frontend | 9xxx (TBD) | Assigned in the frontend spec |
 
 ## Development Workflow
 
 - One `docker-compose.yml` at the repo root MUST start the whole platform, with health checks and
   startup order (discovery and config servers first).
-- Backend specs MUST be built in this order: platform foundation, gateway routing, auth, course,
-  payment and enrollment, certificate and notification, review, then resilience and dead-letter
-  handling. Frontend specs start only once the backend foundation and auth are stable.
+- Specs 001 through 005 are complete: platform foundation, user auth, course catalog, checkout and
+  enrollment, and progress with certificates and notifications.
+- `review-service` is deferred and MUST NOT be started until the student web app ships. Its port
+  (9006) stays reserved.
+- The next spec is the student web app: the frontend a student needs to browse, enrol, learn, track
+  progress and collect certificates.
+- Instructor screens, administrator screens and the review UI come later, if at all. They MUST NOT
+  be folded into the student web app spec.
 - Each spec MUST go through specify, clarify, plan, tasks and implement on its own branch.
 - Every plan MUST include a Constitution Check. Any deviation from this constitution MUST be
   recorded in the plan with a written justification.
@@ -182,4 +268,4 @@ wording. Adding a technology, service or the frontend stack is a MINOR amendment
 plan review and pull request MUST verify compliance with this constitution, and unjustified
 complexity MUST be rejected.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-17
+**Version**: 1.2.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-19

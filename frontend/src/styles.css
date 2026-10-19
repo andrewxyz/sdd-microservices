@@ -1,0 +1,14 @@
+/* LearnHub student web app — the one stylesheet (constitution XI: plain CSS, no UI framework). */
+
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}

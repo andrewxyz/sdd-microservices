@@ -751,7 +751,7 @@ mvn -f backend/pom.xml verify
 
 This builds and tests every module (shared libraries, registry, config server, echo service,
 **auth-service**, **course-service**, **payment-service**, **enrollment-service**, **certificate-service**,
-**notification-service**, gateway, and the infrastructure checks) — around 390 tests in total. `verify`
+**notification-service**, gateway, and the infrastructure checks) — 359 tests in total. `verify`
 (not `test`) is needed because several tests spin up real PostgreSQL, RabbitMQ and Mailpit containers via
 Testcontainers.
 
