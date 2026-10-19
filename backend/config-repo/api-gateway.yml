@@ -153,12 +153,40 @@ spring:
               predicates:
                 - Path=/api/v1/payments/**
 
-            # A user's own enrollments (FR-018). Protected; scoped to the caller inside enrollment-service.
+            # A user's own enrollments (FR-018), plus (005-progress-certificates-notifications) lesson
+            # progress and completion under the same caller-scoped enrollment: PUT/DELETE
+            # .../lessons/{lessonId}/complete and GET .../progress. Widened from an exact match to a
+            # catch-all so those new sub-paths are actually covered — research.md R9's "falls under the
+            # existing route" only holds once this predicate is a prefix, not an exact path. Protected;
+            # ownership/enrollment scoping enforced inside enrollment-service.
             - id: enrollments
               uri: lb://enrollment-service
               order: 18
               predicates:
-                - Path=/api/v1/enrollments
+                # AntPathMatcher's ** also matches the bare prefix itself, so this still covers the
+                # original GET /api/v1/enrollments list as well as the new sub-paths.
+                - Path=/api/v1/enrollments/**
+
+            # 005-progress-certificates-notifications: a student's own certificates (FR-013).
+            - id: certificates-mine
+              uri: lb://certificate-service
+              order: 19
+              predicates:
+                - Path=/api/v1/certificates/mine
+                - Method=GET
+
+            # 005-progress-certificates-notifications: public certificate verification (FR-015 to
+            # FR-018), with a stricter, route-specific rate limit (research.md R8) since this is a
+            # public, unauthenticated, guessable-code endpoint.
+            - id: certificates-verify
+              uri: lb://certificate-service
+              order: 20
+              predicates:
+                - Path=/api/v1/certificates/verify/**
+                - Method=GET
+              metadata:
+                public: true
+                rate-limit: strict
 
   # Needed for the correlation ID to survive across reactive operators and reach log lines.
   reactor:
@@ -171,4 +199,11 @@ platform:
       # concurrent burst of 400 trips it.
       capacity: 200
       refill-per-second: 100
+      idle-eviction: PT10M
+    # 005-progress-certificates-notifications research.md R8: a stricter, route-scoped bucket for
+    # /api/v1/certificates/verify/** — a public, guessable-code endpoint, independent of the general
+    # bucket above.
+    rate-limit-strict:
+      capacity: 10
+      refill-per-second: 2
       idle-eviction: PT10M

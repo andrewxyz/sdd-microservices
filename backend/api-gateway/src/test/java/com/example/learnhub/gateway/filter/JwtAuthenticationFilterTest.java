@@ -165,10 +165,15 @@ class JwtAuthenticationFilterTest {
     @DisplayName("a token signed with a different secret (tampered) is refused with 401")
     void tamperedTokenIsUnauthorized() {
         String foreignToken = token(UUID.randomUUID().toString(), "STUDENT", Instant.now().plusSeconds(900));
-        // Re-sign is impossible without the real secret, so simulate tampering by flipping a payload
-        // character, which breaks the signature the same way an attacker's edit would.
-        String tampered = foreignToken.substring(0, foreignToken.length() - 1)
-                + (foreignToken.charAt(foreignToken.length() - 1) == 'A' ? 'B' : 'A');
+        // Re-sign is impossible without the real secret, so simulate tampering by flipping a character
+        // in the payload segment, which breaks the signature the same way an attacker's edit would.
+        // Deliberately not the token's very last character: that falls in the base64url signature's
+        // final group, where some bits are unused padding a decoder may ignore, making a flip there
+        // flaky rather than reliably invalid.
+        int payloadEnd = foreignToken.lastIndexOf('.');
+        char flipped = foreignToken.charAt(payloadEnd - 1) == 'A' ? 'B' : 'A';
+        String tampered = foreignToken.substring(0, payloadEnd - 1) + flipped
+                + foreignToken.substring(payloadEnd);
         ServerWebExchange exchange = exchangeForRoute(routeWithMetadata(Map.of()), "Bearer " + tampered);
 
         assertThatThrownBy(() -> filter.filter(exchange, ex -> Mono.empty()).block())

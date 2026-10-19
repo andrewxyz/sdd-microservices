@@ -31,6 +31,15 @@ public class Enrollment {
     @Column(name = "source_payment_id", nullable = false, updatable = false)
     private UUID sourcePaymentId;
 
+    /**
+     * specs/005-progress-certificates-notifications: null until every lesson of the course is complete;
+     * set at most once, permanently (FR-008, FR-009). Never set directly — only via
+     * {@link com.example.learnhub.enrollment.infrastructure.EnrollmentRepository}'s conditional update
+     * (research.md R1), so a stray {@code save()} can never silently overwrite it.
+     */
+    @Column(name = "completed_at")
+    private Instant completedAt;
+
     protected Enrollment() {
         // JPA
     }
@@ -61,5 +70,9 @@ public class Enrollment {
 
     public UUID getSourcePaymentId() {
         return sourcePaymentId;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
     }
 }

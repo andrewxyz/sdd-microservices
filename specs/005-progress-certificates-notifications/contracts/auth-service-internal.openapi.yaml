@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info:
+  title: LearnHub auth-service — internal lookup (005-progress-certificates-notifications)
+  version: "1.0.0"
+  description: >
+    auth-service's first service-to-service surface. No gateway route reaches this path (research.md
+    R4, R9); consumed directly via lb://auth-service by notification-service only. Returns the minimum
+    necessary disclosure: no password hash, no role, no timestamps.
+servers:
+  - url: /api/v1
+paths:
+  /internal/accounts/{accountId}:
+    get:
+      summary: Service-to-service account email lookup (no gateway route; research.md R4)
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The account's id and email
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/AccountSummaryView" } }
+        "404":
+          description: No such account
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+components:
+  schemas:
+    AccountSummaryView:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+    ProblemDetail:
+      $ref: "../../001-platform-foundation/contracts/problem-details.schema.json"

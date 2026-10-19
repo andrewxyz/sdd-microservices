@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.learnhub.enrollment.domain.Enrollment;
 import com.example.learnhub.enrollment.infrastructure.EnrollmentRepository;
+import com.example.learnhub.enrollment.infrastructure.OutboxEventRepository;
 import com.example.learnhub.enrollment.support.AbstractEnrollmentServiceIT;
 import com.example.learnhub.events.EventEnvelope;
 import com.example.learnhub.events.LearningEvents;
@@ -25,6 +26,9 @@ class PaymentSucceededConsumerIT extends AbstractEnrollmentServiceIT {
 
     @Autowired
     private EnrollmentRepository enrollments;
+
+    @Autowired
+    private OutboxEventRepository outboxEvents;
 
     private static EventEnvelope paymentSucceeded(UUID paymentId, UUID userId, UUID courseId) {
         ObjectMapper mapper = new ObjectMapper();
@@ -54,6 +58,13 @@ class PaymentSucceededConsumerIT extends AbstractEnrollmentServiceIT {
         });
 
         assertThat(enrollments.existsByUserIdAndCourseId(userId, courseId)).isTrue();
+
+        Enrollment enrollment = enrollments.findByUserIdAndCourseId(userId, courseId).orElseThrow();
+        long enrollmentCreatedOutboxRows = outboxEvents.findAll().stream()
+                .filter(e -> e.getEnrollmentId().equals(enrollment.getId())
+                        && e.getEventType().equals(LearningEvents.ENROLLMENT_CREATED))
+                .count();
+        assertThat(enrollmentCreatedOutboxRows).isEqualTo(1);
     }
 
     @Test

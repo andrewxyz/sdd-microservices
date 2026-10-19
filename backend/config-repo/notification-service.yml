@@ -1,0 +1,16 @@
+# Settings for the notification service.
+#
+# The database and RabbitMQ credentials are deployment secrets supplied as environment variables
+# directly, the same way every other service's are. SMTP host/port are not secrets (Mailpit needs no
+# login) so they live here, refreshable without a rebuild.
+
+spring:
+  mail:
+    host: mailpit
+    port: 1025
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false

@@ -246,4 +246,62 @@ class RealGatewayConfigTest {
         assertThat(routes()).extracting(route -> route.get("id"))
                 .contains("echo-public", "echo");
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("certificates-mine is protected; certificates-verify is public with the stricter rate limit (specs/005-progress-certificates-notifications research.md R8, R9)")
+    void certificateRoutes() {
+        Map<String, Object> mine = routeById("certificates-mine");
+        Map<String, Object> verify = routeById("certificates-verify");
+
+        assertThat(mine.get("uri")).isEqualTo("lb://certificate-service");
+        assertThat(mine.get("metadata"))
+                .as("certificates-mine must not be public")
+                .satisfiesAnyOf(
+                        metadata -> assertThat(metadata).isNull(),
+                        metadata -> assertThat(((Map<String, Object>) metadata).get("public")).isNotEqualTo(true));
+
+        assertThat(verify.get("uri")).isEqualTo("lb://certificate-service");
+        Map<String, Object> verifyMetadata = (Map<String, Object>) verify.get("metadata");
+        assertThat(verifyMetadata).as("certificates-verify must declare metadata").isNotNull();
+        assertThat(verifyMetadata.get("public")).isEqualTo(true);
+        assertThat(verifyMetadata.get("rate-limit")).isEqualTo("strict");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("the enrollments route covers the new progress/completion sub-paths, not just the exact list path (research.md R9 implementation finding)")
+    void enrollmentsRouteCoversProgressSubPaths() {
+        Map<String, Object> route = routeById("enrollments");
+
+        assertThat((List<String>) route.get("predicates"))
+                .as("the enrollments route must be a catch-all, not an exact-path match, or progress/completion requests 404 before reaching enrollment-service")
+                .containsExactly("Path=/api/v1/enrollments/**");
+    }
+
+    @Test
+    @DisplayName("stricter rate limit settings are present")
+    void strictRateLimitPresent() {
+        Map<String, Object> rateLimitStrict = path(root, "platform", "gateway", "rate-limit-strict");
+        assertThat(rateLimitStrict.get("capacity")).isNotNull();
+        assertThat(rateLimitStrict.get("refill-per-second")).isNotNull();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("no route targets /api/v1/internal/** on any service — the brief's explicit assertion (specs/005-progress-certificates-notifications)")
+    void noRouteEverTargetsInternalPaths() {
+        for (Map<String, Object> route : routes()) {
+            List<String> predicates = (List<String>) route.get("predicates");
+            if (predicates == null) {
+                continue;
+            }
+            for (String predicate : predicates) {
+                assertThat(predicate)
+                        .as("route '%s' predicate '%s' must never target /api/v1/internal/**",
+                                route.get("id"), predicate)
+                        .doesNotContain("/internal/");
+            }
+        }
+    }
 }

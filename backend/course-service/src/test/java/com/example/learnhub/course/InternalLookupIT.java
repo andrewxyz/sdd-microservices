@@ -31,12 +31,18 @@ class InternalLookupIT extends AbstractCourseServiceIT {
     @Transactional
     Course seedDraftWithTwoLessons() {
         Course course = new Course(UUID.randomUUID(), UUID.randomUUID(), Instant.now());
+        course.setTitle("Internal Lookup Course");
         course.setPriceCents(1200);
         Course saved = courses.save(course);
-        lessons.save(new Lesson(UUID.randomUUID(), saved, "L1", 0, 5, "c1"));
-        lessons.save(new Lesson(UUID.randomUUID(), saved, "L2", 1, 5, "c2"));
+        Lesson l1 = lessons.save(new Lesson(UUID.randomUUID(), saved, "L1", 0, 5, "c1"));
+        Lesson l2 = lessons.save(new Lesson(UUID.randomUUID(), saved, "L2", 1, 5, "c2"));
+        this.firstLessonId = l1.getId();
+        this.secondLessonId = l2.getId();
         return saved;
     }
+
+    private UUID firstLessonId;
+    private UUID secondLessonId;
 
     @Test
     void looksUpACourseRegardlessOfStatus() throws Exception {
@@ -48,7 +54,11 @@ class InternalLookupIT extends AbstractCourseServiceIT {
                 .andExpect(jsonPath("$.priceCents").value(1200))
                 .andExpect(jsonPath("$.currency").value("USD"))
                 .andExpect(jsonPath("$.instructorId").value(course.getInstructorId().toString()))
-                .andExpect(jsonPath("$.lessonCount").value(2));
+                .andExpect(jsonPath("$.lessonCount").value(2))
+                .andExpect(jsonPath("$.title").value("Internal Lookup Course"))
+                .andExpect(jsonPath("$.lessonIds[0]").value(firstLessonId.toString()))
+                .andExpect(jsonPath("$.lessonIds[1]").value(secondLessonId.toString()))
+                .andExpect(jsonPath("$.lessonIds.length()").value(2));
     }
 
     @Test

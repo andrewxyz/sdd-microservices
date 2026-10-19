@@ -1,0 +1,50 @@
+openapi: 3.0.3
+info:
+  title: LearnHub course-service — internal lookup addendum (005-progress-certificates-notifications)
+  version: "1.0.0"
+  description: >
+    The existing internal endpoint from specs/003-course-catalog (unchanged path, unchanged existing
+    fields) grows two new response fields. No gateway route reaches this path (research.md R9, 003's R6
+    precedent); consumed directly via lb://course-service by payment-service (004, unchanged),
+    enrollment-service (new, research.md R1/R3) and certificate-service (new, research.md R3/R5).
+servers:
+  - url: /api/v1
+paths:
+  /internal/courses/{courseId}:
+    get:
+      summary: Service-to-service course lookup (no gateway route; research.md R3)
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Course details, regardless of status (draft, published or archived)
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/CourseSummaryView" } }
+        "404":
+          description: No such course
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+components:
+  schemas:
+    CourseSummaryView:
+      type: object
+      properties:
+        courseId: { type: string, format: uuid }
+        status: { type: string, enum: [DRAFT, PUBLISHED, ARCHIVED] }
+        priceCents: { type: integer, nullable: true }
+        currency: { type: string }
+        instructorId: { type: string, format: uuid }
+        lessonCount: { type: integer }
+        title:
+          type: string
+          description: New in this feature (research.md R3)
+        lessonIds:
+          type: array
+          description: New in this feature; every lesson id of the course, in position order, capped at 200 (research.md R3)
+          maxItems: 200
+          items: { type: string, format: uuid }
+    ProblemDetail:
+      $ref: "../../001-platform-foundation/contracts/problem-details.schema.json"

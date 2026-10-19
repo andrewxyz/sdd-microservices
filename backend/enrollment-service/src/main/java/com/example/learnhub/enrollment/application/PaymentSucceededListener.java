@@ -1,12 +1,16 @@
 package com.example.learnhub.enrollment.application;
 
 import com.example.learnhub.enrollment.domain.Enrollment;
+import com.example.learnhub.enrollment.domain.OutboxEvent;
 import com.example.learnhub.enrollment.domain.ProcessedEvent;
 import com.example.learnhub.enrollment.infrastructure.EnrollmentRepository;
+import com.example.learnhub.enrollment.infrastructure.OutboxEventRepository;
 import com.example.learnhub.enrollment.infrastructure.ProcessedEventRepository;
 import com.example.learnhub.enrollment.infrastructure.RabbitTopologyConfig;
+import com.example.learnhub.events.EnrollmentCreatedPayload;
 import com.example.learnhub.events.EventEnvelope;
 import com.example.learnhub.events.EventMapper;
+import com.example.learnhub.events.LearningEvents;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.UUID;
@@ -21,7 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code eventId}: a replayed event is acknowledged and otherwise ignored. A payment can only ever
  * result in an enrollment through this listener (research.md R3), so {@link Enrollment}'s own
  * {@code (user_id, course_id)} unique index is a second, independent guarantee against ever holding two
- * (FR-015).
+ * (FR-015). In the same transaction, also outboxes {@code enrollment.created} (US6, tasks.md T059) so the
+ * student's enrollment email is never lost even if a new enrollment is somehow created without going
+ * through this path again.
  */
 @Component
 public class PaymentSucceededListener {
@@ -30,11 +36,14 @@ public class PaymentSucceededListener {
 
     private final EnrollmentRepository enrollments;
     private final ProcessedEventRepository processedEvents;
+    private final OutboxEventRepository outboxEvents;
     private final ObjectMapper mapper = EventMapper.create();
 
-    public PaymentSucceededListener(EnrollmentRepository enrollments, ProcessedEventRepository processedEvents) {
+    public PaymentSucceededListener(EnrollmentRepository enrollments, ProcessedEventRepository processedEvents,
+            OutboxEventRepository outboxEvents) {
         this.enrollments = enrollments;
         this.processedEvents = processedEvents;
+        this.outboxEvents = outboxEvents;
     }
 
     @RabbitListener(queues = RabbitTopologyConfig.QUEUE, containerFactory = RabbitTopologyConfig.LISTENER_CONTAINER_FACTORY)
@@ -54,9 +63,22 @@ public class PaymentSucceededListener {
         }
 
         if (!enrollments.existsByUserIdAndCourseId(payload.userId(), payload.courseId())) {
-            enrollments.save(new Enrollment(UUID.randomUUID(), payload.userId(), payload.courseId(),
-                    Instant.now(), payload.paymentId()));
+            Instant now = Instant.now();
+            Enrollment enrollment = new Enrollment(UUID.randomUUID(), payload.userId(), payload.courseId(), now,
+                    payload.paymentId());
+            enrollments.save(enrollment);
+            outboxEvents.save(new OutboxEvent(UUID.randomUUID(), UUID.randomUUID(), enrollment.getId(),
+                    LearningEvents.ENROLLMENT_CREATED, writePayload(enrollment, now), now));
         }
         processedEvents.save(new ProcessedEvent(eventId, Instant.now()));
+    }
+
+    private String writePayload(Enrollment enrollment, Instant now) {
+        try {
+            return mapper.writeValueAsString(new EnrollmentCreatedPayload(enrollment.getId(),
+                    enrollment.getUserId(), enrollment.getCourseId(), now));
+        } catch (Exception e) {
+            throw new IllegalStateException("Could not serialize enrollment.created payload", e);
+        }
     }
 }

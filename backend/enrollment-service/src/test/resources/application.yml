@@ -12,10 +12,23 @@ spring:
   cloud:
     config:
       enabled: false
+    openfeign:
+      circuitbreaker:
+        enabled: true
+        group:
+          enabled: true
+    loadbalancer:
+      # Safe only because course-service.url below is never empty for any test in this module (so the
+      # load-balanced "else" branch in FeignClientFactoryBean is never needed): Spring Cloud LoadBalancer
+      # does not reliably honor a per-client static URL for a Feign call made from a @RabbitListener
+      # thread (research.md finding), so calls must bypass it entirely via @FeignClient(url=...).
+      enabled: false
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+  rabbitmq:
+    publisher-confirm-type: correlated
 
 eureka:
   client:
@@ -23,6 +36,36 @@ eureka:
     register-with-eureka: false
     fetch-registry: false
 
+# Harmless placeholder so @FeignClient(url = "${course-service.url:}")'s url is never empty for any
+# enrollment-service test — an empty url routes through Spring Cloud LoadBalancer's "lb://" resolution
+# (research.md finding: unreliable from a @RabbitListener thread, with no Eureka instances registered in
+# tests anyway). Tests that actually call CourseLookupClient override this via @DynamicPropertySource;
+# tests that don't never dial it, so the unreachable port is never a problem.
+course-service:
+  url: http://localhost:1
+
 platform:
   config-watcher:
     enabled: false
+
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 2000
+        read-timeout: 2000
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      course-service:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+  timelimiter:
+    instances:
+      course-service:
+        timeout-duration: 15s
+        cancel-running-future: true

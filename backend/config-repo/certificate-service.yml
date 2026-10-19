@@ -1,0 +1,6 @@
+# Settings for the certificate service.
+#
+# Nothing here is a secret: the database and RabbitMQ credentials are deployment secrets supplied as
+# environment variables directly, the same way every other service's are. This file exists so
+# certificate-service participates in the non-optional config-server import like every other business
+# service (constitution Principle III); it has no refreshable setting yet.

@@ -17,11 +17,11 @@ import java.util.function.Supplier;
  */
 public class TokenBucketRateLimiter {
 
-    private final RateLimiterProperties properties;
+    private final RateLimitSettings properties;
     private final Supplier<Instant> clock;
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
-    public TokenBucketRateLimiter(RateLimiterProperties properties, Supplier<Instant> clock) {
+    public TokenBucketRateLimiter(RateLimitSettings properties, Supplier<Instant> clock) {
         this.properties = properties;
         this.clock = clock;
     }
