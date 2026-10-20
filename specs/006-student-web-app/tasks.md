@@ -244,17 +244,17 @@ double-click enroll and confirm exactly one payment in history.
 
 ### Tests for User Story 3 (write first, watch fail) ⚠️
 
-- [ ] T044 [P] [US3] Write `frontend/src/hooks/useCheckout.idempotency.test.ts`: the key is created
+- [X] T044 [P] [US3] Write `frontend/src/hooks/useCheckout.idempotency.test.ts`: the key is created
       by `crypto.randomUUID()` on the **first** submit for a (course, choice) pair; **reused** for an
       automatic retry after a network failure; **regenerated** when the payment choice changes; and
       **regenerated** when the user retries after a terminal `FAILED` (research R7, data-model.md,
       FR-023, SC-006).
-- [ ] T045 [P] [US3] Write `frontend/src/hooks/useCheckout.polling.test.ts` with fake timers: after a
+- [X] T045 [P] [US3] Write `frontend/src/hooks/useCheckout.polling.test.ts` with fake timers: after a
       `SUCCEEDED` payment the hook polls `GET /api/v1/enrollments/{courseId}/progress` once a second
       for up to 15 s; **200 → `enrolled`**, **403 → keep waiting** (the enrollment is created
       asynchronously), **503 → keep waiting** (transient), and a timeout → `pending` with the
       check-back-shortly message (research R8, FR-022).
-- [ ] T046 [P] [US3] Write `frontend/src/hooks/useCheckout.outcomes.test.ts` for status mapping
+- [X] T046 [P] [US3] Write `frontend/src/hooks/useCheckout.outcomes.test.ts` for status mapping
       (research R0.2): **201 and 200 are treated identically** (200 is the idempotent replay);
       **403** is "your own course"; **409** is already-enrolled (disambiguated from `detail`);
       **404**, **422** and **503** each get their own message; `DECLINED` surfaces `failureReason`
@@ -262,16 +262,16 @@ double-click enroll and confirm exactly one payment in history.
 
 ### Implementation for User Story 3
 
-- [ ] T047 [US3] Implement `frontend/src/hooks/useCheckout.ts` with the phase machine from
+- [X] T047 [US3] Implement `frontend/src/hooks/useCheckout.ts` with the phase machine from
       data-model.md (`idle → submitting → confirming → enrolled | pending | declined | failed |
       blocked`) and the idempotency-key rules from T044.
-- [ ] T048 [US3] Create `frontend/src/components/EnrollPanel.tsx`: a single confirm for a free
+- [X] T048 [US3] Create `frontend/src/components/EnrollPanel.tsx`: a single confirm for a free
       course; for a paid course exactly three clearly **labelled as test** outcomes mapping to
       `sim-success`, `sim-decline` and `sim-unavailable`, and **no field asking for a card or any
       payment credential** (FR-019, FR-020); the submit control is disabled while pending (FR-024).
-- [ ] T049 [US3] Wire `EnrollPanel` into `frontend/src/pages/CourseDetailPage.tsx`, sending a
+- [X] T049 [US3] Wire `EnrollPanel` into `frontend/src/pages/CourseDetailPage.tsx`, sending a
       signed-out visitor to `/login` with `returnTo` set to the course page.
-- [ ] T050 [US3] Render the post-payment messaging: "being confirmed", then enrolled with a link into
+- [X] T050 [US3] Render the post-payment messaging: "being confirmed", then enrolled with a link into
       the course, or the check-back-shortly message on timeout (FR-022).
 
 **Checkpoint**: The money path works end to end and cannot double-charge.

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import * as endpoints from "../api/endpoints";
 import type { CoursePublicView } from "../api/endpoints";
 import EmptyState from "../components/EmptyState";
+import EnrollPanel from "../components/EnrollPanel";
 import Loading from "../components/Loading";
+import { useAuth } from "../auth/useAuth";
 
 type PageState = "loading" | "ready" | "not-found";
 
@@ -11,6 +13,7 @@ type PageState = "loading" | "ready" | "not-found";
  * appears here (FR-006, FR-008). */
 export default function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
+  const { status } = useAuth();
   const [course, setCourse] = useState<CoursePublicView | null>(null);
   const [pageState, setPageState] = useState<PageState>("loading");
 
@@ -65,6 +68,14 @@ export default function CourseDetailPage() {
           </li>
         ))}
       </ol>
+
+      {status === "authenticated" ? (
+        <EnrollPanel course={course} />
+      ) : status === "anonymous" ? (
+        <p>
+          <Link to={`/login?returnTo=${encodeURIComponent(`/courses/${courseId}`)}`}>Sign in to enroll</Link>
+        </p>
+      ) : null}
     </div>
   );
 }

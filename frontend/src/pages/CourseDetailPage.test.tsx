@@ -1,6 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import AuthProvider from "../auth/AuthProvider";
+import { clear } from "../auth/session";
 import CourseDetailPage from "./CourseDetailPage";
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -10,14 +12,21 @@ function jsonResponse(status: number, body: unknown): Response {
 function renderAt(courseId: string) {
   return render(
     <MemoryRouter initialEntries={[`/courses/${courseId}`]}>
-      <Routes>
-        <Route path="/courses/:courseId" element={<CourseDetailPage />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/courses/:courseId" element={<CourseDetailPage />} />
+          <Route path="/login" element={<p>Login page</p>} />
+        </Routes>
+      </AuthProvider>
     </MemoryRouter>,
   );
 }
 
 describe("CourseDetailPage", () => {
+  beforeEach(() => {
+    clear();
+  });
+
   it("renders details and the lesson outline ordered by position, with no content field anywhere", async () => {
     vi.stubGlobal(
       "fetch",
