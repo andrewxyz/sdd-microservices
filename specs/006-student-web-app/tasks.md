@@ -361,17 +361,17 @@ role and payment list, then sign out from there.
 
 ### Tests for User Story 6 (write first, watch fail) ⚠️
 
-- [ ] T062 [P] [US6] Write `frontend/src/pages/AccountPage.test.tsx`: the profile shows the email and
+- [X] T062 [P] [US6] Write `frontend/src/pages/AccountPage.test.tsx`: the profile shows the email and
       role from `GET /api/v1/auth/me` (FR-037); `GET /api/v1/payments` renders course, amount,
       status and date **newest first** (FR-038); an empty history renders an empty state rather than
       a blank area (US6 scenario 3).
 
 ### Implementation for User Story 6
 
-- [ ] T063 [US6] Extend `frontend/src/pages/AccountPage.tsx` with the profile block (email, role) and
+- [X] T063 [US6] Extend `frontend/src/pages/AccountPage.tsx` with the profile block (email, role) and
       the payment history table sorted newest first, formatting amounts from `amountCents` and
       `currency` with `Intl` (no date or money library — constitution X).
-- [ ] T064 [US6] Add the sign-out control to `frontend/src/pages/AccountPage.tsx`, reusing
+- [X] T064 [US6] Add the sign-out control to `frontend/src/pages/AccountPage.tsx`, reusing
       `useAuth().logout()` and sending the user to the catalog afterwards (FR-039).
 
 **Checkpoint**: All six user stories are complete and independently demonstrable.
