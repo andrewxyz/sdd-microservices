@@ -89,6 +89,7 @@ mapped into that range; the Spring services use the same port inside and outside
 | RabbitMQ (management) | 9673 | 15672 |
 | Mailpit (SMTP) | 9025 | 1025 |
 | Mailpit (web UI) | 9825 | 8025 |
+| **frontend (nginx)** | **9100** | **80** |
 
 ## Changing a central setting
 
@@ -207,6 +208,20 @@ message that cannot even be parsed, is retried three times and then set aside in
 rather than blocking the messages behind it. See
 `specs/005-progress-certificates-notifications/contracts/` for the full endpoint contracts and
 `specs/005-progress-certificates-notifications/quickstart.md` for a curl walkthrough of the whole flow.
+
+## Student web app
+
+`frontend/` is a React/TypeScript SPA built with Vite and served by nginx. It talks to the gateway
+exclusively through same-origin `/api/` requests — no CORS configuration is needed.
+
+| | |
+|---|---|
+| Dev server | `http://localhost:9100` (port matches production) |
+| Production | Container image served by nginx, proxying `/api/` to the gateway |
+| Seed demo data | `scripts/seed-demo.sh` |
+
+See [`frontend/README.md`](frontend/README.md) for the dev-server setup, API type generation, demo
+data seeding, and the manual end-to-end walkthrough checklist.
 
 ## Building and testing
 

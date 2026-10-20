@@ -382,48 +382,48 @@ role and payment list, then sign out from there.
 
 **Purpose**: Ship the app as part of the platform, and prove nothing regressed.
 
-- [ ] T065 [P] Create `frontend/Dockerfile`: a Node 24 build stage running `npm ci && npm run build`,
+- [X] T065 [P] Create `frontend/Dockerfile`: a Node 24 build stage running `npm ci && npm run build`,
       then an `nginx:alpine` stage serving `dist/` from `/usr/share/nginx/html` (research R13).
-- [ ] T066 [P] Create `frontend/nginx/default.conf.template`: `try_files $uri /index.html` for the
+- [X] T066 [P] Create `frontend/nginx/default.conf.template`: `try_files $uri /index.html` for the
       SPA fallback, `location /api/ { proxy_pass ${GATEWAY_URL}; }` rendered by nginx's `envsubst`
       entrypoint with the default `http://api-gateway:9080`, and the headers
       `Content-Security-Policy: default-src 'self'`, `X-Content-Type-Options: nosniff`,
       `Referrer-Policy: no-referrer` and `X-Frame-Options: DENY`.
-- [ ] T067 Add the `frontend` service to `docker-compose.yml`: built from `./frontend`, host **9100**
+- [X] T067 Add the `frontend` service to `docker-compose.yml`: built from `./frontend`, host **9100**
       to container **80**, `GATEWAY_URL` defaulting to `http://api-gateway:9080`,
       `depends_on: api-gateway: condition: service_healthy`, and a `wget`-based healthcheck against
       `/` matching the interval/retries style of the existing services.
-- [ ] T068 [P] Add `"9100:frontend"` to the `PORTS` array in `scripts/up.sh`, as the constitution's
+- [X] T068 [P] Add `"9100:frontend"` to the `PORTS` array in `scripts/up.sh`, as the constitution's
       port-map note requires.
-- [ ] T069 [P] Create `scripts/seed-demo.sh`: `curl` against `http://localhost:9080`, signing in as
+- [X] T069 [P] Create `scripts/seed-demo.sh`: `curl` against `http://localhost:9080`, signing in as
       the bootstrap administrator from `.env`; create two categories and one instructor
       (**register → promote → sign in again**, because the auth contract states a role change takes
       effect only on the target account's next login — research R15); then four published courses
       with three lessons each, **one of them free**. Exit without changes if
       `GET /api/v1/courses` already reports any course. Keep it `shellcheck`-clean like its
       siblings.
-- [ ] T070 Extend `scripts/smoke-test.sh` with two checks: `GET http://localhost:9100/` returns HTML,
+- [X] T070 Extend `scripts/smoke-test.sh` with two checks: `GET http://localhost:9100/` returns HTML,
       and `GET http://localhost:9100/api/v1/courses` returns JSON through the container's `/api/`
       proxy (SC-009 support).
-- [ ] T071 [P] Add a `frontend` job to `.github/workflows/ci.yml`: Node 24, `npm ci`,
+- [X] T071 [P] Add a `frontend` job to `.github/workflows/ci.yml`: Node 24, `npm ci`,
       `npm run typecheck`, `npm test`, `npm run build`, running independently of the backend job.
-- [ ] T072 [P] Create `frontend/README.md`: how to run the dev server on 9100, what `gen:api` does
+- [X] T072 [P] Create `frontend/README.md`: how to run the dev server on 9100, what `gen:api` does
       and when to re-run it, how to seed demo data, and the **manual walkthrough checklist** mirroring
       [quickstart.md](quickstart.md) and the success criteria. This README lives in `frontend/`, not
       at the repo root.
-- [ ] T073 [P] Update the root `README.md`: change the port table's frontend row to **9100 → 80
+- [X] T073 [P] Update the root `README.md`: change the port table's frontend row to **9100 → 80
       (nginx)**, and add a short "Student web app" section pointing at `frontend/README.md`.
-- [ ] T074 Check whether `docker-compose.yml`'s `GATEWAY_URL` needs an entry in `.env.example`; add
+- [X] T074 Check whether `docker-compose.yml`'s `GATEWAY_URL` needs an entry in `.env.example`; add
       one with its non-secret default if the compose file reads it from the environment, and leave
       `.env.example` untouched if the default is inlined.
-- [ ] T075 Confirm the production build satisfies `default-src 'self'`: serve the container, load
+- [X] T075 Confirm the production build satisfies `default-src 'self'`: serve the container, load
       every route, and verify the browser console reports **no CSP violation**. A violation is a
       build problem to fix, never a reason to weaken the header (research R13).
-- [ ] T076 Full verification: `npm run typecheck && npm test && npm run build` in `frontend/`;
+- [X] T076 Full verification: `npm run typecheck && npm test && npm run build` in `frontend/`;
       `mvn -f backend/pom.xml verify` from WSL for the T010 backend change; `docker compose down -v`
       then `scripts/up.sh`, `scripts/seed-demo.sh` and `scripts/smoke-test.sh`; then walk every step
       of [quickstart.md](quickstart.md) by hand.
-- [ ] T077 Write `specs/006-student-web-app/checklists/success-criteria.md` recording the measured
+- [X] T077 Write `specs/006-student-web-app/checklists/success-criteria.md` recording the measured
       status of SC-001 through SC-009, in the same honest format 002–005 used — including any
       criterion proven once rather than repeatedly.
 

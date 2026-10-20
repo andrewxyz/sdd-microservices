@@ -32,6 +32,7 @@ PORTS=(
   "9673:rabbitmq-management"
   "9025:mailpit-smtp"
   "9825:mailpit-ui"
+  "9100:frontend"
 )
 
 REQUIRED_SETTINGS=(
