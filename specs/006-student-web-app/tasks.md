@@ -288,30 +288,30 @@ move, unmark it and see it move back.
 
 ### Tests for User Story 4 (write first, watch fail) ⚠️
 
-- [ ] T051 [P] [US4] Write `frontend/src/pages/LearnPage.states.test.tsx`: `GET
+- [X] T051 [P] [US4] Write `frontend/src/pages/LearnPage.states.test.tsx`: `GET
       /api/v1/courses/{id}/content` returning **403** renders the enroll invitation (FR-029);
       **503** renders an explanation with a retry button and **never** the "not enrolled" wording
       (FR-030, research R9); **404** renders not-found.
-- [ ] T052 [P] [US4] Write `frontend/src/pages/LearnPage.xss.test.tsx`: a lesson whose `content` is
+- [X] T052 [P] [US4] Write `frontend/src/pages/LearnPage.xss.test.tsx`: a lesson whose `content` is
       `<script>alert(1)</script>` renders that string as **visible text**, nothing executes, and
       `dangerouslySetInnerHTML` appears nowhere (FR-027, constitution XII).
-- [ ] T053 [P] [US4] Write `frontend/src/pages/LearnPage.progress.test.tsx`: marking a lesson
+- [X] T053 [P] [US4] Write `frontend/src/pages/LearnPage.progress.test.tsx`: marking a lesson
       complete updates the bar **from the `ProgressView` in the PUT response** with no refetch, and
       unmarking does the same via DELETE (research R9, FR-028).
 
 ### Implementation for User Story 4
 
-- [ ] T054 [P] [US4] Create `frontend/src/components/ProgressBar.tsx` showing the bar plus
+- [X] T054 [P] [US4] Create `frontend/src/components/ProgressBar.tsx` showing the bar plus
       `completedLessons`/`totalLessons` and the percentage (FR-025, FR-028).
-- [ ] T055 [US4] Implement `frontend/src/pages/MyCoursesPage.tsx` at `/learn`: `GET
+- [X] T055 [US4] Implement `frontend/src/pages/MyCoursesPage.tsx` at `/learn`: `GET
       /api/v1/enrollments`, then **in parallel** per enrollment the public course detail for its
       title and `GET …/progress` for its counts, each card rendering as its own data arrives
       (research R12); an empty state points at the catalog (US4 scenario 2).
-- [ ] T056 [US4] Implement `frontend/src/pages/LearnPage.tsx` at `/learn/:courseId`: the lesson list,
+- [X] T056 [US4] Implement `frontend/src/pages/LearnPage.tsx` at `/learn/:courseId`: the lesson list,
       the selected lesson's `content` in a text node styled `white-space: pre-wrap`, the
       complete/undo toggle keyed by the lesson `id` added in T010, and the progress bar; guarded by
       `RequireAuth`.
-- [ ] T057 [US4] Register `/learn` and `/learn/:courseId` in `frontend/src/App.tsx` and extend
+- [X] T057 [US4] Register `/learn` and `/learn/:courseId` in `frontend/src/App.tsx` and extend
       `frontend/src/styles.css` for the lesson layout at 360 px.
 
 **Checkpoint**: A student can work through a course and reach 100%.
