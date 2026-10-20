@@ -76,28 +76,28 @@ wrapper every later phase depends on.
 > plan.md Complexity Tracking / research R0.3. Sequenced here, before `gen:api`, so the contract
 > types are generated once from their final shape rather than regenerated later.
 
-- [ ] T009 Extend `backend/course-service/src/test/java/com/example/learnhub/course/LessonContentAccessIT.java`
+- [X] T009 Extend `backend/course-service/src/test/java/com/example/learnhub/course/LessonContentAccessIT.java`
       to assert the enrolled-reader response's `lessons[0].id` equals the seeded lesson's id. **Run
       it and watch it fail** before T010 (constitution VI).
-- [ ] T010 Add `UUID id` as the first component of `LessonView` in
+- [X] T010 Add `UUID id` as the first component of `LessonView` in
       `backend/course-service/src/main/java/com/example/learnhub/course/api/CourseContentView.java`,
       and pass `lesson.getId()` where that record is constructed in
       `backend/course-service/src/main/java/com/example/learnhub/course/application/CourseContentService.java`.
-- [ ] T011 [P] Add `id: { type: string, format: uuid }` to the `CourseContentView.lessons[]` schema
+- [X] T011 [P] Add `id: { type: string, format: uuid }` to the `CourseContentView.lessons[]` schema
       in `specs/004-checkout-enrollment/contracts/course-service-content.openapi.yaml`.
-- [ ] T012 Run `mvn -f backend/pom.xml -pl course-service -am verify` from WSL and confirm the whole
+- [X] T012 Run `mvn -f backend/pom.xml -pl course-service -am verify` from WSL and confirm the whole
       module is green, including T009.
 
 ### Generated API types
 
-- [ ] T013 Add the `gen:api` script to `frontend/package.json` running `frontend/scripts/gen-api.mjs`,
+- [X] T013 Add the `gen:api` script to `frontend/package.json` running `frontend/scripts/gen-api.mjs`,
       which invokes `openapi-typescript` once per contract listed in
       [contracts/README.md](contracts/README.md) — auth (002), course catalog (003), course content
       (004, now with `id`), payment (004), enrollment (004), progress (005) and certificate (005) —
       each into its own `frontend/src/api/generated/<name>.ts`, then writes the barrel
       `frontend/src/api/schema.ts` re-exporting all seven as namespaces (research R3's implementation
       finding: `openapi-typescript`'s CLI takes one input per run, so one file cannot hold all seven).
-- [ ] T014 Run `npm run gen:api` and **commit** `frontend/src/api/generated/*.ts` and
+- [X] T014 Run `npm run gen:api` and **commit** `frontend/src/api/generated/*.ts` and
       `frontend/src/api/schema.ts` (constitution XIII; research R3 — committing keeps
       `npm ci && npm run build` codegen-free in CI).
 
@@ -105,33 +105,33 @@ wrapper every later phase depends on.
 
 > Write T015–T017 and watch them fail before T018–T020.
 
-- [ ] T015 [P] Write `frontend/src/api/problem.test.ts`: an `application/problem+json` body parses
+- [X] T015 [P] Write `frontend/src/api/problem.test.ts`: an `application/problem+json` body parses
       into `ApiError` with `status`, `title`, `detail` and `correlationId`; a **429** also carries
       `retryAfterSeconds` from the `Retry-After` header; a thrown `fetch` yields `status: 0` with
       the network message; each status maps to its friendly sentence (research R5).
-- [ ] T016 [P] Write `frontend/src/api/client.singleflight.test.ts`: **five parallel requests that
+- [X] T016 [P] Write `frontend/src/api/client.singleflight.test.ts`: **five parallel requests that
       all receive 401 cause exactly one `POST /api/v1/auth/refresh`**, every caller awaits the same
       promise, and each original request is retried exactly once (research R6, constitution XII).
-- [ ] T017 [P] Write `frontend/src/api/client.refreshfail.test.ts`: when the refresh returns 401 the
+- [X] T017 [P] Write `frontend/src/api/client.refreshfail.test.ts`: when the refresh returns 401 the
       session is cleared and the app navigates to `/login?returnTo=<current path>`; the retry is
       capped at one attempt so no loop is possible.
-- [ ] T018 Implement `frontend/src/api/problem.ts`: the `ApiError` class, problem+json parsing, the
+- [X] T018 Implement `frontend/src/api/problem.ts`: the `ApiError` class, problem+json parsing, the
       `Retry-After` reader, and the status → friendly-message map (network, 429, 503, fallback).
-- [ ] T019 Implement `frontend/src/api/client.ts`: one `request()` that targets relative `/api/...`
+- [X] T019 Implement `frontend/src/api/client.ts`: one `request()` that targets relative `/api/...`
       paths only (constitution XIII), attaches `Authorization: Bearer` when a token exists, parses
       failures through `problem.ts`, and performs the module-level single-flight refresh-and-retry
       from T016/T017.
-- [ ] T020 Implement `frontend/src/api/endpoints.ts`: thin typed helpers for every operation in
+- [X] T020 Implement `frontend/src/api/endpoints.ts`: thin typed helpers for every operation in
       [contracts/README.md](contracts/README.md), with request and response types derived from
       `schema.ts`.
 
 ### Shared presentation pieces
 
-- [ ] T021 [P] Create `frontend/src/components/ErrorNotice.tsx` rendering an `ApiError`'s friendly
+- [X] T021 [P] Create `frontend/src/components/ErrorNotice.tsx` rendering an `ApiError`'s friendly
       message plus its `correlationId` as the user-facing **reference code** (FR-040).
-- [ ] T022 [P] Create `frontend/src/components/Loading.tsx` and
+- [X] T022 [P] Create `frontend/src/components/Loading.tsx` and
       `frontend/src/components/EmptyState.tsx` (FR-043, FR-007).
-- [ ] T023 [P] Establish the base layer of `frontend/src/styles.css`: layout, typography, a visible
+- [X] T023 [P] Establish the base layer of `frontend/src/styles.css`: layout, typography, a visible
       `:focus-visible` outline, and the mobile-first rules that keep pages usable at 360 px
       (FR-041, FR-042, SC-008).
 
