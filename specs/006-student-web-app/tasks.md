@@ -328,7 +328,7 @@ successfully; then verify a made-up code and get a clear "not valid".
 
 ### Tests for User Story 5 (write first, watch fail) ⚠️
 
-- [ ] T058 [P] [US5] Write `frontend/src/pages/VerifyPage.test.tsx`: the entered code is **trimmed
+- [X] T058 [P] [US5] Write `frontend/src/pages/VerifyPage.test.tsx`: the entered code is **trimmed
       and upper-cased** before being sent (FR-036); a **200** shows valid with `courseTitle` and
       `issuedAt` and nothing about the holder (FR-034); a **404 is rendered as the "not valid"
       result, not an error, and carries no reference code** (research R10, FR-035); a **429** shows
@@ -336,13 +336,13 @@ successfully; then verify a made-up code and get a clear "not valid".
 
 ### Implementation for User Story 5
 
-- [ ] T059 [US5] Implement `frontend/src/pages/VerifyPage.tsx` serving both `/verify` (with an entry
+- [X] T059 [US5] Implement `frontend/src/pages/VerifyPage.tsx` serving both `/verify` (with an entry
       field) and `/verify/:code` (verifying immediately), public — not wrapped in `RequireAuth` —
       and register both routes in `frontend/src/App.tsx`.
-- [ ] T060 [US5] Create `frontend/src/pages/AccountPage.tsx` with its certificates section:
+- [X] T060 [US5] Create `frontend/src/pages/AccountPage.tsx` with its certificates section:
       `GET /api/v1/certificates/mine` rendering course title, issue date and verification code, each
       with a copy control (FR-031, FR-032). Register `/account` behind `RequireAuth`.
-- [ ] T061 [US5] Add the "a certificate is on its way" state shown when the list is empty, rather
+- [X] T061 [US5] Add the "a certificate is on its way" state shown when the list is empty, rather
       than an empty area (US5 scenario 3).
 
 **Checkpoint**: The payoff journey works, including for someone with no account.

@@ -2,6 +2,7 @@ import { Link, Route, Routes, useNavigate } from "react-router";
 import AuthProvider from "./auth/AuthProvider";
 import { useAuth } from "./auth/useAuth";
 import RequireAuth from "./auth/RequireAuth";
+import AccountPage from "./pages/AccountPage";
 import CatalogPage from "./pages/CatalogPage";
 import CourseDetailPage from "./pages/CourseDetailPage";
 import LearnPage from "./pages/LearnPage";
@@ -9,6 +10,7 @@ import LoginPage from "./pages/LoginPage";
 import MyCoursesPage from "./pages/MyCoursesPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import RegisterPage from "./pages/RegisterPage";
+import VerifyPage from "./pages/VerifyPage";
 
 function SiteHeader() {
   const { status, user, logout } = useAuth();
@@ -26,6 +28,7 @@ function SiteHeader() {
         {status === "authenticated" && user ? (
           <>
             <Link to="/learn">My courses</Link>
+            <Link to="/account">Account</Link>
             <span>{user.email}</span>
             <button type="button" onClick={onSignOut}>
               Sign out
@@ -66,6 +69,16 @@ function AppRoutes() {
           element={
             <RequireAuth>
               <LearnPage />
+            </RequireAuth>
+          }
+        />
+        <Route path="/verify" element={<VerifyPage />} />
+        <Route path="/verify/:code" element={<VerifyPage />} />
+        <Route
+          path="/account"
+          element={
+            <RequireAuth>
+              <AccountPage />
             </RequireAuth>
           }
         />
