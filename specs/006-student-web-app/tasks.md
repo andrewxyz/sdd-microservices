@@ -203,30 +203,30 @@ Nothing asks for a login; no lesson text appears.
 
 ### Tests for User Story 1 (write first, watch fail) ⚠️
 
-- [ ] T036 [P] [US1] Write `frontend/src/pages/CatalogPage.test.tsx` for URL-driven state: `q`,
+- [X] T036 [P] [US1] Write `frontend/src/pages/CatalogPage.test.tsx` for URL-driven state: `q`,
       `category`, `level`, `free`, `sort`, `page` and `size` round-trip through the query string and
       are passed through unchanged to `GET /api/v1/courses`; defaults are `sort=newest`, `page=0`,
       `size=20`; `sort` accepts only `newest`, `title`, `price_asc`, `price_desc` (research R11,
       data-model.md, FR-009).
-- [ ] T037 [P] [US1] Extend `frontend/src/pages/CatalogPage.test.tsx`: an empty `items` array renders
+- [X] T037 [P] [US1] Extend `frontend/src/pages/CatalogPage.test.tsx`: an empty `items` array renders
       the friendly empty state with a clear-filters action, **not** an error (FR-007).
-- [ ] T038 [P] [US1] Write `frontend/src/pages/CourseDetailPage.test.tsx`: a 200 renders details and
+- [X] T038 [P] [US1] Write `frontend/src/pages/CourseDetailPage.test.tsx`: a 200 renders details and
       the lesson outline ordered by `position` with **no `content` field anywhere**, and a 404
       renders "no longer available" (FR-008, spec edge case).
 
 ### Implementation for User Story 1
 
-- [ ] T039 [P] [US1] Create `frontend/src/components/CourseCard.tsx` showing title, level, category
+- [X] T039 [P] [US1] Create `frontend/src/components/CourseCard.tsx` showing title, level, category
       name and either the price or "Free" (FR-001).
-- [ ] T040 [US1] Implement `frontend/src/pages/CatalogPage.tsx`: filters, sort and paging held in
+- [X] T040 [US1] Implement `frontend/src/pages/CatalogPage.tsx`: filters, sort and paging held in
       the URL via the router's search params, one `GET /api/v1/courses` per change, and a single
       `GET /api/v1/categories` whose bare array maps `categoryId` → name for the filter control and
       the cards (research R11).
-- [ ] T041 [US1] Implement `frontend/src/pages/CourseDetailPage.tsx`: course details plus the
+- [X] T041 [US1] Implement `frontend/src/pages/CourseDetailPage.tsx`: course details plus the
       ordered outline from `CoursePublicView.lessons`, which carries no lesson text.
-- [ ] T042 [P] [US1] Create `frontend/src/pages/NotFoundPage.tsx` and register the catch-all route
+- [X] T042 [P] [US1] Create `frontend/src/pages/NotFoundPage.tsx` and register the catch-all route
       in `frontend/src/App.tsx`.
-- [ ] T043 [US1] Extend `frontend/src/styles.css` for the catalog grid, filter bar and course page,
+- [X] T043 [US1] Extend `frontend/src/styles.css` for the catalog grid, filter bar and course page,
       verified readable and operable at 360 px with keyboard only.
 
 **Checkpoint**: A visitor can browse and inspect courses with no account. Combined with Phase 3 this

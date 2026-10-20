@@ -1,12 +1,11 @@
 import { Link, Route, Routes, useNavigate } from "react-router";
 import AuthProvider from "./auth/AuthProvider";
 import { useAuth } from "./auth/useAuth";
+import CatalogPage from "./pages/CatalogPage";
+import CourseDetailPage from "./pages/CourseDetailPage";
 import LoginPage from "./pages/LoginPage";
+import NotFoundPage from "./pages/NotFoundPage";
 import RegisterPage from "./pages/RegisterPage";
-
-function HomePlaceholder() {
-  return <p>LearnHub — scaffold running.</p>;
-}
 
 function SiteHeader() {
   const { status, user, logout } = useAuth();
@@ -46,9 +45,11 @@ function AppRoutes() {
     <AuthProvider onUnauthorized={(returnTo) => navigate(`/login?returnTo=${encodeURIComponent(returnTo)}`)}>
       <SiteHeader />
       <Routes>
-        <Route path="/" element={<HomePlaceholder />} />
+        <Route path="/" element={<CatalogPage />} />
+        <Route path="/courses/:courseId" element={<CourseDetailPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AuthProvider>
   );
