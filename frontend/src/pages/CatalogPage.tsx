@@ -23,6 +23,9 @@ function isLevelOption(value: string): value is LevelOption {
   return (LEVEL_OPTIONS as readonly string[]).includes(value);
 }
 
+const selectClass =
+  "border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow";
+
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -107,68 +110,100 @@ export default function CatalogPage() {
   }
 
   return (
-    <div className="page">
-      <h1>Courses</h1>
-      <form className="catalog-filters" onSubmit={(e) => e.preventDefault()}>
-        <input
-          aria-label="Search"
-          placeholder="Search courses"
-          value={q}
-          onChange={(e) => updateParam("q", e.target.value)}
-        />
-        <select aria-label="Category" value={category} onChange={(e) => updateParam("category", e.target.value)}>
-          <option value="">All categories</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <select aria-label="Level" value={level} onChange={(e) => updateParam("level", e.target.value)}>
-          <option value="">Any level</option>
-          <option value="BEGINNER">Beginner</option>
-          <option value="INTERMEDIATE">Intermediate</option>
-          <option value="ADVANCED">Advanced</option>
-        </select>
-        <label>
-          <input
-            type="checkbox"
-            checked={free}
-            onChange={(e) => updateParam("free", e.target.checked ? "true" : null)}
-          />
-          Free only
-        </label>
-        <select aria-label="Sort" value={sort} onChange={(e) => updateParam("sort", e.target.value)}>
-          <option value="newest">Newest</option>
-          <option value="title">Title</option>
-          <option value="price_asc">Price: low to high</option>
-          <option value="price_desc">Price: high to low</option>
-        </select>
-      </form>
+    <div className="min-h-screen bg-slate-50">
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-800 text-white py-14 px-4 text-center">
+        <h1 className="text-4xl font-bold mb-2 tracking-tight">Discover Your Next Skill</h1>
+        <p className="text-indigo-200 text-lg">Explore our growing library of courses</p>
+      </div>
 
-      {loading && <Loading label="Loading courses…" />}
-      {error && <ErrorNotice error={error} />}
-      {!loading && !error && result && result.items.length === 0 && (
-        <EmptyState
-          message="No courses match these filters."
-          action={
-            <button type="button" onClick={clearFilters}>
-              Clear filters
-            </button>
-          }
-        />
-      )}
-      {!loading && !error && result && result.items.length > 0 && (
-        <div className="course-grid">
-          {result.items.map((course) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              categoryName={course.categoryId ? categoryNameById.get(course.categoryId) : undefined}
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Filters */}
+        <form
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-8 flex flex-wrap gap-3 items-center"
+          onSubmit={(e) => e.preventDefault()}
+        >
+          <input
+            aria-label="Search"
+            placeholder="Search courses…"
+            value={q}
+            onChange={(e) => updateParam("q", e.target.value)}
+            className="flex-1 min-w-[180px] border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+          />
+          <select
+            aria-label="Category"
+            value={category}
+            onChange={(e) => updateParam("category", e.target.value)}
+            className={selectClass}
+          >
+            <option value="">All categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Level"
+            value={level}
+            onChange={(e) => updateParam("level", e.target.value)}
+            className={selectClass}
+          >
+            <option value="">Any level</option>
+            <option value="BEGINNER">Beginner</option>
+            <option value="INTERMEDIATE">Intermediate</option>
+            <option value="ADVANCED">Advanced</option>
+          </select>
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={free}
+              onChange={(e) => updateParam("free", e.target.checked ? "true" : null)}
+              className="accent-indigo-600 w-4 h-4"
             />
-          ))}
-        </div>
-      )}
+            Free only
+          </label>
+          <select
+            aria-label="Sort"
+            value={sort}
+            onChange={(e) => updateParam("sort", e.target.value)}
+            className={selectClass}
+          >
+            <option value="newest">Newest</option>
+            <option value="title">Title</option>
+            <option value="price_asc">Price: low to high</option>
+            <option value="price_desc">Price: high to low</option>
+          </select>
+        </form>
+
+        {loading && <Loading label="Loading courses…" />}
+        {error && <ErrorNotice error={error} />}
+        {!loading && !error && result && result.items.length === 0 && (
+          <EmptyState
+            message="No courses match these filters."
+            action={
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+              >
+                Clear filters
+              </button>
+            }
+          />
+        )}
+        {!loading && !error && result && result.items.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {result.items.map((course) => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                categoryName={course.categoryId ? categoryNameById.get(course.categoryId) : undefined}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,11 +1,12 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 // Dev server on 9100 (constitution amendment: frontend port 9100), proxying /api to the gateway so
 // every call is same-origin and CORS never enters the picture (research.md R1, constitution XIII).
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   server: {
     port: 9100,
     strictPort: true,

@@ -72,32 +72,75 @@ export default function MyCoursesPage() {
   }, []);
 
   if (loading) {
-    return <Loading label="Loading your courses…" />;
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <Loading label="Loading your courses…" />
+      </div>
+    );
   }
 
   if (cards.length === 0) {
     return (
-      <div className="page">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <EmptyState
           message="You haven't enrolled in any course yet."
-          action={<Link to="/">Browse the catalog</Link>}
+          action={
+            <Link
+              to="/"
+              className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors"
+            >
+              Browse the catalog
+            </Link>
+          }
         />
       </div>
     );
   }
 
   return (
-    <div className="page">
-      <h1>My courses</h1>
-      <div className="course-grid">
-        {cards.map((card) => (
-          <article key={card.enrollment.id} className="course-card">
-            <h3>
-              {card.title ? <Link to={`/learn/${card.enrollment.courseId}`}>{card.title}</Link> : "Loading…"}
-            </h3>
-            {card.progress ? <ProgressBar progress={card.progress} /> : <Loading label="Loading progress…" />}
-          </article>
-        ))}
+    <div className="min-h-screen bg-slate-50">
+      <div className="bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-800 text-white py-10 px-4">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-3xl font-bold">My courses</h1>
+          <p className="text-indigo-200 mt-1">{cards.length} enrolled course{cards.length !== 1 ? "s" : ""}</p>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {cards.map((card) => (
+            <article
+              key={card.enrollment.id}
+              className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col gap-4"
+            >
+              <h3 className="text-base font-semibold leading-snug">
+                {card.title ? (
+                  <Link
+                    to={`/learn/${card.enrollment.courseId}`}
+                    className="text-slate-800 hover:text-indigo-600 transition-colors"
+                  >
+                    {card.title}
+                  </Link>
+                ) : (
+                  <span className="text-slate-400 animate-pulse">Loading…</span>
+                )}
+              </h3>
+              {card.progress ? (
+                <ProgressBar progress={card.progress} />
+              ) : (
+                <Loading label="Loading progress…" />
+              )}
+              {card.title && (
+                <Link
+                  to={`/learn/${card.enrollment.courseId}`}
+                  className="inline-flex items-center justify-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors mt-auto"
+                >
+                  Continue learning →
+                </Link>
+              )}
+            </article>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -79,15 +79,26 @@ export default function LearnPage() {
   }
 
   if (pageState === "loading") {
-    return <Loading label="Loading course…" />;
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <Loading label="Loading course…" />
+      </div>
+    );
   }
 
   if (pageState === "not-enrolled") {
     return (
-      <div className="page">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <EmptyState
           message="You are not enrolled in this course."
-          action={<Link to={`/courses/${courseId}`}>View the course</Link>}
+          action={
+            <Link
+              to={`/courses/${courseId}`}
+              className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors"
+            >
+              View the course
+            </Link>
+          }
         />
       </div>
     );
@@ -95,7 +106,7 @@ export default function LearnPage() {
 
   if (pageState === "not-found") {
     return (
-      <div className="page">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <EmptyState message="This course is no longer available." />
       </div>
     );
@@ -103,9 +114,15 @@ export default function LearnPage() {
 
   if (pageState === "unavailable") {
     return (
-      <div className="page">
-        <p role="alert">We could not confirm your enrollment right now. Please try again.</p>
-        <button type="button" onClick={() => void load()}>
+      <div className="max-w-6xl mx-auto px-4 py-8 text-center">
+        <p role="alert" className="text-slate-600 mb-4">
+          We could not confirm your enrollment right now. Please try again.
+        </p>
+        <button
+          type="button"
+          onClick={() => void load()}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-lg transition-colors cursor-pointer"
+        >
           Retry
         </button>
       </div>
@@ -120,36 +137,86 @@ export default function LearnPage() {
   const selectedLesson = lessons.find((lesson) => lesson.id === selectedLessonId) ?? lessons[0];
 
   return (
-    <div className="page learn-page">
-      <h1>{content.title}</h1>
-      {progress && <ProgressBar progress={progress} />}
-      <div className="learn-page__layout">
-        <ol className="learn-page__lessons">
-          {lessons.map((lesson) => (
-            <li key={lesson.id}>
+    <div className="min-h-screen bg-slate-50">
+      {/* Course header */}
+      <div className="bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-800 text-white py-8 px-4">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-2xl font-bold mb-3">{content.title}</h1>
+          {progress && (
+            <div className="max-w-md">
+              <ProgressBar progress={progress} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col sm:flex-row gap-6">
+        {/* Lesson sidebar */}
+        <aside className="sm:w-64 flex-shrink-0">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden sticky top-20">
+            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Lessons</h2>
+            </div>
+            <ol className="list-none p-0 m-0 max-h-[60vh] overflow-y-auto">
+              {lessons.map((lesson, index) => {
+                const isSelected = lesson.id === selectedLesson?.id;
+                const isComplete = lesson.id ? completedLessonIds.has(lesson.id) : false;
+                return (
+                  <li key={lesson.id} className="border-b border-slate-100 last:border-0">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLessonId(lesson.id ?? null)}
+                      aria-current={isSelected ? "true" : undefined}
+                      className={`w-full text-left px-4 py-3 text-sm transition-colors flex items-center gap-2 cursor-pointer ${
+                        isSelected
+                          ? "bg-indigo-50 text-indigo-700 font-medium border-l-4 border-l-indigo-500"
+                          : "hover:bg-slate-50 text-slate-700"
+                      }`}
+                    >
+                      <span
+                        className={`w-5 h-5 rounded-full text-xs flex items-center justify-center flex-shrink-0 font-bold ${
+                          isComplete
+                            ? "bg-emerald-500 text-white"
+                            : isSelected
+                              ? "bg-indigo-200 text-indigo-700"
+                              : "bg-slate-200 text-slate-500"
+                        }`}
+                      >
+                        {isComplete ? "✓" : index + 1}
+                      </span>
+                      <span className="truncate">{lesson.title}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        </aside>
+
+        {/* Lesson content */}
+        {selectedLesson && (
+          <main className="flex-1 min-w-0">
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h2 className="text-xl font-bold text-slate-800 mb-4">{selectedLesson.title}</h2>
+              <div className="prose prose-slate max-w-none">
+                <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedLesson.content}</p>
+              </div>
               <button
                 type="button"
-                onClick={() => setSelectedLessonId(lesson.id ?? null)}
-                aria-current={lesson.id === selectedLesson?.id}
+                onClick={() => selectedLesson.id && void toggleComplete(selectedLesson.id)}
+                disabled={toggleBusy || !selectedLesson.id}
+                className={`mt-6 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                  selectedLesson.id && completedLessonIds.has(selectedLesson.id)
+                    ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                }`}
               >
-                {lesson.id && completedLessonIds.has(lesson.id) ? "✓ " : ""}
-                {lesson.title}
+                {selectedLesson.id && completedLessonIds.has(selectedLesson.id)
+                  ? "✓ Mark incomplete"
+                  : "Mark complete"}
               </button>
-            </li>
-          ))}
-        </ol>
-        {selectedLesson && (
-          <div className="learn-page__content">
-            <h2>{selectedLesson.title}</h2>
-            <p className="lesson-content">{selectedLesson.content}</p>
-            <button
-              type="button"
-              onClick={() => selectedLesson.id && void toggleComplete(selectedLesson.id)}
-              disabled={toggleBusy || !selectedLesson.id}
-            >
-              {selectedLesson.id && completedLessonIds.has(selectedLesson.id) ? "Mark incomplete" : "Mark complete"}
-            </button>
-          </div>
+            </div>
+          </main>
         )}
       </div>
     </div>

@@ -8,10 +8,17 @@ export default function Field({
 }: { label: string; message?: string } & InputHTMLAttributes<HTMLInputElement>) {
   const id = inputProps.id ?? inputProps.name;
   return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      <input id={id} {...inputProps} aria-invalid={message ? true : undefined} />
-      {message && <span className="field__message">{message}</span>}
+    <div className="flex flex-col gap-1 mb-4">
+      <label htmlFor={id} className="text-sm font-medium text-slate-700">
+        {label}
+      </label>
+      <input
+        id={id}
+        {...inputProps}
+        aria-invalid={message ? true : undefined}
+        className="border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+      />
+      {message && <span className="text-sm text-red-600">{message}</span>}
     </div>
   );
 }
