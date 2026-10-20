@@ -115,11 +115,13 @@ class LessonContentAccessIT extends AbstractCourseServiceIT {
         course.markPublished(Instant.now());
         courses.save(course);
         ENROLLMENT_SERVICE.enrolled(course.getId(), student);
+        UUID lessonId = lessons.findByCourseIdOrderByPosition(course.getId()).get(0).getId();
 
         mockMvc.perform(get("/api/v1/courses/" + course.getId() + "/content")
                         .header(IdentityHeaders.USER_ID, student.toString())
                         .header(IdentityHeaders.USER_ROLE, "STUDENT"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lessons[0].id").value(lessonId.toString()))
                 .andExpect(jsonPath("$.lessons[0].content").value("TOP SECRET CONTENT"));
     }
 

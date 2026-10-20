@@ -13,11 +13,11 @@ import java.util.UUID;
  */
 public record CourseContentView(UUID courseId, String title, List<LessonView> lessons) {
 
-    public record LessonView(String title, int position, int durationMinutes, String content) {
+    public record LessonView(UUID id, String title, int position, int durationMinutes, String content) {
 
         static LessonView of(Lesson lesson) {
-            return new LessonView(lesson.getTitle(), lesson.getPosition(), lesson.getDurationMinutes(),
-                    lesson.getContent());
+            return new LessonView(lesson.getId(), lesson.getTitle(), lesson.getPosition(),
+                    lesson.getDurationMinutes(), lesson.getContent());
         }
     }
 

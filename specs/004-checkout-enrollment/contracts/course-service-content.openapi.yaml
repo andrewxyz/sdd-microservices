@@ -6,7 +6,10 @@ info:
     One new endpoint added to course-service by this feature. 003's existing
     specs/003-course-catalog/contracts/course-service.openapi.yaml is unchanged; this file documents
     only the addition (research.md R5). Reached through the gateway at /api/v1/courses/*/content,
-    which requires a valid access token.
+    which requires a valid access token. lessons[].id was added additively by
+    specs/006-student-web-app (research.md R0.3): it is the only gateway-reachable place a signed-in
+    caller can learn a lesson's id, which the progress endpoints
+    (specs/005-progress-certificates-notifications) require to mark it complete.
 servers:
   - url: /api/v1
 paths:
@@ -54,6 +57,7 @@ components:
           items:
             type: object
             properties:
+              id: { type: string, format: uuid }
               title: { type: string }
               position: { type: integer }
               durationMinutes: { type: integer }

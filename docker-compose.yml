@@ -418,6 +418,27 @@ services:
       retries: 20
       start_period: 30s
 
+  # The student-facing React app, built from source and served by nginx (research R13).
+  # All API calls from the browser go through the container's own /api/ proxy, keeping every request
+  # same-origin and removing the need for CORS configuration on the gateway.
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      GATEWAY_URL: ${GATEWAY_URL:-http://api-gateway:9080}
+      NGINX_ENVSUBST_TEMPLATE_VARS: GATEWAY_URL
+    ports:
+      - "9100:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
   # A second copy of the echo service, for checking that calls spread across instances.
   # Started on demand:  docker compose --profile scale up -d echo-service-b
   # No host port: it is reached only through the gateway, by service name.

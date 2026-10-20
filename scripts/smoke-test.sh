@@ -551,5 +551,22 @@ if [ "$LIFECYCLE" -eq 1 ]; then
   fi
 fi
 
+# ---------------------------------------------------------------- frontend (SC-009)
+FE="http://localhost:9100"
+
+fe_html="$(curl -s -o /dev/null -w '%{http_code}' "$FE/")"
+if [ "$fe_html" = "200" ]; then
+  pass "frontend root returns HTTP 200"
+else
+  fail "frontend root returns HTTP 200" "got $fe_html (is the frontend container running?)"
+fi
+
+fe_api="$(curl -s -o /dev/null -w '%{http_code}' "$FE/api/v1/courses")"
+if [ "$fe_api" = "200" ]; then
+  pass "GET /api/v1/courses proxied through the frontend container returns 200"
+else
+  fail "GET /api/v1/courses proxied through the frontend container returns 200" "got $fe_api"
+fi
+
 printf '\n%d passed, %d failed\n' "$PASSED" "$FAILED"
 [ "$FAILED" -eq 0 ]
