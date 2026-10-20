@@ -150,42 +150,42 @@ keep using the app (no prompt), then sign out and confirm guarded routes are unr
 
 ### Tests for User Story 2 (write first, watch fail) ⚠️
 
-- [ ] T024 [P] [US2] Write `frontend/src/auth/session.test.ts`: the access token is held in memory
+- [X] T024 [P] [US2] Write `frontend/src/auth/session.test.ts`: the access token is held in memory
       and **never** written to storage; the refresh token is written to `sessionStorage` under
       `learnhub.refreshToken`; **nothing is ever written to `localStorage`** (constitution XII,
       data-model.md).
-- [ ] T025 [P] [US2] Write `frontend/src/auth/AuthProvider.test.tsx` for restore-on-load: no refresh
+- [X] T025 [P] [US2] Write `frontend/src/auth/AuthProvider.test.tsx` for restore-on-load: no refresh
       token → `anonymous`; refresh succeeds → `authenticated` with the profile from
       `GET /api/v1/auth/me`; refresh fails → `anonymous` with storage cleared (research R4).
-- [ ] T026 [P] [US2] Write `frontend/src/auth/RequireAuth.test.tsx`: a signed-out visitor is
+- [X] T026 [P] [US2] Write `frontend/src/auth/RequireAuth.test.tsx`: a signed-out visitor is
       redirected to `/login` carrying `returnTo`, and while status is `restoring` a loading state
       renders rather than a flash of the login page (FR-017, data-model.md).
-- [ ] T027 [P] [US2] Write `frontend/src/pages/RegisterPage.test.tsx`: registration is
+- [X] T027 [P] [US2] Write `frontend/src/pages/RegisterPage.test.tsx`: registration is
       **register-then-login** because `POST /api/v1/auth/register` returns no tokens (research
       R0.1); and if the follow-up login fails, the user is sent to `/login` told the account was
       created — never told registration failed.
-- [ ] T028 [P] [US2] Write `frontend/src/pages/LoginPage.test.tsx` for field-level messages
+- [X] T028 [P] [US2] Write `frontend/src/pages/LoginPage.test.tsx` for field-level messages
       (research R5): register **409** attaches to the email field, register **422** attaches to the
       password field, and login **401** renders as a form-level message because the backend
       deliberately cannot distinguish a wrong email from a wrong password (FR-016).
 
 ### Implementation for User Story 2
 
-- [ ] T029 [US2] Implement `frontend/src/auth/session.ts`: access token in a module variable,
+- [X] T029 [US2] Implement `frontend/src/auth/session.ts`: access token in a module variable,
       refresh token in `sessionStorage` under `learnhub.refreshToken`, plus `clear()`.
-- [ ] T030 [US2] Implement `frontend/src/auth/AuthProvider.tsx` and
+- [X] T030 [US2] Implement `frontend/src/auth/AuthProvider.tsx` and
       `frontend/src/auth/useAuth.ts` with the `restoring | authenticated | anonymous` state machine
       and transitions from data-model.md, including `logout()` calling
       `POST /api/v1/auth/logout` and then clearing regardless of the response.
-- [ ] T031 [US2] Implement `frontend/src/auth/RequireAuth.tsx` redirecting to
+- [X] T031 [US2] Implement `frontend/src/auth/RequireAuth.tsx` redirecting to
       `/login?returnTo=…` and rendering `Loading` while restoring.
-- [ ] T032 [P] [US2] Create `frontend/src/components/Field.tsx`: label, input, and the slot where a
+- [X] T032 [P] [US2] Create `frontend/src/components/Field.tsx`: label, input, and the slot where a
       field-level message appears (FR-016).
-- [ ] T033 [US2] Implement `frontend/src/pages/LoginPage.tsx`, honouring `returnTo` on success and
+- [X] T033 [US2] Implement `frontend/src/pages/LoginPage.tsx`, honouring `returnTo` on success and
       showing the `Retry-After` wait on a 429.
-- [ ] T034 [US2] Implement `frontend/src/pages/RegisterPage.tsx` with the register-then-login flow
+- [X] T034 [US2] Implement `frontend/src/pages/RegisterPage.tsx` with the register-then-login flow
       from T027.
-- [ ] T035 [US2] Wire `/login` and `/register` into `frontend/src/App.tsx`, wrap the app in
+- [X] T035 [US2] Wire `/login` and `/register` into `frontend/src/App.tsx`, wrap the app in
       `AuthProvider`, and add a header showing the signed-in email with a sign-out control.
 
 **Checkpoint**: Sign-up, sign-in, reload-persistence, silent renewal and sign-out all work. The app
