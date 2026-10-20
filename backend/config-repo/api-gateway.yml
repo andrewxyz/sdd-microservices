@@ -12,8 +12,8 @@ spring:
           globalcors:
             cors-configurations:
               '[/**]':
-                # Placeholders until the frontend spec assigns its real 9xxx port.
                 allowed-origins:
+                  - "http://localhost:9100"
                   - "http://localhost:9000"
                   - "http://localhost:5173"
                 allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
