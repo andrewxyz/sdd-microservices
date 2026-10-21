@@ -1,0 +1,167 @@
+openapi: 3.0.3
+info:
+  title: LearnHub review-service
+  version: "1.0.0"
+  description: >
+    Reached through the gateway. Reads (list + summary) are public; writes (create/update/delete) are
+    protected and restricted to the review's owner (identity from the gateway-verified JWT, forwarded as
+    X-User-Id). Every error response uses the shared problem-details.schema.json shape
+    (specs/001-platform-foundation/contracts/).
+servers:
+  - url: /api/v1
+paths:
+  /reviews/courses/{courseId}:
+    get:
+      summary: List a course's active reviews (FR-008)
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer, default: 0, minimum: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: A page of the course's active reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/ReviewView" }
+                  page: { type: integer }
+                  size: { type: integer }
+                  totalItems: { type: integer }
+    post:
+      summary: Create or update the caller's review for this course (FR-001, FR-002, FR-003)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReviewWriteRequest" }
+      responses:
+        "200":
+          description: An existing review for this (student, course) pair was updated in place (FR-003)
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/ReviewView" } }
+        "201":
+          description: A new review was created
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/ReviewView" } }
+        "400":
+          description: Rating out of range, comment too long, or comment failed the blocked-word check (FR-007, FR-012)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "403":
+          description: The caller is not enrolled in this course (FR-002)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "404":
+          description: The course does not exist
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "503":
+          description: The enrollment check could not be completed (enrollment-service unavailable, circuit open) — the review is not created (R2)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+  /reviews/courses/{courseId}/summary:
+    get:
+      summary: A course's aggregate rating (FR-009)
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The average rating and review count, or review_count 0 with no average when there are no reviews yet
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/CourseRatingSummary" } }
+  /reviews/{reviewId}:
+    put:
+      summary: Edit the caller's own review (FR-004)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReviewEditRequest" }
+      responses:
+        "200":
+          description: The updated review
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/ReviewView" } }
+        "400":
+          description: Comment too long or failed the blocked-word check, or rating out of range
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "404":
+          description: No such review, or the review does not belong to the caller (identical response for both, FR-006)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+    delete:
+      summary: Delete the caller's own review (FR-005)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: No such review, or the review does not belong to the caller (identical response for both, FR-006)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    ReviewView:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ReviewWriteRequest:
+      type: object
+      required: [rating]
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, nullable: true, maxLength: 500 }
+    ReviewEditRequest:
+      type: object
+      required: [rating]
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, nullable: true, maxLength: 500 }
+    CourseRatingSummary:
+      type: object
+      properties:
+        courseId: { type: string, format: uuid }
+        averageRating: { type: number, nullable: true }
+        reviewCount: { type: integer }
+    ProblemDetail:
+      $ref: "../../001-platform-foundation/contracts/problem-details.schema.json"

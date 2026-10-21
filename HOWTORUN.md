@@ -95,11 +95,11 @@ publishing, categories, and a new lesson-content reading endpoint gated by enrol
 **checkout-and-enrollment pair**: **payment-service** (checkout, a simulated payment provider, payment
 history) and **enrollment-service** (consuming successful payments into enrollments, reliably, plus
 lesson progress and one-time course completion), and the **progress-certificates-notifications trio**:
-**certificate-service** (automatic, exactly-once certificate issuance and public verification) and
-**notification-service** (enrollment and certificate emails, captured locally by Mailpit). The one
-remaining business service (review) already has an **empty database and login** provisioned (step 3.18
-below), ready for its own spec to fill in — but its code doesn't exist yet, so there's nothing to call
-for it.
+**certificate-service** (automatic, exactly-once certificate issuance and public verification),
+**notification-service** (enrollment and certificate emails, captured locally by Mailpit), and
+**review-service** (course ratings and comments, gated by a live enrollment check, with the aggregate
+rating computed on every read — no RabbitMQ, since nothing else consumes a review event). Every business
+service in the original plan is now built.
 
 | Component | Host port | What it's for |
 |-----------|-----------|----------------|
@@ -111,9 +111,10 @@ for it.
 | **enrollment-service** | 9003 | Enrollments, lesson progress, course completion — reached through the gateway at `/api/v1/enrollments/**` |
 | **payment-service** | 9004 | Checkout, payment history — reached through the gateway at `/api/v1/checkouts`, `/api/v1/payments/**` |
 | **certificate-service** | 9005 | Certificates — reached through the gateway at `/api/v1/certificates/mine` and the public `/api/v1/certificates/verify/{code}` |
+| **review-service** | 9006 | Course reviews — reached through the gateway at the public `/api/v1/reviews/courses/{courseId}` and `/api/v1/reviews/courses/{courseId}/summary`, and the protected `POST /api/v1/reviews/courses/{courseId}`, `PUT`/`DELETE /api/v1/reviews/{reviewId}` |
 | **notification-service** | 9007 | Enrollment and certificate emails, captured by Mailpit — no gateway route, nothing to call directly |
 | echo-service | 9099 | Placeholder service (also reachable directly, for comparison) |
-| PostgreSQL | 9432 | One database per business service; `auth`, `course`, `enrollment`, `payment`, `certificate` and `notification` have real tables now, `review` is still empty |
+| PostgreSQL | 9432 | One database per business service; `auth`, `course`, `enrollment`, `payment`, `certificate`, `review` and `notification` all have real tables now |
 | RabbitMQ (AMQP / management) | 9672 / 9673 | Message broker; carries `payment.succeeded`, `enrollment.created`, `course.completed` and `certificate.issued` on the `learning.events` exchange |
 | Mailpit (SMTP / web UI) | 9025 / 9825 | Catches outgoing mail locally; nothing leaves the machine |
 
@@ -489,12 +490,13 @@ docker compose exec postgres psql -U "$POSTGRES_USER" -d postgres -c '\l' \
 ```
 
 Every service has its own database, owned by a role of the same name. `auth`, `course`, `enrollment`,
-`payment`, `certificate` and `notification` now have real tables — check any of them with:
+`payment`, `certificate`, `review` and `notification` now have real tables — check any of them with:
 
 ```bash
 docker compose exec postgres psql -U auth -d auth -c '\dt'
 docker compose exec postgres psql -U course -d course -c '\dt'
 docker compose exec postgres psql -U certificate -d certificate -c '\dt'
+docker compose exec postgres psql -U review -d review -c '\dt'
 docker compose exec postgres psql -U notification -d notification -c '\dt'
 ```
 
@@ -517,7 +519,7 @@ docker compose exec postgres psql -U notification -d notification -c '\dt'
  public | lessons               | table | course
 ```
 
-Only `review` is still empty, waiting for its own spec.
+`review` now has its own `reviews` table too — every business service's database has real tables.
 
 ### 3.19 Send and view a test email
 

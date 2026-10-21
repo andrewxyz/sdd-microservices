@@ -1,0 +1,55 @@
+# Test defaults, replacing the service's own application.yml on the test classpath.
+#
+# The real file imports settings from the config server; that import is declared inside the file and
+# is processed while the file loads, so only replacing the file (not an external property) can cancel
+# it. The datasource comes from each IT class's @DynamicPropertySource, pointed at a Testcontainers
+# PostgreSQL instance (constitution Principle VI: Testcontainers, never H2). review-service has no
+# RabbitMQ dependency (research.md R1).
+
+spring:
+  application:
+    name: review-service
+  cloud:
+    config:
+      enabled: false
+    openfeign:
+      circuitbreaker:
+        enabled: true
+        group:
+          enabled: true
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+platform:
+  config-watcher:
+    enabled: false
+
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 2000
+        read-timeout: 2000
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      enrollment-service:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+  timelimiter:
+    instances:
+      enrollment-service:
+        timeout-duration: 15s
+        cancel-running-future: true

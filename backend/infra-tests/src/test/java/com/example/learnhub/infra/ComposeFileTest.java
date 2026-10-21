@@ -83,7 +83,7 @@ class ComposeFileTest {
         // (specs/003-course-catalog); 9003 is enrollment-service's and 9004 is payment-service's real
         // port (specs/004-checkout-enrollment); 9005 is certificate-service's and 9007 is
         // notification-service's real port (specs/005-progress-certificates-notifications); 9006 is
-        // still reserved for review-service, not yet built.
+        // review-service's real port (specs/007-review-service).
         for (String name : services.keySet()) {
             for (String mapping : ports(name)) {
                 int hostPort = Integer.parseInt(mapping.split(":")[0].replace("\"", "").trim());
@@ -92,10 +92,12 @@ class ComposeFileTest {
                 boolean isEnrollmentServiceOnItsOwnPort = hostPort == 9003 && "enrollment-service".equals(name);
                 boolean isPaymentServiceOnItsOwnPort = hostPort == 9004 && "payment-service".equals(name);
                 boolean isCertificateServiceOnItsOwnPort = hostPort == 9005 && "certificate-service".equals(name);
+                boolean isReviewServiceOnItsOwnPort = hostPort == 9006 && "review-service".equals(name);
                 boolean isNotificationServiceOnItsOwnPort = hostPort == 9007 && "notification-service".equals(name);
                 assertThat(isAuthServiceOnItsOwnPort || isCourseServiceOnItsOwnPort
                                 || isEnrollmentServiceOnItsOwnPort || isPaymentServiceOnItsOwnPort
-                                || isCertificateServiceOnItsOwnPort || isNotificationServiceOnItsOwnPort
+                                || isCertificateServiceOnItsOwnPort || isReviewServiceOnItsOwnPort
+                                || isNotificationServiceOnItsOwnPort
                                 || hostPort < 9003 || hostPort > 9007)
                         .as("%s uses port %d, which is reserved for a future business service",
                                 name, hostPort)

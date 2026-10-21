@@ -35,6 +35,7 @@ publish courses; administrators manage categories and roles.
 4. **Learning and progress**: lesson content gated by enrollment; mark lessons complete; progress percentage; course completion detected exactly once.
 5. **Certificates**: one certificate per student per course, issued from `course.completed`; public verification by 16-character code.
 6. **Notifications**: plain-text email on enrollment and on certificate issue.
+7. **Reviews**: a student rates (1-5) and optionally comments on a course they are enrolled in; one review per student per course; public browsing of a course's reviews and its average rating.
 
 ### 0.3 How to read this document
 
@@ -79,26 +80,26 @@ events, for anything that changes state. The main patterns:
                          |  api-gateway  (:9080)      |<---->| discovery-server  |
                          |  JWT check, CORS, rate     |      | Eureka   (:9761)  |
                          |  limit, correlation ID     |      +-------------------+
-                         +--+-----+-----+-----+----+--+      +-------------------+
-                            |     |     |     |    |         | config-server     |
-              lb:// routes  |     |     |     |    |         | (:9888) serves    |
-                            v     v     v     v    v         | backend/config-repo
-   +-----------+ +---------+ +-----------+ +---------+ +-------------+
-   | auth      | | course  | | enrollment| | payment | | certificate |   notification
-   | :9001     | | :9002   | | :9003     | | :9004   | | :9005       |   :9007 (no public
-   +-----+-----+ +----+----+ +-----+-----+ +----+----+ +------+------+    route)
-         |            |            |            |             |               |
-         |      Feign lookups (Resilience4j circuit breaker + fallback)       |
-         |            |            |            |             |               |
-   +-----v------------v------------v------------v-------------v---------------v-----+
-   |  PostgreSQL 16 (:9432): auth_db, course_db, enrollment_db, payment_db,          |
-   |  certificate_db, notification_db (review_db reserved). One owner per database   |
-   +----------------------------------------------------------------------------------+
-   |  RabbitMQ 4.3 (:9672): topic exchange learning.events, one queue + DLQ per       |
-   |  consumer                                                                        |
-   +----------------------------------------------------------------------------------+
-   |  Mailpit (:9025 SMTP / :9825 UI): local email capture                            |
-   +----------------------------------------------------------------------------------+
+                         +--+-----+-----+-----+----+--+--+   +-------------------+
+                            |     |     |     |    |    |   | config-server     |
+              lb:// routes  |     |     |     |    |    |   | (:9888) serves    |
+                            v     v     v     v    v    v   | backend/config-repo
+   +-----------+ +---------+ +-----------+ +---------+ +-------------+ +--------+
+   | auth      | | course  | | enrollment| | payment | | certificate | | review |   notification
+   | :9001     | | :9002   | | :9003     | | :9004   | | :9005       | | :9006  |   :9007 (no public
+   +-----+-----+ +----+----+ +-----+-----+ +----+----+ +------+------+ +---+----+    route)
+         |            |            |            |             |            |            |
+         |      Feign lookups (Resilience4j circuit breaker + fallback)                 |
+         |            |            |            |             |            |            |
+   +-----v------------v------------v------------v-------------v------------v------------v-----+
+   |  PostgreSQL 16 (:9432): auth_db, course_db, enrollment_db, payment_db,                    |
+   |  certificate_db, review_db, notification_db. One owner per database                       |
+   +---------------------------------------------------------------------------------------------+
+   |  RabbitMQ 4.3 (:9672): topic exchange learning.events, one queue + DLQ per consumer         |
+   |  (review-service publishes/consumes nothing — no downstream reads a review event)           |
+   +---------------------------------------------------------------------------------------------+
+   |  Mailpit (:9025 SMTP / :9825 UI): local email capture                                       |
+   +---------------------------------------------------------------------------------------------+
 ```
 
 ### 1.3 Bounded contexts
@@ -111,7 +112,7 @@ events, for anything that changes state. The main patterns:
 | Learning | `enrollment-service` | Enrollments, lesson completions, course completion | Built (specs 004–005) |
 | Credentials | `certificate-service` | Certificates and verification codes | Built (spec 005) |
 | Messaging | `notification-service` | Sent-notification log (for de-duplication) | Built (spec 005) |
-| Feedback | `review-service` | Course reviews | Deferred; port 9006 and `review_db` reserved |
+| Feedback | `review-service` | Reviews, ratings, the per-course aggregate | Built (spec 007) |
 
 ### 1.4 Architectural principles in force
 
@@ -166,6 +167,7 @@ These are enforced by the constitution and, in several cases, by tests (`NoWirin
 | `payment-service` | `POST /checkouts`; `GET /payments/**` (caller's own only) |
 | `enrollment-service` | `GET /enrollments`; `PUT` / `DELETE /enrollments/{courseId}/lessons/{lessonId}/complete`; `GET /enrollments/{courseId}/progress` |
 | `certificate-service` | `GET /certificates/mine`; `GET /certificates/verify/{code}` (public, strict rate limit) |
+| `review-service` | `GET /reviews/courses/{courseId}`, `/reviews/courses/{courseId}/summary` (public); `POST /reviews/courses/{courseId}`; `PUT`/`DELETE /reviews/{reviewId}` (owner only) |
 | `notification-service` | none (event-driven only) |
 
 **Dependencies and events:**
@@ -177,7 +179,12 @@ These are enforced by the constitution and, in several cases, by tests (`NoWirin
 | `payment-service` | `course-service`: price, published state | `payment.succeeded` | none |
 | `enrollment-service` | `course-service`: lesson set for progress | `enrollment.created`, `course.completed` | `payment.succeeded` |
 | `certificate-service` | `course-service`: course title | `certificate.issued` | `course.completed` |
+| `review-service` | `enrollment-service`: is the caller enrolled? | none | none |
 | `notification-service` | `auth-service`: email address; `course-service`: course title | none | `enrollment.created`, `certificate.issued` |
+
+`review-service` is the one business service with no outbox and no RabbitMQ listener: its aggregate
+rating is computed from its own `reviews` table on every read, and no other service currently needs to
+react to a review being created, edited or deleted (see `specs/007-review-service/research.md` R1).
 
 Every service follows the `api` / `application` / `domain` /
 `infrastructure` layering under `com.example.learnhub.<service>`.
@@ -457,9 +464,9 @@ peak; p95 checkout-to-enrollment < 10 s (already a spec goal); zero lost or dupl
 
 #### Phase 5: Product expansion
 
-1. `review-service` (port 9006, `review_db` already reserved) as its own spec, consuming `course.completed` so only finishers can review.
-2. Instructor and administrator web apps as separate specs and separate frontends (constitution: not folded into the student app).
-3. Optional search service fed by catalog events, if filtering is no longer enough.
+1. Instructor and administrator web apps as separate specs and separate frontends (constitution: not folded into the student app).
+2. Optional search service fed by catalog events, if filtering is no longer enough.
+3. If a future spec needs a course's rating cached on `course-service` (e.g. for catalog sort/filter), add a `review.created`/`review.updated`/`review.deleted` outbox to `review-service` then — not before, since nothing consumes it yet (`specs/007-review-service/research.md` R1).
 
 ### 5.3 Risk register
 
@@ -486,6 +493,7 @@ peak; p95 checkout-to-enrollment < 10 s (already a spec goal); zero lost or dupl
 
 Envelope (all events): `eventId`, `type`, `version`, `occurredAt`, `correlationId`, `payload`. Exchange:
 `learning.events` (topic). Each consumer has its own queue and DLQ, 3 retries with backoff.
+`review-service` is not in this table: it neither publishes nor consumes any event.
 
 ## Appendix B: Port map (local and CI)
 
@@ -494,7 +502,7 @@ Envelope (all events): `eventId`, `type`, `version`, `occurredAt`, `correlationI
 | frontend (nginx) | 9100 | api-gateway | 9080 |
 | auth-service | 9001 | course-service | 9002 |
 | enrollment-service | 9003 | payment-service | 9004 |
-| certificate-service | 9005 | review-service (reserved) | 9006 |
+| certificate-service | 9005 | review-service | 9006 |
 | notification-service | 9007 | echo-service | 9099 |
 | discovery-server | 9761 | config-server | 9888 |
 | PostgreSQL | 9432 | RabbitMQ AMQP / UI | 9672 / 9673 |

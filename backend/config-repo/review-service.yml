@@ -1,0 +1,6 @@
+# Settings for the review service.
+#
+# Nothing here is a secret: the database credentials are a deployment secret supplied as an environment
+# variable directly, the same way every other service's are. This file exists so review-service
+# participates in the non-optional config-server import like every other business service (constitution
+# Principle III); it has no refreshable setting yet.

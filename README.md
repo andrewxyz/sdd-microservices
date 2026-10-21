@@ -81,7 +81,7 @@ mapped into that range; the Spring services use the same port inside and outside
 | enrollment-service | 9003 | 9003 |
 | payment-service | 9004 | 9004 |
 | certificate-service | 9005 | 9005 |
-| review-service | 9006 | reserved, not yet built |
+| review-service | 9006 | 9006 |
 | notification-service | 9007 | 9007 |
 | echo-service | 9099 | 9099 |
 | PostgreSQL | 9432 | 5432 |
@@ -208,6 +208,21 @@ message that cannot even be parsed, is retried three times and then set aside in
 rather than blocking the messages behind it. See
 `specs/005-progress-certificates-notifications/contracts/` for the full endpoint contracts and
 `specs/005-progress-certificates-notifications/quickstart.md` for a curl walkthrough of the whole flow.
+
+## Course reviews
+
+`review-service` (port 9006, behind the gateway at `POST /api/v1/reviews/courses/{courseId}`,
+`PUT`/`DELETE /api/v1/reviews/{reviewId}`, and the public `GET /api/v1/reviews/courses/{courseId}` and
+`GET /api/v1/reviews/courses/{courseId}/summary`) lets a student rate (1-5) and optionally comment on a
+course, but only if they are enrolled in it — checked with a live call to enrollment-service, not an
+event. A second submission for the same course updates the student's existing review rather than
+creating a duplicate; a student can edit or delete their own review, and anyone, signed in or not, can
+browse a course's reviews and see its average rating and review count. The aggregate rating is computed
+directly from review-service's own data on every read, so it can never drift from the underlying
+reviews — unlike the other business services, review-service publishes no events and needs no RabbitMQ
+topology, since nothing else in the platform currently consumes a review change. See
+`specs/007-review-service/contracts/` for the full endpoint contracts and
+`specs/007-review-service/quickstart.md` for a curl walkthrough of the whole flow.
 
 ## Student web app
 

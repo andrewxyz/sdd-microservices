@@ -188,6 +188,26 @@ spring:
                 public: true
                 rate-limit: strict
 
+            # 007-review-service: writes (create/update/delete) are protected by default; ownership is
+            # enforced inside review-service (identical 404 for someone else's review, research.md R5).
+            - id: reviews-write
+              uri: lb://review-service
+              order: 21
+              predicates:
+                - Path=/api/v1/reviews/**
+                - Method=POST,PUT,DELETE
+
+            # 007-review-service: a course's reviews and aggregate rating are public, no authentication
+            # required (FR-008, FR-009, research.md R5).
+            - id: reviews-read
+              uri: lb://review-service
+              order: 22
+              predicates:
+                - Path=/api/v1/reviews/**
+                - Method=GET
+              metadata:
+                public: true
+
   # Needed for the correlation ID to survive across reactive operators and reach log lines.
   reactor:
     context-propagation: auto

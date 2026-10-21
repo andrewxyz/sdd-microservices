@@ -232,7 +232,7 @@ cover every host port in this table.
 | enrollment-service | 9003 | |
 | payment-service | 9004 | |
 | certificate-service | 9005 | |
-| review-service | 9006 | Deferred, not started |
+| review-service | 9006 | Implemented (007-review-service) |
 | notification-service | 9007 | |
 | echo-service | 9099 | Platform verification service |
 | frontend | 9100 | Internal 80 (nginx); the Vite dev server also uses 9100 |
@@ -247,11 +247,9 @@ cover every host port in this table.
 - One `docker-compose.yml` at the repo root MUST start the whole platform, with health checks and
   startup order (discovery and config servers first).
 - Specs 001 through 005 are complete: platform foundation, user auth, course catalog, checkout and
-  enrollment, and progress with certificates and notifications.
-- `review-service` is deferred and MUST NOT be started until the student web app ships. Its port
-  (9006) stays reserved.
-- The next spec is the student web app: the frontend a student needs to browse, enrol, learn, track
-  progress and collect certificates.
+  enrollment, and progress with certificates and notifications. Spec 006 (the student web app) is
+  complete. Spec 007 (`review-service`) is complete: enrolled students rate and comment on courses,
+  edit or delete their own review, and anyone can browse a course's reviews and aggregate rating.
 - Instructor screens, administrator screens and the review UI come later, if at all. They MUST NOT
   be folded into the student web app spec.
 - Each spec MUST go through specify, clarify, plan, tasks and implement on its own branch.
@@ -268,4 +266,4 @@ wording. Adding a technology, service or the frontend stack is a MINOR amendment
 plan review and pull request MUST verify compliance with this constitution, and unjustified
 complexity MUST be rejected.
 
-**Version**: 1.2.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-19
+**Version**: 1.2.1 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-20
