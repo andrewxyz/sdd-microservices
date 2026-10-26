@@ -9,3 +9,5 @@ export * as payment from "./generated/payment";
 export * as enrollment from "./generated/enrollment";
 export * as progress from "./generated/progress";
 export * as certificate from "./generated/certificate";
+export * as review from "./generated/review";
+export * as reviewSummaries from "./generated/reviewSummaries";

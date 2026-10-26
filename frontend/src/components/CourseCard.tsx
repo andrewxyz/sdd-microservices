@@ -1,5 +1,6 @@
 import { Link } from "react-router";
-import type { CoursePublicView } from "../api/endpoints";
+import type { CoursePublicView, CourseRatingSummary } from "../api/endpoints";
+import StarRating from "./StarRating";
 
 const LEVEL_BADGE: Record<string, string> = {
   BEGINNER: "bg-emerald-100 text-emerald-800",
@@ -21,9 +22,11 @@ function formatPrice(course: CoursePublicView): string {
 export default function CourseCard({
   course,
   categoryName,
+  summary,
 }: {
   course: CoursePublicView;
   categoryName: string | undefined;
+  summary?: CourseRatingSummary;
 }) {
   const isFree = !course.priceCents;
   const levelBadge = LEVEL_BADGE[course.level ?? ""] ?? "bg-slate-100 text-slate-600";
@@ -41,6 +44,7 @@ export default function CourseCard({
         )}
         {categoryName && <span className="text-xs text-slate-500">{categoryName}</span>}
       </div>
+      {summary && <StarRating average={summary.averageRating} count={summary.reviewCount ?? 0} />}
       <p className={`text-lg font-bold mt-auto ${isFree ? "text-emerald-600" : "text-slate-800"}`}>
         {formatPrice(course)}
       </p>
