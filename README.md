@@ -265,6 +265,36 @@ graphify . --update                         # refresh after changing files
 Its output lives in `graphify-out/` (gitignored — it's a local cache, never committed) and needs no API
 key for a code-only run: structural extraction is free, local tree-sitter parsing.
 
+### Viewing the graph in Obsidian
+
+[Obsidian](https://obsidian.md) can browse the graph as a vault of linked notes. Export it from the
+existing `graph.json` — no re-scan, no LLM tokens:
+
+```bash
+graphify export obsidian --graph graphify-out/graph.json
+```
+
+This writes one note per node plus a `graph.canvas` into `graphify-out/obsidian/` (about 2,800 notes for
+this repo). In Obsidian choose **Open folder as vault** and select that folder, then use the Graph view
+or open `graph.canvas`. The vault is part of `graphify-out/`, so it is gitignored; re-run the export
+after the graph changes. Prefer this over `graphify . --obsidian`, which re-scans the whole repo and can
+trigger the expensive doc extraction described below. The graph covers `backend/` and `frontend/` only,
+not the markdown under `specs/`.
+
+### Keeping the graph fresh with git hooks
+
+```bash
+graphify hook install     # also: hook status, hook uninstall
+```
+
+This installs `post-commit`, `post-checkout`, `post-merge` and `post-rewrite` hooks in `.git/hooks/`
+and registers a merge driver for `graphify-out/graph.json` (adding a line to `.gitattributes`). After
+each commit the hook finds the changed code files (`git diff HEAD~1`), re-parses them, and rebuilds
+`graph.json` and `GRAPH_REPORT.md` — AST only, so no LLM tokens. Doc and image changes are ignored by
+the hook; index those with a deliberate, scoped `graphify --update`. Hooks live in `.git/`, so they are
+not committed: each fresh clone has to run `graphify hook install` again. The trade-off is a few extra
+seconds on every commit and checkout, and a graph that changes on disk without you asking.
+
 What's genuinely useful about it:
 
 - `graphify explain`/`path` on a symbol gives a quick, free (no LLM) map of what calls what, which is
