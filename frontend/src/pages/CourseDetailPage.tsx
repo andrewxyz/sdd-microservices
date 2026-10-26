@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import * as endpoints from "../api/endpoints";
-import type { CoursePublicView } from "../api/endpoints";
+import type { CoursePublicView, CourseRatingSummary, ReviewView } from "../api/endpoints";
 import EmptyState from "../components/EmptyState";
 import EnrollPanel from "../components/EnrollPanel";
 import Loading from "../components/Loading";
+import ReviewForm from "../components/ReviewForm";
+import ReviewList from "../components/ReviewList";
+import StarRating from "../components/StarRating";
 import { useAuth } from "../auth/useAuth";
 
 type PageState = "loading" | "ready" | "not-found";
@@ -19,9 +22,15 @@ const LEVEL_BADGE: Record<string, string> = {
  * appears here (FR-006, FR-008). */
 export default function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const [course, setCourse] = useState<CoursePublicView | null>(null);
   const [pageState, setPageState] = useState<PageState>("loading");
+  const [summary, setSummary] = useState<CourseRatingSummary | null>(null);
+  const [reviews, setReviews] = useState<ReviewView[]>([]);
+  const [reviewPage, setReviewPage] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [reviewsFailed, setReviewsFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!courseId) {
@@ -47,6 +56,48 @@ export default function CourseDetailPage() {
     };
   }, [courseId]);
 
+  // Reviews are secondary: a failure here leaves the rest of the page intact. Any change (submit, edit,
+  // delete) bumps reloadKey, which refetches the summary and the first page.
+  useEffect(() => {
+    if (!courseId) {
+      return;
+    }
+    let cancelled = false;
+    setReviewsFailed(false);
+    Promise.all([endpoints.getReviewSummary(courseId), endpoints.listReviews(courseId, 0)])
+      .then(([summaryView, firstPage]) => {
+        if (!cancelled) {
+          setSummary(summaryView);
+          setReviews(firstPage.items);
+          setReviewPage(0);
+          setTotalReviews(firstPage.totalItems);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setReviewsFailed(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, reloadKey]);
+
+  function showMoreReviews() {
+    if (!courseId) {
+      return;
+    }
+    const next = reviewPage + 1;
+    endpoints
+      .listReviews(courseId, next)
+      .then((more) => {
+        setReviews((current) => [...current, ...more.items]);
+        setReviewPage(next);
+        setTotalReviews(more.totalItems);
+      })
+      .catch(() => setReviewsFailed(true));
+  }
+
   if (pageState === "loading") {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -65,6 +116,7 @@ export default function CourseDetailPage() {
 
   const lessons = [...(course.lessons ?? [])].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   const levelBadge = LEVEL_BADGE[course.level ?? ""] ?? "bg-slate-100 text-slate-600";
+  const ownReview = user ? reviews.find((r) => r.userId === user.id) : undefined;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -107,6 +159,33 @@ export default function CourseDetailPage() {
             </ol>
           </div>
         )}
+
+        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-slate-800 mb-2">Reviews</h2>
+          {reviewsFailed ? (
+            <p className="text-sm text-slate-500">Reviews are unavailable right now.</p>
+          ) : (
+            <>
+              {summary && <StarRating average={summary.averageRating} count={summary.reviewCount ?? 0} />}
+              <div className="my-4">
+                <ReviewList
+                  reviews={reviews}
+                  hasMore={reviews.length < totalReviews}
+                  onShowMore={showMoreReviews}
+                />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-2">
+                {ownReview ? "Your review" : "Write a review"}
+              </h3>
+              <ReviewForm
+                key={ownReview?.id ?? "new"}
+                courseId={course.id ?? courseId ?? ""}
+                existing={ownReview}
+                onChanged={() => setReloadKey((k) => k + 1)}
+              />
+            </>
+          )}
+        </div>
 
         {status === "authenticated" ? (
           <EnrollPanel course={course} />

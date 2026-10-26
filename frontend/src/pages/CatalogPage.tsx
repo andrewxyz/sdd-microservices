@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import * as endpoints from "../api/endpoints";
-import type { Category, CoursePublicView, Page } from "../api/endpoints";
+import type { Category, CoursePublicView, CourseRatingSummary, Page } from "../api/endpoints";
 import { ApiError } from "../api/problem";
 import CourseCard from "../components/CourseCard";
 import EmptyState from "../components/EmptyState";
@@ -30,6 +30,7 @@ export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [categories, setCategories] = useState<Category[]>([]);
   const [result, setResult] = useState<Page<CoursePublicView> | null>(null);
+  const [summaries, setSummaries] = useState<Map<string, CourseRatingSummary>>(new Map());
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -81,6 +82,33 @@ export default function CatalogPage() {
       cancelled = true;
     };
   }, [q, category, level, free, sort, page, size]);
+
+  // Ratings are best-effort (FR-004): one request per 50 visible ids; a failure just leaves cards unrated.
+  useEffect(() => {
+    setSummaries(new Map());
+    const ids = (result?.items ?? []).map((c) => c.id).filter((id): id is string => !!id);
+    if (ids.length === 0) {
+      return;
+    }
+    let cancelled = false;
+    const chunks: string[][] = [];
+    for (let i = 0; i < ids.length; i += endpoints.MAX_SUMMARY_IDS) {
+      chunks.push(ids.slice(i, i + endpoints.MAX_SUMMARY_IDS));
+    }
+    Promise.all(chunks.map((chunk) => endpoints.getReviewSummaries(chunk)))
+      .then((responses) => {
+        if (cancelled) {
+          return;
+        }
+        const next = new Map<string, CourseRatingSummary>();
+        responses.forEach((r) => r.items?.forEach((s) => s.courseId && next.set(s.courseId, s)));
+        setSummaries(next);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [result]);
 
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -199,6 +227,7 @@ export default function CatalogPage() {
                 key={course.id}
                 course={course}
                 categoryName={course.categoryId ? categoryNameById.get(course.categoryId) : undefined}
+                summary={course.id ? summaries.get(course.id) : undefined}
               />
             ))}
           </div>

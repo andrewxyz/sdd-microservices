@@ -7,6 +7,9 @@ import com.example.learnhub.review.domain.Review;
 import com.example.learnhub.review.domain.ReviewStatus;
 import com.example.learnhub.review.infrastructure.ReviewRepository;
 import jakarta.validation.Valid;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -72,6 +75,28 @@ public class ReviewController {
         long reviewCount = ((Number) row[1]).longValue();
         Double averageRating = reviewCount == 0 ? null : ((Number) row[0]).doubleValue();
         return new CourseRatingSummaryView(courseId, averageRating, reviewCount);
+    }
+
+    public record CourseRatingSummaries(List<CourseRatingSummaryView> items) {
+    }
+
+    /**
+     * {@code GET /api/v1/reviews/summaries?courseIds=a,b} — aggregate ratings for 1 to 50 courses in one call,
+     * public (spec 008 FR-001, FR-002). One item per distinct id in request order; unreviewed courses are
+     * zero-filled.
+     */
+    @GetMapping("/summaries")
+    public CourseRatingSummaries summaries(@RequestParam(required = false) String courseIds) {
+        List<UUID> ids = CourseIdBatch.parse(courseIds);
+        Map<UUID, CourseRatingSummaryView> found = new HashMap<>();
+        for (Object[] row : reviews.aggregateRatings(ids, ReviewStatus.ACTIVE)) {
+            UUID courseId = (UUID) row[0];
+            found.put(courseId, new CourseRatingSummaryView(courseId, ((Number) row[1]).doubleValue(),
+                    ((Number) row[2]).longValue()));
+        }
+        return new CourseRatingSummaries(ids.stream()
+                .map(id -> found.getOrDefault(id, new CourseRatingSummaryView(id, null, 0)))
+                .toList());
     }
 
     /** {@code PUT /api/v1/reviews/{reviewId}} — edit the caller's own review (FR-004). */

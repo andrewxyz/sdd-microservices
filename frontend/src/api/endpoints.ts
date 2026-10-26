@@ -3,7 +3,17 @@
 // (constitution XIII). Nothing here does more than shape the call — behaviour lives in the pages
 // and hooks that use these.
 import { request } from "./client";
-import type { auth, certificate, course, courseContent, enrollment, payment, progress } from "./schema";
+import type {
+  auth,
+  certificate,
+  course,
+  courseContent,
+  enrollment,
+  payment,
+  progress,
+  review,
+  reviewSummaries,
+} from "./schema";
 
 type AuthSchemas = auth.components["schemas"];
 type CourseSchemas = course.components["schemas"];
@@ -12,6 +22,8 @@ type PaymentSchemas = payment.components["schemas"];
 type EnrollmentSchemas = enrollment.components["schemas"];
 type ProgressSchemas = progress.components["schemas"];
 type CertificateSchemas = certificate.components["schemas"];
+type ReviewSchemas = review.components["schemas"];
+type ReviewSummariesSchemas = reviewSummaries.components["schemas"];
 
 export type TokenPair = AuthSchemas["TokenPair"];
 export type MeView = { id: string; email: string; role: "STUDENT" | "INSTRUCTOR" | "ADMINISTRATOR"; createdAt: string };
@@ -31,6 +43,14 @@ export type ProgressView = ProgressSchemas["ProgressView"];
 
 export type CertificateView = CertificateSchemas["CertificateView"];
 export type VerificationView = CertificateSchemas["VerificationView"];
+
+export type ReviewView = ReviewSchemas["ReviewView"];
+export type ReviewWriteRequest = ReviewSchemas["ReviewWriteRequest"];
+export type CourseRatingSummary = ReviewSchemas["CourseRatingSummary"];
+export type CourseRatingSummaries = ReviewSummariesSchemas["CourseRatingSummaries"];
+
+/** The batch summaries endpoint refuses more than this many ids (callers chunk). */
+export const MAX_SUMMARY_IDS = 50;
 
 export type CourseListQuery = {
   q?: string;
@@ -131,7 +151,36 @@ export function verifyCertificate(code: string): Promise<VerificationView> {
   return request(`/v1/certificates/verify/${encodeURIComponent(code)}`);
 }
 
-// --- Account (specs/004) --------------------------------------------------------------------------
+// --- Reviews (specs/007, specs/008) -------------------------------------------------------------
+
+export function listReviews(courseId: string, page: number): Promise<Page<ReviewView>> {
+  return request(`/v1/reviews/courses/${courseId}?page=${page}`);
+}
+
+export function getReviewSummary(courseId: string): Promise<CourseRatingSummary> {
+  return request(`/v1/reviews/courses/${courseId}/summary`);
+}
+
+export function getReviewSummaries(courseIds: string[]): Promise<CourseRatingSummaries> {
+  if (courseIds.length > MAX_SUMMARY_IDS) {
+    throw new Error(`At most ${MAX_SUMMARY_IDS} course ids per request.`);
+  }
+  return request(`/v1/reviews/summaries?courseIds=${courseIds.join(",")}`);
+}
+
+export function createReview(courseId: string, body: ReviewWriteRequest): Promise<ReviewView> {
+  return request(`/v1/reviews/courses/${courseId}`, { method: "POST", body });
+}
+
+export function updateReview(reviewId: string, body: ReviewWriteRequest): Promise<ReviewView> {
+  return request(`/v1/reviews/${reviewId}`, { method: "PUT", body });
+}
+
+export function deleteReview(reviewId: string): Promise<void> {
+  return request(`/v1/reviews/${reviewId}`, { method: "DELETE" });
+}
+
+// --- Account (specs/004)--------------------------------------------------------------------------
 
 export function listPayments(): Promise<Page<PaymentView>> {
   return request("/v1/payments");

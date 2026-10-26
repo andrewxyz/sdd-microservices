@@ -2,6 +2,7 @@ package com.example.learnhub.review.infrastructure;
 
 import com.example.learnhub.review.domain.Review;
 import com.example.learnhub.review.domain.ReviewStatus;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,4 +24,10 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
      */
     @Query("select avg(r.rating), count(r) from Review r where r.courseId = :courseId and r.status = :status")
     List<Object[]> aggregateRating(@Param("courseId") UUID courseId, @Param("status") ReviewStatus status);
+
+    /** One {@code [courseId, avg, count]} row per course that has at least one review of the given status. */
+    @Query("select r.courseId, avg(r.rating), count(r) from Review r where r.courseId in :courseIds "
+            + "and r.status = :status group by r.courseId")
+    List<Object[]> aggregateRatings(@Param("courseIds") Collection<UUID> courseIds,
+            @Param("status") ReviewStatus status);
 }
