@@ -28,3 +28,5 @@ desktop.ini
 
 # graphify-generated knowledge graph (local dev tool output, not source)
 graphify-out/
+# Playwright CLI output (may contain credentials)
+.playwright-cli/

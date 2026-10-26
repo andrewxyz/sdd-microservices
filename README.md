@@ -247,6 +247,15 @@ mvn -f backend/pom.xml verify     # unit tests, plus Testcontainers tests that n
 Tests come first here: the project constitution makes test-first development non-negotiable, and
 integration tests use Testcontainers rather than an in-memory database.
 
+## Browser testing with playwright-cli
+
+`playwright-cli` can drive the running web app in a real browser (login, registration, ratings, the
+whole review flow). It is a manual, developer-side check, not part of `mvn verify` or `npm test`, and
+the flow is packaged as the `learnhub-ui-test` Claude Code skill (run it with `/learnhub-ui-test` or just
+ask Claude to test the UI in the browser). See
+[`docs/playwright-ui-testing.md`](docs/playwright-ui-testing.md) for setup, what it found, and the
+traps to avoid.
+
 ## Exploring the codebase with graphify
 
 [graphify](https://github.com/Graphify-Labs/graphify) is an optional, local-only dev tool — not part of
