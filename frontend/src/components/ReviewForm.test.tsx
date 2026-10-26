@@ -17,14 +17,15 @@ function renderForm(status: AuthStatus, props: { existing?: Parameters<typeof Re
     register: vi.fn(),
     logout: vi.fn(),
   };
-  render(
+  const tree = (clearErrorKey: number) => (
     <MemoryRouter>
       <AuthContext.Provider value={auth}>
-        <ReviewForm courseId="c-1" existing={props.existing} onChanged={onChanged} />
+        <ReviewForm courseId="c-1" existing={props.existing} onChanged={onChanged} clearErrorKey={clearErrorKey} />
       </AuthContext.Provider>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
-  return { onChanged };
+  const view = render(tree(0));
+  return { onChanged, setClearErrorKey: (key: number) => view.rerender(tree(key)) };
 }
 
 function lastCall(): { url: string; init: RequestInit } {
@@ -65,6 +66,7 @@ describe("ReviewForm", () => {
 
   it("pre-fills an existing review, saves edits with PUT and deletes with DELETE", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(200, { id: "r-9" })));
+    vi.spyOn(window, "confirm").mockReturnValue(true);
     const { onChanged } = renderForm("authenticated", { existing: { id: "r-9", rating: 2, comment: "Meh" } });
 
     expect((screen.getByLabelText("Rating (1-5)") as HTMLInputElement).value).toBe("2");
@@ -80,6 +82,32 @@ describe("ReviewForm", () => {
     await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(2));
     expect(lastCall().url).toBe("/api/v1/reviews/r-9");
     expect(lastCall().init.method).toBe("DELETE");
+  });
+
+  it("does not delete when the student cancels the confirmation", () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderForm("authenticated", { existing: { id: "r-9", rating: 2, comment: "Meh" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /delete/i }));
+
+    expect(window.confirm).toHaveBeenCalledTimes(1);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("clears an earlier refusal when the clear-error key changes (for example after enrolling)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => jsonResponse(403, { title: "Forbidden", status: 403, detail: "You must be enrolled to review.", correlationId: "c" })),
+    );
+    const { setClearErrorKey } = renderForm("authenticated");
+    fillAndSubmit("5", "Great");
+    await waitFor(() => expect(screen.getByRole("alert")).not.toBeNull());
+
+    setClearErrorKey(1);
+
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
   });
 
   it("shows the refusal with its reference code on a 403 and saves nothing", async () => {

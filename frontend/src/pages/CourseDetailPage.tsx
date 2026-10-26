@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router";
 import * as endpoints from "../api/endpoints";
 import type { CoursePublicView, CourseRatingSummary, ReviewView } from "../api/endpoints";
 import EmptyState from "../components/EmptyState";
+import ErrorNotice from "../components/ErrorNotice";
+import { ApiError } from "../api/problem";
 import EnrollPanel from "../components/EnrollPanel";
 import Loading from "../components/Loading";
 import ReviewForm from "../components/ReviewForm";
@@ -10,7 +12,7 @@ import ReviewList from "../components/ReviewList";
 import StarRating from "../components/StarRating";
 import { useAuth } from "../auth/useAuth";
 
-type PageState = "loading" | "ready" | "not-found";
+type PageState = "loading" | "ready" | "not-found" | "error";
 
 const LEVEL_BADGE: Record<string, string> = {
   BEGINNER: "bg-emerald-100 text-emerald-800",
@@ -31,6 +33,9 @@ export default function CourseDetailPage() {
   const [totalReviews, setTotalReviews] = useState(0);
   const [reviewsFailed, setReviewsFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [courseKey, setCourseKey] = useState(0);
+  const [loadError, setLoadError] = useState<ApiError | null>(null);
+  const [enrolledTick, setEnrolledTick] = useState(0);
 
   useEffect(() => {
     if (!courseId) {
@@ -46,15 +51,22 @@ export default function CourseDetailPage() {
           setPageState("ready");
         }
       })
-      .catch(() => {
-        if (!cancelled) {
+      .catch((err: unknown) => {
+        if (cancelled) {
+          return;
+        }
+        // Only a real 404 means the course is gone; a timeout or 5xx is temporary and can be retried.
+        if (err instanceof ApiError && err.status === 404) {
           setPageState("not-found");
+        } else {
+          setLoadError(err instanceof ApiError ? err : null);
+          setPageState("error");
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [courseId]);
+  }, [courseId, courseKey]);
 
   // Reviews are secondary: a failure here leaves the rest of the page intact. Any change (submit, edit,
   // delete) bumps reloadKey, which refetches the summary and the first page.
@@ -102,6 +114,25 @@ export default function CourseDetailPage() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
         <Loading label="Loading course…" />
+      </div>
+    );
+  }
+
+  if (pageState === "error") {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {loadError ? (
+          <ErrorNotice error={loadError} />
+        ) : (
+          <EmptyState message="This course could not be loaded right now." />
+        )}
+        <button
+          type="button"
+          onClick={() => setCourseKey((k) => k + 1)}
+          className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium cursor-pointer"
+        >
+          Try again
+        </button>
       </div>
     );
   }
@@ -182,13 +213,14 @@ export default function CourseDetailPage() {
                 courseId={course.id ?? courseId ?? ""}
                 existing={ownReview}
                 onChanged={() => setReloadKey((k) => k + 1)}
+                clearErrorKey={enrolledTick}
               />
             </>
           )}
         </div>
 
         {status === "authenticated" ? (
-          <EnrollPanel course={course} />
+          <EnrollPanel course={course} onEnrolled={() => setEnrolledTick((k) => k + 1)} />
         ) : status === "anonymous" ? (
           <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6 text-center">
             <p className="text-indigo-800 font-medium mb-3">Ready to start learning?</p>

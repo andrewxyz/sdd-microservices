@@ -19,6 +19,10 @@ export default function LoginPage() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (email.trim() === "" || password === "") {
+      setFormMessage("Enter your email and password.");
+      return;
+    }
     setSubmitting(true);
     setFormMessage(null);
     try {

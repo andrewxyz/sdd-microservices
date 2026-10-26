@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import * as endpoints from "../api/endpoints";
 import type { ReviewView } from "../api/endpoints";
@@ -26,16 +26,23 @@ export default function ReviewForm({
   courseId,
   existing,
   onChanged,
+  clearErrorKey,
 }: {
   courseId: string;
   existing?: ReviewView;
   onChanged: () => void;
+  /** Changing this value clears a previous error, e.g. a "not enrolled" refusal once the student enrolls. */
+  clearErrorKey?: number;
 }) {
   const { status } = useAuth();
   const [rating, setRating] = useState(String(existing?.rating ?? 5));
   const [comment, setComment] = useState(existing?.comment ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
+
+  useEffect(() => {
+    setError(null);
+  }, [clearErrorKey]);
 
   if (status === "restoring") {
     return null;
@@ -116,7 +123,11 @@ export default function ReviewForm({
           <button
             type="button"
             disabled={busy}
-            onClick={() => void run(() => endpoints.deleteReview(existing.id!))}
+            onClick={() => {
+              if (window.confirm("Delete your review? This cannot be undone.")) {
+                void run(() => endpoints.deleteReview(existing.id!));
+              }
+            }}
             className="border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-60 px-5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
           >
             Delete my review

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router";
 import { useCheckout, type PaymentChoice } from "../hooks/useCheckout";
 import type { CoursePublicView } from "../api/endpoints";
@@ -13,11 +14,18 @@ const CHOICES: { value: Exclude<PaymentChoice, null>; label: string }[] = [
  * cards — never a field asking for real payment credentials (FR-019, FR-020). The submit control
  * is disabled while a request is in flight (FR-024).
  */
-export default function EnrollPanel({ course }: { course: CoursePublicView }) {
+export default function EnrollPanel({ course, onEnrolled }: { course: CoursePublicView; onEnrolled?: () => void }) {
   const isFree = !course.priceCents;
   const { phase, payment, error, choice, setChoice, submit } = useCheckout(course.id ?? "");
 
   const busy = phase === "submitting" || phase === "confirming";
+
+  useEffect(() => {
+    if (phase === "enrolled") {
+      onEnrolled?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   if (phase === "enrolled") {
     return (

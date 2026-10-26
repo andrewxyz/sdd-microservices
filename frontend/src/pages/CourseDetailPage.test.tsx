@@ -108,6 +108,28 @@ describe("CourseDetailPage", () => {
 
     await waitFor(() => expect(screen.getByText(/no longer available/i)).not.toBeNull());
   });
+
+  it("shows a retryable error, not 'no longer available', on a gateway timeout", async () => {
+    let attempts = 0;
+    stubApi((url) => {
+      if (url === "/api/v1/courses/course-1") {
+        attempts += 1;
+        if (attempts === 1) {
+          return jsonResponse(504, { title: "Gateway Timeout", status: 504, correlationId: "corr-504" });
+        }
+      }
+      return undefined;
+    });
+
+    renderAt("course-1");
+
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("corr-504"));
+    expect(screen.queryByText(/no longer available/i)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /try again/i }));
+
+    await waitFor(() => expect(screen.getByText("Intro to Testing")).not.toBeNull());
+  });
 });
 
 describe("CourseDetailPage — reviews", () => {
@@ -184,6 +206,7 @@ describe("CourseDetailPage — reviews", () => {
       return undefined;
     });
 
+    vi.spyOn(window, "confirm").mockReturnValue(true);
     renderSignedIn();
 
     await waitFor(() => expect((screen.getByLabelText("Rating (1-5)") as HTMLInputElement).value).toBe("2"));

@@ -34,6 +34,17 @@ describe("LoginPage", () => {
     clear();
   });
 
+  it("asks for both fields instead of calling the server when the form is empty", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+    expect(screen.getByRole("alert").textContent).toMatch(/enter your email and password/i);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("renders a 401 as a form-level message, never blamed on one field", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(401, { title: "Unauthorized", status: 401 })));
 
