@@ -36,6 +36,7 @@ export default function CourseDetailPage() {
   const [courseKey, setCourseKey] = useState(0);
   const [loadError, setLoadError] = useState<ApiError | null>(null);
   const [enrolledTick, setEnrolledTick] = useState(0);
+  const [alreadyEnrolled, setAlreadyEnrolled] = useState(false);
 
   useEffect(() => {
     if (!courseId) {
@@ -67,6 +68,27 @@ export default function CourseDetailPage() {
       cancelled = true;
     };
   }, [courseId, courseKey]);
+
+  // A returning student must not be offered "Enroll" for a course they already own. The progress endpoint
+  // answers 200 for an enrolled caller and 403 otherwise; any other failure just leaves the normal panel.
+  useEffect(() => {
+    setAlreadyEnrolled(false);
+    if (!courseId || status !== "authenticated") {
+      return;
+    }
+    let cancelled = false;
+    endpoints
+      .getEnrollmentProgress(courseId)
+      .then(() => {
+        if (!cancelled) {
+          setAlreadyEnrolled(true);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, status]);
 
   // Reviews are secondary: a failure here leaves the rest of the page intact. Any change (submit, edit,
   // delete) bumps reloadKey, which refetches the summary and the first page.
@@ -220,7 +242,7 @@ export default function CourseDetailPage() {
         </div>
 
         {status === "authenticated" ? (
-          <EnrollPanel course={course} onEnrolled={() => setEnrolledTick((k) => k + 1)} />
+          <EnrollPanel course={course} alreadyEnrolled={alreadyEnrolled} onEnrolled={() => setEnrolledTick((k) => k + 1)} />
         ) : status === "anonymous" ? (
           <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6 text-center">
             <p className="text-indigo-800 font-medium mb-3">Ready to start learning?</p>

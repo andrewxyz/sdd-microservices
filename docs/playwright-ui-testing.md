@@ -106,12 +106,10 @@ playwright-cli --raw sessionstorage-list                         # where the ref
 | Course page on a 504 | Showed "no longer available". **Fixed**: only a 404 says that; other failures show the error with a Try again button |
 | Stale error after enrolling | The old refusal stayed on screen. **Fixed**: it clears when the student enrolls |
 | Delete a review | Had no confirmation. **Fixed**: asks "Delete your review? This cannot be undone." |
+| Course page after logging back in | Offered "Enroll for free" for a course the account already owned. **Fixed**: the page checks the progress endpoint (200 = enrolled, 403 = not) and shows "You're enrolled! Start learning" |
 | Deploys | nginx sent no cache header for `index.html`, so a browser kept the old build. **Fixed**: `Cache-Control: no-cache` |
 
-The fixes are on branch `fix/review-ui-polish` with unit tests (87 frontend tests pass).
-
-Not fixed, noted: after logging back in, the course page still offers "Enroll for free" for a course the
-account is already enrolled in.
+All fixes have unit tests (89 frontend tests pass).
 
 ## Traps to know about
 

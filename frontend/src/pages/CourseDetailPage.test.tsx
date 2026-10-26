@@ -132,6 +132,39 @@ describe("CourseDetailPage", () => {
   });
 });
 
+describe("CourseDetailPage — enrollment state", () => {
+  beforeEach(() => {
+    clear();
+  });
+
+  it("shows 'You're enrolled' instead of the enroll button when the student is already enrolled", async () => {
+    stubApi((url) =>
+      url === "/api/v1/enrollments/course-1/progress"
+        ? jsonResponse(200, { courseId: "course-1", completedLessons: 0, totalLessons: 2, percent: 0 })
+        : undefined,
+    );
+
+    renderSignedIn();
+
+    await waitFor(() => expect(screen.getByText(/you're enrolled/i)).not.toBeNull());
+    expect(screen.queryByRole("button", { name: /enroll for free|submit test payment/i })).toBeNull();
+    expect(screen.getByRole("link", { name: /start learning/i })).not.toBeNull();
+  });
+
+  it("still offers enrollment when the student is not enrolled (progress answers 403)", async () => {
+    stubApi((url) =>
+      url === "/api/v1/enrollments/course-1/progress"
+        ? jsonResponse(403, { title: "Forbidden", status: 403, correlationId: "c-403" })
+        : undefined,
+    );
+
+    renderSignedIn();
+
+    await waitFor(() => expect(screen.getByText("Intro to Testing")).not.toBeNull());
+    expect(screen.queryByText(/you're enrolled/i)).toBeNull();
+  });
+});
+
 describe("CourseDetailPage — reviews", () => {
   beforeEach(() => {
     clear();

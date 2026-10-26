@@ -14,7 +14,16 @@ const CHOICES: { value: Exclude<PaymentChoice, null>; label: string }[] = [
  * cards — never a field asking for real payment credentials (FR-019, FR-020). The submit control
  * is disabled while a request is in flight (FR-024).
  */
-export default function EnrollPanel({ course, onEnrolled }: { course: CoursePublicView; onEnrolled?: () => void }) {
+export default function EnrollPanel({
+  course,
+  onEnrolled,
+  alreadyEnrolled = false,
+}: {
+  course: CoursePublicView;
+  onEnrolled?: () => void;
+  /** The student owned this course before the page loaded, so show the enrolled state, not the checkout. */
+  alreadyEnrolled?: boolean;
+}) {
   const isFree = !course.priceCents;
   const { phase, payment, error, choice, setChoice, submit } = useCheckout(course.id ?? "");
 
@@ -27,7 +36,7 @@ export default function EnrollPanel({ course, onEnrolled }: { course: CoursePubl
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  if (phase === "enrolled") {
+  if (phase === "enrolled" || alreadyEnrolled) {
     return (
       <div className="mt-6 p-5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-4">
         <span className="text-3xl">🎉</span>

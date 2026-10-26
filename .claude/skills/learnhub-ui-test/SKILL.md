@@ -51,7 +51,8 @@ Run the ones the user asked for; the full set is A to E.
 3. Submit rating 4 with a comment containing `<b>bold</b>` -> 201, summary shows 4.0, the comment is displayed as literal text (not bold), the form switches to "Your review".
 4. Edit to rating 2 -> summary 2.0, the catalog card now shows 2.0.
 5. Delete with confirmation: confirm cancelled -> review stays and no DELETE is sent; confirm accepted -> 204 and "No reviews yet" returns.
-6. Course detail fetch failing with 5xx or 504 (use `route`) -> a retryable error with a Try again button, not "This course is no longer available" (that wording is only for a real 404).
+6. Sign out, sign back in, and reopen the same course: the page shows "You're enrolled! Start learning" and no "Enroll for free" button (`GET /enrollments/<id>/progress` is 200). A course the account has not bought still shows its checkout (that request is 403).
+7. Course detail fetch failing with 5xx or 504 (use `route`) -> a retryable error with a Try again button, not "This course is no longer available" (that wording is only for a real 404).
 
 ## Report
 
