@@ -1,0 +1,53 @@
+openapi: 3.0.3
+info:
+  title: LearnHub review-service - batch rating summaries
+  version: "1.0.0"
+  description: >
+    Public (no sign-in) batch lookup used by the catalog so it needs one request, not one per course.
+    Every error uses the shared problem-details shape (specs/001-platform-foundation/contracts/).
+servers:
+  - url: /api/v1
+paths:
+  /reviews/summaries:
+    get:
+      summary: Rating summaries for many courses (FR-001, FR-002)
+      parameters:
+        - name: courseIds
+          in: query
+          required: true
+          description: 1 to 50 distinct course ids, comma separated
+          schema:
+            type: array
+            items: { type: string, format: uuid }
+            minItems: 1
+            maxItems: 50
+          style: form
+          explode: false
+      responses:
+        "200":
+          description: One summary per distinct requested id, in request order; unreviewed courses have reviewCount 0 and a null average
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseRatingSummaries" }
+        "400":
+          description: No ids, more than 50 ids, or a malformed id
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+components:
+  schemas:
+    CourseRatingSummaries:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/CourseRatingSummary" }
+    CourseRatingSummary:
+      type: object
+      required: [courseId, reviewCount]
+      properties:
+        courseId: { type: string, format: uuid }
+        averageRating: { type: number, nullable: true }
+        reviewCount: { type: integer }
+    ProblemDetail:
+      $ref: "../../001-platform-foundation/contracts/problem-details.schema.json"
