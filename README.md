@@ -247,6 +247,44 @@ mvn -f backend/pom.xml verify     # unit tests, plus Testcontainers tests that n
 Tests come first here: the project constitution makes test-first development non-negotiable, and
 integration tests use Testcontainers rather than an in-memory database.
 
+## Exploring the codebase with graphify
+
+[graphify](https://github.com/Graphify-Labs/graphify) is an optional, local-only dev tool — not part of
+LearnHub itself — that turns a folder of code into a queryable knowledge graph. It was used while
+building spec 007 (review-service) to look up existing patterns (Feign client shape, event envelope,
+gateway route conventions) before writing new code against them.
+
+```bash
+graphify .                                  # first build: AST-only for code, no LLM needed
+graphify query "How does course-service verify enrollment?"
+graphify explain "EnrollmentLookupClient"
+graphify path "Course" "Certificate"
+graphify . --update                         # refresh after changing files
+```
+
+Its output lives in `graphify-out/` (gitignored — it's a local cache, never committed) and needs no API
+key for a code-only run: structural extraction is free, local tree-sitter parsing.
+
+What's genuinely useful about it:
+
+- `graphify explain`/`path` on a symbol gives a quick, free (no LLM) map of what calls what, which is
+  handy for a service this size before touching unfamiliar code.
+- Incremental `--update` on code-only changes costs zero LLM tokens — it's just AST re-parsing.
+
+What to watch out for, from using it on this repo:
+
+- `graphify query` answers are BFS/DFS node lists with **no edges** by default, often truncated to a
+  tiny fraction of the matched nodes unless you raise `--budget` a lot — useful as a pointer to where to
+  look, not a substitute for reading the actual file.
+- Indexing **docs** (not code) uses a real LLM call per batch of files and can be expensive if the scope
+  isn't deliberately scoped — an unscoped `--update` on this repo once dispatched 5 subagents to
+  semantically index ~94 markdown files, burning over 150k tokens before being stopped. Keep `--update`
+  scoped to the code you actually changed (e.g. `graphify backend/ --update`) rather than the whole repo
+  unless you mean to (re)index docs too.
+- Net token cost for a single, moderate-size feature (like review-service) was **higher**, not lower,
+  than just reading the handful of relevant files directly — the tool pays off more on a long-lived
+  project queried many times, less on a one-off task.
+
 ## Governance
 
 `.specify/memory/constitution.md` holds the rules this codebase is held to: service boundaries, the
