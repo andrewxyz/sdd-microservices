@@ -14,6 +14,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -62,7 +63,9 @@ public class ReviewController {
     @GetMapping("/courses/{courseId}")
     public ReviewsPage list(@PathVariable UUID courseId, @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_SIZE));
+        // Newest first, with the id as a tie-break: without a total order, paging could repeat or skip rows.
+        Sort newestFirst = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_SIZE), newestFirst);
         Page<Review> result = reviews.findByCourseIdAndStatus(courseId, ReviewStatus.ACTIVE, pageable);
         return new ReviewsPage(result.map(ReviewView::of).getContent(), result.getNumber(), result.getSize(),
                 result.getTotalElements());
