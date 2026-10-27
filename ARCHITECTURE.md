@@ -113,6 +113,7 @@ events, for anything that changes state. The main patterns:
 | Credentials | `certificate-service` | Certificates and verification codes | Built (spec 005) |
 | Messaging | `notification-service` | Sent-notification log (for de-duplication) | Built (spec 005) |
 | Feedback | `review-service` | Reviews, ratings, the per-course aggregate | Built (spec 007) |
+| Insight | `analytics-service` | Per-course, per-UTC-day counters (no personal data) and processed event ids | Built (spec 009) |
 
 ### 1.4 Architectural principles in force
 
@@ -169,6 +170,7 @@ These are enforced by the constitution and, in several cases, by tests (`NoWirin
 | `certificate-service` | `GET /certificates/mine`; `GET /certificates/verify/{code}` (public, strict rate limit) |
 | `review-service` | `GET /reviews/courses/{courseId}`, `/reviews/courses/{courseId}/summary` (public); `POST /reviews/courses/{courseId}`; `PUT`/`DELETE /reviews/{reviewId}` (owner only) |
 | `notification-service` | none (event-driven only) |
+| `analytics-service` | `GET /instructor/stats/summary`, `/instructor/stats/courses`, `/instructor/stats/courses/{courseId}?days=7\|30\|90` (instructor and administrator only) |
 
 **Dependencies and events:**
 
@@ -181,6 +183,7 @@ These are enforced by the constitution and, in several cases, by tests (`NoWirin
 | `certificate-service` | `course-service`: course title | `certificate.issued` | `course.completed` |
 | `review-service` | `enrollment-service`: is the caller enrolled? | none | none |
 | `notification-service` | `auth-service`: email address; `course-service`: course title | none | `enrollment.created`, `certificate.issued` |
+| `analytics-service` | `course-service`: which courses an instructor owns, only when a dashboard request arrives (never while handling an event) | none | `payment.succeeded`, `enrollment.created`, `course.completed`, `certificate.issued` |
 
 `review-service` is the one business service with no outbox and no RabbitMQ listener: its aggregate
 rating is computed from its own `reviews` table on every read, and no other service currently needs to
@@ -486,10 +489,10 @@ peak; p95 checkout-to-enrollment < 10 s (already a spec goal); zero lost or dupl
 
 | Routing key | Producer | Consumers | Effect |
 |---|---|---|---|
-| `payment.succeeded` | payment-service (outbox) | enrollment-service | Create enrollment (idempotent) |
-| `enrollment.created` | enrollment-service (outbox) | notification-service | "You're enrolled" email |
-| `course.completed` | enrollment-service (outbox) | certificate-service | Issue one certificate per student per course |
-| `certificate.issued` | certificate-service (outbox) | notification-service | "Your certificate" email |
+| `payment.succeeded` | payment-service (outbox) | enrollment-service, analytics-service | Create enrollment (idempotent); add the amount to the course's revenue |
+| `enrollment.created` | enrollment-service (outbox) | notification-service, analytics-service | "You're enrolled" email; count one enrollment |
+| `course.completed` | enrollment-service (outbox) | certificate-service, analytics-service | Issue one certificate per student per course; count one completion |
+| `certificate.issued` | certificate-service (outbox) | notification-service, analytics-service | "Your certificate" email; count one certificate |
 
 Envelope (all events): `eventId`, `type`, `version`, `occurredAt`, `correlationId`, `payload`. Exchange:
 `learning.events` (topic). Each consumer has its own queue and DLQ, 3 retries with backoff.
@@ -503,7 +506,8 @@ Envelope (all events): `eventId`, `type`, `version`, `occurredAt`, `correlationI
 | auth-service | 9001 | course-service | 9002 |
 | enrollment-service | 9003 | payment-service | 9004 |
 | certificate-service | 9005 | review-service | 9006 |
-| notification-service | 9007 | echo-service | 9099 |
+| notification-service | 9007 | analytics-service | 9008 |
+| echo-service | 9099 | | |
 | discovery-server | 9761 | config-server | 9888 |
 | PostgreSQL | 9432 | RabbitMQ AMQP / UI | 9672 / 9673 |
 | Mailpit SMTP / UI | 9025 / 9825 | | |

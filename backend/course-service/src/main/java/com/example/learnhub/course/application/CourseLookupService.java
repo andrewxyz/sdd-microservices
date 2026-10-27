@@ -1,6 +1,7 @@
 package com.example.learnhub.course.application;
 
 import com.example.learnhub.course.api.CourseSummaryView;
+import com.example.learnhub.course.api.InstructorCourseItem;
 import com.example.learnhub.course.domain.Course;
 import com.example.learnhub.course.domain.Lesson;
 import com.example.learnhub.course.infrastructure.CourseRepository;
@@ -33,5 +34,13 @@ public class CourseLookupService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No such course."));
         List<Lesson> orderedLessons = lessons.findByCourseIdOrderByPosition(courseId);
         return CourseSummaryView.of(course, orderedLessons.size(), orderedLessons);
+    }
+
+    /** Spec 009: an instructor's courses in every status, newest first, at most 200. */
+    @Transactional(readOnly = true)
+    public List<InstructorCourseItem> listByInstructor(UUID instructorId) {
+        return courses.findTop200ByInstructorIdOrderByCreatedAtDesc(instructorId).stream()
+                .map(InstructorCourseItem::of)
+                .toList();
     }
 }

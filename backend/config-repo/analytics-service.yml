@@ -1,0 +1,5 @@
+# Settings for the analytics service.
+#
+# Nothing service-specific yet: the database and RabbitMQ credentials are deployment secrets supplied as
+# environment variables by docker-compose.yml, the same way every other service's are, and the shared
+# defaults (registry, probes, logging) come from application.yml in this folder.

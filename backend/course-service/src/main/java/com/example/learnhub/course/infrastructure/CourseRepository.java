@@ -11,4 +11,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, JpaSpecif
     long countByCategoryId(UUID categoryId);
 
     List<Course> findByInstructorId(UUID instructorId);
+
+    /** Spec 009 research R8: the internal list for analytics-service, newest first, at most 200. */
+    List<Course> findTop200ByInstructorIdOrderByCreatedAtDesc(UUID instructorId);
 }

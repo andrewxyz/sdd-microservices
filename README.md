@@ -83,6 +83,7 @@ mapped into that range; the Spring services use the same port inside and outside
 | certificate-service | 9005 | 9005 |
 | review-service | 9006 | 9006 |
 | notification-service | 9007 | 9007 |
+| analytics-service | 9008 | 9008 |
 | echo-service | 9099 | 9099 |
 | PostgreSQL | 9432 | 5432 |
 | RabbitMQ (AMQP) | 9672 | 5672 |
@@ -237,6 +238,28 @@ exclusively through same-origin `/api/` requests — no CORS configuration is ne
 
 See [`frontend/README.md`](frontend/README.md) for the dev-server setup, API type generation, demo
 data seeding, and the manual end-to-end walkthrough checklist.
+
+## Instructor dashboard
+
+`analytics-service` (port 9008) gives instructors a view of how their courses are doing, and
+administrators a platform-wide view. It is a read model: it consumes `payment.succeeded`,
+`enrollment.created`, `course.completed` and `certificate.issued` into per-course, per-UTC-day counters in
+its own `analytics` database, stores no student identity, and never calls another service while handling
+an event.
+
+- **Pages** (student web app, signed in as an instructor or administrator): `/instructor` shows totals and
+  a sortable table of your courses (drafts and archived included, zeros when idle); `/instructor/courses/:id`
+  shows the funnel (enrolled, completed, certificate issued) and enrollments per day for 7, 30 or 90 days
+  with a table alternative to the chart. Both show a "last updated" time and a Refresh button; figures
+  follow a payment, enrollment, completion or certificate within about 10 seconds.
+- **API** (through the gateway, `INSTRUCTOR` and `ADMINISTRATOR` only): `GET /api/v1/instructor/stats/summary`,
+  `/stats/courses`, `/stats/courses/{courseId}?days=7|30|90`. Contract:
+  `specs/009-instructor-dashboard/contracts/analytics-service.openapi.yaml`.
+- **Access**: an instructor only ever sees their own courses, and another instructor's course looks exactly
+  like one that does not exist (404). Students and visitors get 403 and 401. If course-service cannot confirm
+  who owns what, the answer is a 503 with a reference code and no numbers.
+- **Course list**: course-service gained one internal endpoint, `GET /api/v1/internal/courses?instructorId=`,
+  reachable only service to service (no gateway route).
 
 ## Building and testing
 

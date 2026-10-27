@@ -2,9 +2,12 @@ import { Link, Route, Routes, useNavigate } from "react-router";
 import AuthProvider from "./auth/AuthProvider";
 import { useAuth } from "./auth/useAuth";
 import RequireAuth from "./auth/RequireAuth";
+import RequireRole, { DASHBOARD_ROLES } from "./auth/RequireRole";
 import AccountPage from "./pages/AccountPage";
 import CatalogPage from "./pages/CatalogPage";
 import CourseDetailPage from "./pages/CourseDetailPage";
+import InstructorCoursePage from "./pages/InstructorCoursePage";
+import InstructorOverviewPage from "./pages/InstructorOverviewPage";
 import LearnPage from "./pages/LearnPage";
 import LoginPage from "./pages/LoginPage";
 import MyCoursesPage from "./pages/MyCoursesPage";
@@ -39,6 +42,11 @@ function SiteHeader() {
               <Link to="/account" className="text-indigo-200 hover:text-white transition-colors font-medium text-sm">
                 Account
               </Link>
+              {DASHBOARD_ROLES.includes(user.role) && (
+                <Link to="/instructor" className="text-indigo-200 hover:text-white transition-colors font-medium text-sm">
+                  Dashboard
+                </Link>
+              )}
               <span className="text-indigo-300 text-xs hidden sm:inline">{user.email}</span>
               <button
                 type="button"
@@ -102,6 +110,22 @@ function AppRoutes() {
             <RequireAuth>
               <AccountPage />
             </RequireAuth>
+          }
+        />
+        <Route
+          path="/instructor"
+          element={
+            <RequireRole roles={DASHBOARD_ROLES}>
+              <InstructorOverviewPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/instructor/courses/:courseId"
+          element={
+            <RequireRole roles={DASHBOARD_ROLES}>
+              <InstructorCoursePage />
+            </RequireRole>
           }
         />
         <Route path="*" element={<NotFoundPage />} />

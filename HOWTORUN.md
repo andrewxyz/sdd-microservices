@@ -113,8 +113,9 @@ service in the original plan is now built.
 | **certificate-service** | 9005 | Certificates — reached through the gateway at `/api/v1/certificates/mine` and the public `/api/v1/certificates/verify/{code}` |
 | **review-service** | 9006 | Course reviews — reached through the gateway at the public `/api/v1/reviews/courses/{courseId}` and `/api/v1/reviews/courses/{courseId}/summary`, and the protected `POST /api/v1/reviews/courses/{courseId}`, `PUT`/`DELETE /api/v1/reviews/{reviewId}` |
 | **notification-service** | 9007 | Enrollment and certificate emails, captured by Mailpit — no gateway route, nothing to call directly |
+| **analytics-service** | 9008 | Instructor dashboard figures — reached through the gateway at `/api/v1/instructor/**` (instructor and administrator only); fed by the platform's events |
 | echo-service | 9099 | Placeholder service (also reachable directly, for comparison) |
-| PostgreSQL | 9432 | One database per business service; `auth`, `course`, `enrollment`, `payment`, `certificate`, `review` and `notification` all have real tables now |
+| PostgreSQL | 9432 | One database per business service; `auth`, `course`, `enrollment`, `payment`, `certificate`, `review`, `notification` and `analytics` all have real tables now |
 | RabbitMQ (AMQP / management) | 9672 / 9673 | Message broker; carries `payment.succeeded`, `enrollment.created`, `course.completed` and `certificate.issued` on the `learning.events` exchange |
 | Mailpit (SMTP / web UI) | 9025 / 9825 | Catches outgoing mail locally; nothing leaves the machine |
 

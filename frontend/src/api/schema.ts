@@ -11,3 +11,4 @@ export * as progress from "./generated/progress";
 export * as certificate from "./generated/certificate";
 export * as review from "./generated/review";
 export * as reviewSummaries from "./generated/reviewSummaries";
+export * as analytics from "./generated/analytics";

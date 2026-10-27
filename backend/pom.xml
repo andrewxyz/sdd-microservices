@@ -39,6 +39,7 @@
     <module>certificate-service</module>
     <module>review-service</module>
     <module>notification-service</module>
+    <module>analytics-service</module>
     <module>api-gateway</module>
     <module>infra-tests</module>
   </modules>

@@ -30,7 +30,7 @@ FAILED=0
 pass() { printf 'PASS  %s\n' "$1"; PASSED=$((PASSED + 1)); }
 fail() { printf 'FAIL  %s\n      %s\n' "$1" "${2:-}"; FAILED=$((FAILED + 1)); }
 
-SERVICES="auth course enrollment payment certificate review notification"
+SERVICES="auth course enrollment payment certificate review notification analytics"
 
 psql_admin() {
   docker compose exec -T postgres psql -U "${POSTGRES_USER:-learnhub}" -d postgres -tAc "$1" 2>/dev/null
@@ -566,6 +566,171 @@ if [ "$fe_api" = "200" ]; then
   pass "GET /api/v1/courses proxied through the frontend container returns 200"
 else
   fail "GET /api/v1/courses proxied through the frontend container returns 200" "got $fe_api"
+fi
+
+# -------------------------------------------- instructor dashboard (spec 009)
+# A student pays for and finishes a published course; the instructor's figures must follow within 10
+# seconds, a second instructor and a student must be kept out, and the analytics queue must be drained
+# (research.md, quickstart.md section 3).
+ENV_FILE="${LEARNHUB_ENV_FILE:-$REPO_ROOT/.env}"
+if [ -f "$ENV_FILE" ]; then
+  # shellcheck source=/dev/null
+  set -a
+  . "$ENV_FILE"
+  set +a
+fi
+
+json_string() { grep -o "\"$1\":\"[^\"]*\"" | head -1 | cut -d'"' -f4; }
+
+dash_post() { # dash_post <path> <token> <json-body>
+  curl -s -X POST "$GW$1" -H "Authorization: Bearer $2" -H 'Content-Type: application/json' -d "$3"
+}
+
+dash_login() { # dash_login <email> <password> -> prints an access token
+  curl -s -X POST "$GW/api/v1/auth/login" -H 'Content-Type: application/json' \
+    -d "{\"email\":\"$1\",\"password\":\"$2\"}" | json_string accessToken
+}
+
+dash_register() { # dash_register <email> <password> -> prints the account id
+  curl -s -X POST "$GW/api/v1/auth/register" -H 'Content-Type: application/json' \
+    -d "{\"email\":\"$1\",\"password\":\"$2\"}" | json_string id
+}
+
+dash_etag() { # dash_etag <token> <course-id> -> prints the course's current ETag
+  curl -s -D - -o /dev/null -H "Authorization: Bearer $1" "$GW/api/v1/courses/$2/full" \
+    | grep -i '^etag:' | tr -d '\r' | awk '{print $2}'
+}
+
+dash_code() { # dash_code <token-or-empty> <path> -> prints the HTTP status
+  if [ -n "$1" ]; then
+    curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $1" "$GW$2"
+  else
+    curl -s -o /dev/null -w '%{http_code}' "$GW$2"
+  fi
+}
+
+dash_suffix="$$-$(date +%s)"
+dash_password="Smoke-password-1"
+dash_price=2999
+admin_token="$(dash_login "${ADMIN_EMAIL:-admin@learnhub.example}" "${ADMIN_PASSWORD:-change-me-admin-password-1}")"
+
+if [ -z "$admin_token" ]; then
+  fail "instructor dashboard scenario can start" "could not sign in as the administrator"
+else
+  category_id="$(dash_post /api/v1/categories "$admin_token" "{\"name\":\"Smoke $dash_suffix\"}" | json_string id)"
+
+  instructor_a_id="$(dash_register "smoke-a-$dash_suffix@learnhub.example" "$dash_password")"
+  instructor_b_id="$(dash_register "smoke-b-$dash_suffix@learnhub.example" "$dash_password")"
+  dash_register "smoke-s-$dash_suffix@learnhub.example" "$dash_password" >/dev/null
+  for account in "$instructor_a_id" "$instructor_b_id"; do
+    curl -s -X PATCH "$GW/api/v1/auth/accounts/$account/role" -H "Authorization: Bearer $admin_token" \
+      -H 'Content-Type: application/json' -d '{"role":"INSTRUCTOR"}' >/dev/null
+  done
+  # A role change takes effect at the account's next sign-in.
+  token_a="$(dash_login "smoke-a-$dash_suffix@learnhub.example" "$dash_password")"
+  token_b="$(dash_login "smoke-b-$dash_suffix@learnhub.example" "$dash_password")"
+  token_s="$(dash_login "smoke-s-$dash_suffix@learnhub.example" "$dash_password")"
+
+  course_id="$(dash_post /api/v1/courses "$token_a" \
+    "{\"title\":\"Smoke dashboard course\",\"description\":\"Created by the smoke test.\",\"categoryId\":\"$category_id\",\"priceCents\":$dash_price,\"level\":\"BEGINNER\"}" \
+    | json_string id)"
+
+  if [ -z "$course_id" ] || [ -z "$token_a" ] || [ -z "$token_b" ] || [ -z "$token_s" ]; then
+    fail "instructor dashboard scenario can start" "could not create the accounts or the course"
+  else
+    for lesson in 1 2; do
+      curl -s -X POST "$GW/api/v1/courses/$course_id/lessons" -H "Authorization: Bearer $token_a" \
+        -H "If-Match: $(dash_etag "$token_a" "$course_id")" -H 'Content-Type: application/json' \
+        -d "{\"title\":\"Lesson $lesson\",\"durationMinutes\":5,\"content\":\"Smoke lesson $lesson.\"}" >/dev/null
+    done
+    curl -s -X PATCH "$GW/api/v1/courses/$course_id/publish" -H "Authorization: Bearer $token_a" \
+      -H "If-Match: $(dash_etag "$token_a" "$course_id")" >/dev/null
+
+    lesson_ids="$(curl -s -H "Authorization: Bearer $token_a" "$GW/api/v1/courses/$course_id/full" \
+      | grep -o '"lessons":\[.*' | grep -o '"id":"[^"]*"' | cut -d'"' -f4)"
+
+    dash_post /api/v1/checkouts "$token_s" \
+      "{\"courseId\":\"$course_id\",\"idempotencyKey\":\"smoke-$dash_suffix\",\"paymentToken\":\"sim-success\"}" >/dev/null
+    enrolled=0
+    for _ in $(seq 1 20); do
+      if [ "$(dash_code "$token_s" "/api/v1/enrollments/$course_id/progress")" = "200" ]; then
+        enrolled=1
+        break
+      fi
+      sleep 1
+    done
+    for lesson_id in $lesson_ids; do
+      curl -s -o /dev/null -X PUT -H "Authorization: Bearer $token_s" \
+        "$GW/api/v1/enrollments/$course_id/lessons/$lesson_id/complete"
+    done
+
+    expected='"enrollments":1,"revenueCents":'"$dash_price"',"completions":1,"certificates":1'
+    summary=""
+    seen=0
+    for _ in $(seq 1 10); do
+      summary="$(curl -s -H "Authorization: Bearer $token_a" "$GW/api/v1/instructor/stats/summary")"
+      if printf '%s' "$summary" | grep -q "$expected"; then
+        seen=1
+        break
+      fi
+      sleep 1
+    done
+    if [ "$enrolled" -eq 1 ] && [ "$seen" -eq 1 ]; then
+      pass "instructor sees enrollments 1, revenue $dash_price, completions 1 and certificates 1 within 10 seconds"
+    else
+      fail "instructor sees enrollments 1, revenue $dash_price, completions 1 and certificates 1 within 10 seconds" \
+        "enrolled=$enrolled summary=$summary"
+    fi
+
+    code_b="$(dash_code "$token_b" "/api/v1/instructor/stats/courses/$course_id")"
+    if [ "$code_b" = "404" ]; then
+      pass "a second instructor gets 404 for the course"
+    else
+      fail "a second instructor gets 404 for the course" "got $code_b"
+    fi
+    summary_b="$(curl -s -H "Authorization: Bearer $token_b" "$GW/api/v1/instructor/stats/summary")"
+    if printf '%s' "$summary_b" | grep -q '"enrollments":0,"revenueCents":0'; then
+      pass "a second instructor sees none of the first instructor's figures"
+    else
+      fail "a second instructor sees none of the first instructor's figures" "$summary_b"
+    fi
+
+    code_s="$(dash_code "$token_s" "/api/v1/instructor/stats/summary")"
+    if [ "$code_s" = "403" ]; then
+      pass "a student gets 403 on the dashboard"
+    else
+      fail "a student gets 403 on the dashboard" "got $code_s"
+    fi
+    code_anon="$(dash_code "" "/api/v1/instructor/stats/summary")"
+    if [ "$code_anon" = "401" ]; then
+      pass "an anonymous caller gets 401 on the dashboard"
+    else
+      fail "an anonymous caller gets 401 on the dashboard" "got $code_anon"
+    fi
+
+    # The management API refreshes its counters every few seconds, so allow it a little time.
+    drained=0
+    queue_state=""
+    dlq_state=""
+    for _ in $(seq 1 15); do
+      queue_state="$(curl -s -u "${RABBITMQ_DEFAULT_USER:-learnhub}:${RABBITMQ_DEFAULT_PASS:-}" \
+        http://localhost:9673/api/queues/%2F/analytics.q)"
+      dlq_state="$(curl -s -u "${RABBITMQ_DEFAULT_USER:-learnhub}:${RABBITMQ_DEFAULT_PASS:-}" \
+        http://localhost:9673/api/queues/%2F/analytics.q.dlq)"
+      if printf '%s' "$queue_state" | grep -q '"messages_unacknowledged":0' \
+        && printf '%s' "$dlq_state" | grep -q '"messages":0'; then
+        drained=1
+        break
+      fi
+      sleep 1
+    done
+    if [ "$drained" -eq 1 ]; then
+      pass "analytics.q holds no unacknowledged messages and analytics.q.dlq is empty"
+    else
+      fail "analytics.q holds no unacknowledged messages and analytics.q.dlq is empty" \
+        "queue: ${queue_state:0:200} dlq: ${dlq_state:0:200}"
+    fi
+  fi
 fi
 
 printf '\n%d passed, %d failed\n' "$PASSED" "$FAILED"
