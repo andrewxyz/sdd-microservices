@@ -350,6 +350,26 @@ Two source-only audits were run with the Cloudflare
 - Both runs are **partial coverage**: budget-capped and not re-checked by a final clean pass, so
   they make no claim that nothing was missed.
 
+## Harness engineering
+
+The repo carries a small "harness" so an AI agent can pick up work across sessions without losing
+context. It follows the [Learn Harness Engineering templates](https://walkinglabs.github.io/learn-harness-engineering/en/resources/templates/),
+adapted to LearnHub.
+
+| File | Purpose |
+|---|---|
+| `CLAUDE.md` | Rules the agent reads first: session start loop, one feature at a time, evidence before "done", never merge without approval, no co-author trailer, Docker via WSL |
+| `init.sh` | Session start check: frontend typecheck + tests (`VERIFY_BACKEND=1 ./init.sh` adds backend tests through WSL) |
+| `feature_list.json` | Machine-readable feature tracker (`not_started`, `in_progress`, `blocked`, `passing`) with verification steps and evidence |
+| `claude-progress.md` | Per-session log: what ran, what was verified, next best step |
+| `session-handoff.md` | Short note for the next session |
+| `docs/harness/` | Clean-state checklist, evaluator rubric (0-2 scores, Accept/Revise/Block) and a quality document grading each domain and layer |
+
+Each session reads the progress log and feature list, runs `./init.sh`, works on exactly one feature,
+and records evidence before it stops. Completed specs 001-008 are listed as `passing` from their
+merge history; `sec-001` to `sec-005` track the security leads and hardening notes from the audits.
+This works alongside spec-kit: spec-kit defines *what* to build, the harness keeps *sessions* reliable.
+
 ## Governance
 
 `.specify/memory/constitution.md` holds the rules this codebase is held to: service boundaries, the
