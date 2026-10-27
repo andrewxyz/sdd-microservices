@@ -94,7 +94,7 @@ export default function LearnPage() {
           action={
             <Link
               to={`/courses/${courseId}`}
-              className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors"
+              className="inline-block bg-brand hover:bg-brand-strong shadow-card active:shadow-inset text-on-brand font-semibold px-5 py-2 rounded-xl text-sm transition-colors"
             >
               View the course
             </Link>
@@ -115,13 +115,13 @@ export default function LearnPage() {
   if (pageState === "unavailable") {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8 text-center">
-        <p role="alert" className="text-slate-600 mb-4">
+        <p role="alert" className="text-ink-muted mb-4">
           We could not confirm your enrollment right now. Please try again.
         </p>
         <button
           type="button"
           onClick={() => void load()}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-lg transition-colors cursor-pointer"
+          className="bg-brand hover:bg-brand-strong shadow-card active:shadow-inset text-on-brand font-semibold px-5 py-2 rounded-xl transition-colors cursor-pointer"
         >
           Retry
         </button>
@@ -137,9 +137,9 @@ export default function LearnPage() {
   const selectedLesson = lessons.find((lesson) => lesson.id === selectedLessonId) ?? lessons[0];
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-canvas">
       {/* Course header */}
-      <div className="bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-800 text-white py-8 px-4">
+      <div className="bg-hero text-on-hero py-8 px-4">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl font-bold mb-3">{content.title}</h1>
           {progress && (
@@ -153,33 +153,33 @@ export default function LearnPage() {
       <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col sm:flex-row gap-6">
         {/* Lesson sidebar */}
         <aside className="sm:w-64 flex-shrink-0">
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden sticky top-20">
-            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Lessons</h2>
+          <div className="bg-surface rounded-2xl shadow-card overflow-hidden sticky top-20">
+            <div className="px-4 py-3 bg-surface-muted border-b border-line">
+              <h2 className="text-xs font-semibold text-ink-muted uppercase tracking-wide">Lessons</h2>
             </div>
             <ol className="list-none p-0 m-0 max-h-[60vh] overflow-y-auto">
               {lessons.map((lesson, index) => {
                 const isSelected = lesson.id === selectedLesson?.id;
                 const isComplete = lesson.id ? completedLessonIds.has(lesson.id) : false;
                 return (
-                  <li key={lesson.id} className="border-b border-slate-100 last:border-0">
+                  <li key={lesson.id} className="border-b border-line last:border-0">
                     <button
                       type="button"
                       onClick={() => setSelectedLessonId(lesson.id ?? null)}
                       aria-current={isSelected ? "true" : undefined}
                       className={`w-full text-left px-4 py-3 text-sm transition-colors flex items-center gap-2 cursor-pointer ${
                         isSelected
-                          ? "bg-indigo-50 text-indigo-700 font-medium border-l-4 border-l-indigo-500"
-                          : "hover:bg-slate-50 text-slate-700"
+                          ? "bg-brand-soft text-brand-ink font-medium border-l-4 border-l-brand"
+                          : "hover:bg-surface-muted text-ink-body"
                       }`}
                     >
                       <span
                         className={`w-5 h-5 rounded-full text-xs flex items-center justify-center flex-shrink-0 font-bold ${
                           isComplete
-                            ? "bg-emerald-500 text-white"
+                            ? "bg-success-solid text-on-brand"
                             : isSelected
-                              ? "bg-indigo-200 text-indigo-700"
-                              : "bg-slate-200 text-slate-500"
+                              ? "bg-brand-soft-strong text-brand-ink"
+                              : "bg-surface-sunken text-ink-muted"
                         }`}
                       >
                         {isComplete ? "✓" : index + 1}
@@ -196,19 +196,19 @@ export default function LearnPage() {
         {/* Lesson content */}
         {selectedLesson && (
           <main className="flex-1 min-w-0">
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="text-xl font-bold text-slate-800 mb-4">{selectedLesson.title}</h2>
+            <div className="bg-surface rounded-2xl shadow-card p-6">
+              <h2 className="text-xl font-bold text-ink mb-4">{selectedLesson.title}</h2>
               <div className="prose prose-slate max-w-none">
-                <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedLesson.content}</p>
+                <p className="text-ink-body leading-relaxed whitespace-pre-wrap">{selectedLesson.content}</p>
               </div>
               <button
                 type="button"
                 onClick={() => selectedLesson.id && void toggleComplete(selectedLesson.id)}
                 disabled={toggleBusy || !selectedLesson.id}
-                className={`mt-6 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                className={`mt-6 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
                   selectedLesson.id && completedLessonIds.has(selectedLesson.id)
-                    ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    ? "bg-surface-muted hover:bg-surface-sunken text-ink-body"
+                    : "bg-success-solid hover:bg-success-solid-strong text-on-brand"
                 }`}
               >
                 {selectedLesson.id && completedLessonIds.has(selectedLesson.id)

@@ -18,13 +18,13 @@ export default function RefreshBar({
   busy: boolean;
 }) {
   return (
-    <div className="flex items-center gap-3 text-sm text-slate-500 mb-4">
+    <div className="flex items-center gap-3 text-sm text-ink-muted mb-4">
       {generatedAt && <span>Last updated {utcTime(generatedAt)}</span>}
       <button
         type="button"
         onClick={onRefresh}
         disabled={busy}
-        className="px-3 py-1 rounded-full border border-slate-300 bg-white text-slate-700 disabled:opacity-50 cursor-pointer"
+        className="px-3 py-1 rounded-full shadow-card bg-surface text-ink-body disabled:opacity-50 cursor-pointer"
       >
         {busy ? "Refreshing…" : "Refresh"}
       </button>

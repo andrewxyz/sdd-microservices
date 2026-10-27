@@ -26,7 +26,7 @@ export default function DailyBarChart({ series }: { series: DailyPoint[] }) {
         aria-label={`Enrollments per day for the last ${series.length} days`}
         viewBox={`0 0 ${width} ${CHART_HEIGHT}`}
         preserveAspectRatio="none"
-        className="w-full h-40 bg-slate-50 rounded-lg"
+        className="w-full h-40 bg-surface-muted shadow-inset rounded-xl"
       >
         {series.map((point, index) => {
           const height = (point.enrollments / max) * (CHART_HEIGHT - 4);
@@ -37,13 +37,13 @@ export default function DailyBarChart({ series }: { series: DailyPoint[] }) {
               y={CHART_HEIGHT - height}
               width={BAR_WIDTH}
               height={height}
-              className="fill-indigo-500"
+              className="fill-brand-graphic"
             />
           );
         })}
       </svg>
       {series.length > 0 && (
-        <div className="flex justify-between text-xs text-slate-500 mt-1" aria-hidden="true">
+        <div className="flex justify-between text-xs text-ink-muted mt-1" aria-hidden="true">
           <span>{series[0]!.day}</span>
           <span>{series[series.length - 1]!.day}</span>
         </div>
@@ -53,14 +53,17 @@ export default function DailyBarChart({ series }: { series: DailyPoint[] }) {
         type="button"
         aria-expanded={showTable}
         onClick={() => setShowTable((current) => !current)}
-        className="mt-3 text-sm text-indigo-700 hover:underline cursor-pointer"
+        className="mt-3 text-sm text-brand-ink hover:underline cursor-pointer"
       >
         {showTable ? "Hide data table" : "Show data table"}
       </button>
-      <div className={showTable ? "mt-2 overflow-x-auto" : "sr-only"}>
-        <table className="w-full text-left text-sm border border-slate-200 bg-white">
-          <caption className="text-left font-medium text-slate-700 py-1">Enrollments per day</caption>
-          <thead className="bg-slate-50 text-slate-600">
+      <div
+        className={showTable ? "mt-2 overflow-x-auto rounded-2xl shadow-card" : "sr-only"}
+        {...(showTable ? { role: "region", "aria-label": "Enrollments per day table", tabIndex: 0 } : {})}
+      >
+        <table className="w-full text-left text-sm bg-surface">
+          <caption className="text-left font-medium text-ink-body py-1">Enrollments per day</caption>
+          <thead className="bg-surface-muted text-ink-muted">
             <tr>
               <th scope="col" className="px-3 py-1">Day (UTC)</th>
               <th scope="col" className="px-3 py-1">Enrollments</th>
@@ -68,7 +71,7 @@ export default function DailyBarChart({ series }: { series: DailyPoint[] }) {
           </thead>
           <tbody>
             {series.map((point) => (
-              <tr key={point.day} className="border-t border-slate-100">
+              <tr key={point.day} className="border-t border-line">
                 <td className="px-3 py-1">{point.day}</td>
                 <td className="px-3 py-1">{point.enrollments}</td>
               </tr>

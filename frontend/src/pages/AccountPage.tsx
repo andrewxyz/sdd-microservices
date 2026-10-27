@@ -18,10 +18,10 @@ function formatAmount(amountCents: number, currency: string): string {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  SUCCEEDED: "bg-emerald-100 text-emerald-800",
-  PENDING: "bg-amber-100 text-amber-800",
-  DECLINED: "bg-red-100 text-red-800",
-  FAILED: "bg-red-100 text-red-800",
+  SUCCEEDED: "bg-success-soft-strong text-success-ink",
+  PENDING: "bg-warning-soft-strong text-warning-ink",
+  DECLINED: "bg-danger-soft-strong text-danger-ink",
+  FAILED: "bg-danger-soft-strong text-danger-ink",
 };
 
 export default function AccountPage() {
@@ -73,31 +73,31 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-canvas">
       {/* Header */}
-      <div className="bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-800 text-white py-10 px-4">
+      <div className="bg-hero text-on-hero py-10 px-4">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold">My account</h1>
-          <p className="text-indigo-200 mt-1 text-sm">Profile, payments &amp; certificates</p>
+          <p className="text-on-hero-muted mt-1 text-sm">Profile, payments &amp; certificates</p>
         </div>
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
         {/* Profile */}
-        <section className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-800">Profile</h2>
+        <section className="bg-surface rounded-2xl shadow-card overflow-hidden">
+          <div className="px-6 py-4 bg-surface-muted border-b border-line flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-ink">Profile</h2>
           </div>
           <div className="px-6 py-5">
             {!profile && !profileError && <Loading />}
             {profileError && <ErrorNotice error={profileError} />}
             {profile && (
               <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
-                <dt className="font-medium text-slate-500">Email</dt>
-                <dd className="text-slate-800">{profile.email}</dd>
-                <dt className="font-medium text-slate-500">Role</dt>
+                <dt className="font-medium text-ink-muted">Email</dt>
+                <dd className="text-ink">{profile.email}</dd>
+                <dt className="font-medium text-ink-muted">Role</dt>
                 <dd>
-                  <span className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                  <span className="bg-brand-soft-strong text-brand-ink text-xs font-semibold px-2.5 py-0.5 rounded-full">
                     {profile.role}
                   </span>
                 </dd>
@@ -106,7 +106,7 @@ export default function AccountPage() {
             <button
               type="button"
               onClick={onSignOut}
-              className="mt-5 bg-slate-100 hover:bg-red-50 hover:text-red-700 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+              className="mt-5 bg-surface-muted hover:bg-danger-soft hover:text-danger-ink text-ink-body px-4 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer"
             >
               Sign out
             </button>
@@ -114,42 +114,42 @@ export default function AccountPage() {
         </section>
 
         {/* Payment history */}
-        <section className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 bg-slate-50 border-b border-slate-200">
-            <h2 className="text-lg font-semibold text-slate-800">Payment history</h2>
+        <section className="bg-surface rounded-2xl shadow-card overflow-hidden">
+          <div className="px-6 py-4 bg-surface-muted border-b border-line">
+            <h2 className="text-lg font-semibold text-ink">Payment history</h2>
           </div>
           <div className="px-6 py-5">
             {!payments && !paymentsError && <Loading />}
             {paymentsError && <ErrorNotice error={paymentsError} />}
             {payments && payments.length === 0 && (
-              <p className="text-slate-500 text-sm">No payments yet.</p>
+              <p className="text-ink-muted text-sm">No payments yet.</p>
             )}
             {payments && payments.length > 0 && (
               <div className="overflow-x-auto -mx-6">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-slate-500 border-b border-slate-100">
+                    <tr className="text-left text-ink-muted border-b border-line">
                       <th className="px-6 py-2 font-medium">Course</th>
                       <th className="px-6 py-2 font-medium">Amount</th>
                       <th className="px-6 py-2 font-medium">Status</th>
                       <th className="px-6 py-2 font-medium">Date</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
+                  <tbody className="divide-y divide-line">
                     {payments.map((p, i) => (
-                      <tr key={p.id ?? i} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-3 text-slate-700 font-mono text-xs">{p.courseId}</td>
-                        <td className="px-6 py-3 text-slate-800 font-semibold">
+                      <tr key={p.id ?? i} className="hover:bg-surface-muted transition-colors">
+                        <td className="px-6 py-3 text-ink-body font-mono text-xs">{p.courseId}</td>
+                        <td className="px-6 py-3 text-ink font-semibold">
                           {p.amountCents != null && p.currency ? formatAmount(p.amountCents, p.currency) : "—"}
                         </td>
                         <td className="px-6 py-3">
                           <span
-                            className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${STATUS_COLORS[p.status ?? ""] ?? "bg-slate-100 text-slate-600"}`}
+                            className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${STATUS_COLORS[p.status ?? ""] ?? "bg-surface-muted text-ink-muted"}`}
                           >
                             {p.status}
                           </span>
                         </td>
-                        <td className="px-6 py-3 text-slate-500 text-xs">{p.createdAt}</td>
+                        <td className="px-6 py-3 text-ink-muted text-xs">{p.createdAt}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -160,15 +160,15 @@ export default function AccountPage() {
         </section>
 
         {/* Certificates */}
-        <section className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 bg-slate-50 border-b border-slate-200">
-            <h2 className="text-lg font-semibold text-slate-800">Certificates</h2>
+        <section className="bg-surface rounded-2xl shadow-card overflow-hidden">
+          <div className="px-6 py-4 bg-surface-muted border-b border-line">
+            <h2 className="text-lg font-semibold text-ink">Certificates</h2>
           </div>
           <div className="px-6 py-5">
             {!certs && !certsError && <Loading />}
             {certsError && <ErrorNotice error={certsError} />}
             {certs && certs.length === 0 && (
-              <p className="text-slate-500 text-sm">
+              <p className="text-ink-muted text-sm">
                 Your certificate is on its way — it usually arrives within a few minutes of completing a course.
               </p>
             )}
@@ -177,14 +177,14 @@ export default function AccountPage() {
                 {certs.map((cert, i) => (
                   <li
                     key={cert.verificationCode ?? i}
-                    className="border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3"
+                    className="shadow-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-800 truncate">{cert.courseTitle}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">Issued: {cert.issuedAt}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="font-semibold text-ink truncate">{cert.courseTitle}</p>
+                      <p className="text-xs text-ink-muted mt-0.5">Issued: {cert.issuedAt}</p>
+                      <p className="text-xs text-ink-muted mt-0.5">
                         Code:{" "}
-                        <code className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-indigo-700">
+                        <code className="font-mono bg-surface-muted px-1.5 py-0.5 rounded-full text-brand-ink">
                           {cert.verificationCode}
                         </code>
                       </p>
@@ -196,7 +196,7 @@ export default function AccountPage() {
                           void navigator.clipboard.writeText(cert.verificationCode);
                         }
                       }}
-                      className="flex-shrink-0 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                      className="flex-shrink-0 bg-brand-soft hover:bg-brand-soft-strong text-brand-ink text-sm font-medium px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
                     >
                       Copy code
                     </button>

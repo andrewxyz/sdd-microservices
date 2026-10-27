@@ -15,9 +15,9 @@ import { useAuth } from "../auth/useAuth";
 type PageState = "loading" | "ready" | "not-found" | "error";
 
 const LEVEL_BADGE: Record<string, string> = {
-  BEGINNER: "bg-emerald-100 text-emerald-800",
-  INTERMEDIATE: "bg-amber-100 text-amber-800",
-  ADVANCED: "bg-red-100 text-red-800",
+  BEGINNER: "bg-success-soft-strong text-success-ink",
+  INTERMEDIATE: "bg-warning-soft-strong text-warning-ink",
+  ADVANCED: "bg-danger-soft-strong text-danger-ink",
 };
 
 /** Public detail plus the ordered outline from CoursePublicView.lessons — no lesson content ever
@@ -151,7 +151,7 @@ export default function CourseDetailPage() {
         <button
           type="button"
           onClick={() => setCourseKey((k) => k + 1)}
-          className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium cursor-pointer"
+          className="mt-4 bg-brand hover:bg-brand-strong shadow-card active:shadow-inset text-on-brand px-5 py-2 rounded-xl text-sm font-medium cursor-pointer"
         >
           Try again
         </button>
@@ -168,15 +168,15 @@ export default function CourseDetailPage() {
   }
 
   const lessons = [...(course.lessons ?? [])].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-  const levelBadge = LEVEL_BADGE[course.level ?? ""] ?? "bg-slate-100 text-slate-600";
+  const levelBadge = LEVEL_BADGE[course.level ?? ""] ?? "bg-surface-muted text-ink-muted";
   const ownReview = user ? reviews.find((r) => r.userId === user.id) : undefined;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-canvas">
       {/* Course hero */}
-      <div className="bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-800 text-white py-10 px-4">
+      <div className="bg-hero text-on-hero py-10 px-4">
         <div className="max-w-4xl mx-auto">
-          <Link to="/" className="text-indigo-200 text-sm hover:text-white transition-colors">
+          <Link to="/" className="text-on-hero-muted text-sm hover:text-on-hero transition-colors">
             ← Back to catalog
           </Link>
           <h1 className="text-3xl font-bold mt-3 mb-3">{course.title}</h1>
@@ -187,25 +187,25 @@ export default function CourseDetailPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
-          <p className="text-slate-700 text-base leading-relaxed">{course.description}</p>
+        <div className="bg-surface rounded-2xl shadow-card p-6 mb-6">
+          <p className="text-ink-body text-base leading-relaxed">{course.description}</p>
         </div>
 
         {lessons.length > 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-6">
-            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200">
-              <h2 className="text-lg font-semibold text-slate-800">Course outline</h2>
-              <p className="text-sm text-slate-500">{lessons.length} lessons</p>
+          <div className="bg-surface rounded-2xl shadow-card overflow-hidden mb-6">
+            <div className="px-6 py-4 bg-surface-muted border-b border-line">
+              <h2 className="text-lg font-semibold text-ink">Course outline</h2>
+              <p className="text-sm text-ink-muted">{lessons.length} lessons</p>
             </div>
-            <ol className="divide-y divide-slate-100">
+            <ol className="divide-y divide-line">
               {lessons.map((lesson, index) => (
                 <li key={index} className="flex items-center gap-4 px-6 py-3">
-                  <span className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                  <span className="w-7 h-7 rounded-full bg-brand-soft-strong text-brand-ink text-xs font-bold flex items-center justify-center flex-shrink-0">
                     {index + 1}
                   </span>
-                  <span className="text-slate-700 text-sm flex-1">{lesson.title}</span>
+                  <span className="text-ink-body text-sm flex-1">{lesson.title}</span>
                   {lesson.durationMinutes && (
-                    <span className="text-xs text-slate-400 flex-shrink-0">{lesson.durationMinutes} min</span>
+                    <span className="text-xs text-ink-muted flex-shrink-0">{lesson.durationMinutes} min</span>
                   )}
                 </li>
               ))}
@@ -213,10 +213,10 @@ export default function CourseDetailPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-2">Reviews</h2>
+        <div className="bg-surface rounded-2xl shadow-card p-6 mb-6">
+          <h2 className="text-lg font-semibold text-ink mb-2">Reviews</h2>
           {reviewsFailed ? (
-            <p className="text-sm text-slate-500">Reviews are unavailable right now.</p>
+            <p className="text-sm text-ink-muted">Reviews are unavailable right now.</p>
           ) : (
             <>
               {summary && <StarRating average={summary.averageRating} count={summary.reviewCount ?? 0} />}
@@ -227,7 +227,7 @@ export default function CourseDetailPage() {
                   onShowMore={showMoreReviews}
                 />
               </div>
-              <h3 className="text-base font-semibold text-slate-800 mb-2">
+              <h3 className="text-base font-semibold text-ink mb-2">
                 {ownReview ? "Your review" : "Write a review"}
               </h3>
               <ReviewForm
@@ -244,11 +244,11 @@ export default function CourseDetailPage() {
         {status === "authenticated" ? (
           <EnrollPanel course={course} alreadyEnrolled={alreadyEnrolled} onEnrolled={() => setEnrolledTick((k) => k + 1)} />
         ) : status === "anonymous" ? (
-          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6 text-center">
-            <p className="text-indigo-800 font-medium mb-3">Ready to start learning?</p>
+          <div className="bg-brand-soft border border-brand-soft-strong rounded-2xl p-6 text-center">
+            <p className="text-brand-ink font-medium mb-3">Ready to start learning?</p>
             <Link
               to={`/login?returnTo=${encodeURIComponent(`/courses/${courseId}`)}`}
-              className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-lg transition-colors"
+              className="inline-block bg-brand hover:bg-brand-strong shadow-card active:shadow-inset text-on-brand font-semibold px-6 py-2.5 rounded-xl transition-colors"
             >
               Sign in to enroll
             </Link>

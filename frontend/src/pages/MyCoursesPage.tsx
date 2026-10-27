@@ -87,7 +87,7 @@ export default function MyCoursesPage() {
           action={
             <Link
               to="/"
-              className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors"
+              className="inline-block bg-brand hover:bg-brand-strong shadow-card active:shadow-inset text-on-brand font-semibold px-5 py-2 rounded-xl text-sm transition-colors"
             >
               Browse the catalog
             </Link>
@@ -98,11 +98,11 @@ export default function MyCoursesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-800 text-white py-10 px-4">
+    <div className="min-h-screen bg-canvas">
+      <div className="bg-hero text-on-hero py-10 px-4">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl font-bold">My courses</h1>
-          <p className="text-indigo-200 mt-1">{cards.length} enrolled course{cards.length !== 1 ? "s" : ""}</p>
+          <p className="text-on-hero-muted mt-1">{cards.length} enrolled course{cards.length !== 1 ? "s" : ""}</p>
         </div>
       </div>
 
@@ -111,18 +111,18 @@ export default function MyCoursesPage() {
           {cards.map((card) => (
             <article
               key={card.enrollment.id}
-              className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col gap-4"
+              className="bg-surface shadow-card rounded-2xl p-5 hover:shadow-lift transition-shadow flex flex-col gap-4"
             >
               <h3 className="text-base font-semibold leading-snug">
                 {card.title ? (
                   <Link
                     to={`/learn/${card.enrollment.courseId}`}
-                    className="text-slate-800 hover:text-indigo-600 transition-colors"
+                    className="text-ink hover:text-brand-ink transition-colors"
                   >
                     {card.title}
                   </Link>
                 ) : (
-                  <span className="text-slate-400 animate-pulse">Loading…</span>
+                  <span className="text-ink-muted animate-pulse">Loading…</span>
                 )}
               </h3>
               {card.progress ? (
@@ -133,7 +133,7 @@ export default function MyCoursesPage() {
               {card.title && (
                 <Link
                   to={`/learn/${card.enrollment.courseId}`}
-                  className="inline-flex items-center justify-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors mt-auto"
+                  className="inline-flex items-center justify-center gap-1 bg-brand hover:bg-brand-strong shadow-card active:shadow-inset text-on-brand text-sm font-medium px-4 py-2 rounded-xl transition-colors mt-auto"
                 >
                   Continue learning →
                 </Link>

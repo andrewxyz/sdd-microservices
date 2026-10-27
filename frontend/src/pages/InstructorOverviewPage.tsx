@@ -35,6 +35,10 @@ function percent(rate: number): string {
   return `${Math.round(rate * 100)}%`;
 }
 
+function statusLabel(status: string): string {
+  return status ? status.charAt(0) + status.slice(1).toLowerCase() : "";
+}
+
 function shortId(id: string): string {
   return id.slice(0, 8);
 }
@@ -136,7 +140,7 @@ export default function InstructorOverviewPage() {
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-slate-900 mb-6">{isAdmin ? "Platform dashboard" : "Instructor dashboard"}</h1>
+      <h1 className="text-3xl font-bold text-ink mb-6">{isAdmin ? "Platform dashboard" : "Instructor dashboard"}</h1>
 
       {state.kind !== "loading" && (
         <RefreshBar
@@ -152,7 +156,7 @@ export default function InstructorOverviewPage() {
       {state.kind === "ready" && (
         <>
           {state.summary.truncated && (
-            <p role="note" className="border border-amber-300 bg-amber-50 text-amber-800 rounded-lg px-4 py-3 mb-4">
+            <p role="note" className="border border-warning-line bg-warning-soft text-warning-ink rounded-xl px-4 py-3 mb-4">
               Showing your 200 newest courses; totals cover only these.
             </p>
           )}
@@ -168,13 +172,13 @@ export default function InstructorOverviewPage() {
 
           {isAdmin ? (
             <section aria-label="Top courses by revenue">
-              <h2 className="text-xl font-semibold text-slate-900 mb-3">Top courses by revenue</h2>
+              <h2 className="text-xl font-semibold text-ink mb-3">Top courses by revenue</h2>
               {state.top.length === 0 ? (
-                <EmptyState message="No course activity yet — nothing to show yet." />
+                <EmptyState message="No course has any activity yet." />
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border border-slate-200 bg-white rounded-lg">
-                    <thead className="bg-slate-50 text-slate-600 text-sm">
+                <div className="overflow-x-auto rounded-2xl shadow-card" role="region" aria-label="Top courses table" tabIndex={0}>
+                  <table className="w-full text-left bg-surface">
+                    <thead className="bg-surface-muted text-ink-muted text-sm">
                       <tr>
                         <th scope="col" className="px-3 py-2">Course</th>
                         <th scope="col" className="px-3 py-2">Enrollments</th>
@@ -183,11 +187,11 @@ export default function InstructorOverviewPage() {
                     </thead>
                     <tbody>
                       {state.top.map((course) => (
-                        <tr key={course.courseId} className="border-t border-slate-100">
+                        <tr key={course.courseId} className="border-t border-line">
                           <td className="px-3 py-2">
                             <Link
                               to={`/instructor/courses/${encodeURIComponent(course.courseId)}`}
-                              className="text-indigo-700 hover:underline"
+                              className="text-brand-ink hover:underline"
                             >
                               {course.title ?? shortId(course.courseId)}
                             </Link>
@@ -205,16 +209,16 @@ export default function InstructorOverviewPage() {
             <EmptyState message="You have no courses yet, so there is nothing to show yet." />
           ) : (
             <section aria-label="Your courses">
-              <h2 className="text-xl font-semibold text-slate-900 mb-3">Your courses</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border border-slate-200 bg-white rounded-lg">
-                  <thead className="bg-slate-50 text-slate-600 text-sm">
+              <h2 className="text-xl font-semibold text-ink mb-3">Your courses</h2>
+              <div className="overflow-x-auto rounded-2xl shadow-card" role="region" aria-label="Your courses table" tabIndex={0}>
+                <table className="w-full text-left bg-surface">
+                  <thead className="bg-surface-muted text-ink-muted text-sm">
                     <tr>
                       <th scope="col" className="px-3 py-2">Course</th>
                       <th scope="col" className="px-3 py-2">Status</th>
                       {COLUMNS.slice(0, 2).map((column) => (
                         <th key={column.key} scope="col" aria-sort={ariaSort(column.key)} className="px-3 py-2">
-                          <button type="button" onClick={() => toggleSort(column.key)} className="font-semibold cursor-pointer">
+                          <button type="button" onClick={() => toggleSort(column.key)} className="font-semibold cursor-pointer py-2 min-h-11 focus-visible:outline-2 focus-visible:outline-focus">
                             {column.label}
                             {indicator(column.key)}
                           </button>
@@ -223,7 +227,7 @@ export default function InstructorOverviewPage() {
                       <th scope="col" className="px-3 py-2">Completions</th>
                       <th scope="col" className="px-3 py-2">Certificates</th>
                       <th scope="col" aria-sort={ariaSort("completionRate")} className="px-3 py-2">
-                        <button type="button" onClick={() => toggleSort("completionRate")} className="font-semibold cursor-pointer">
+                        <button type="button" onClick={() => toggleSort("completionRate")} className="font-semibold cursor-pointer py-2 min-h-11 focus-visible:outline-2 focus-visible:outline-focus">
                           Completion rate
                           {indicator("completionRate")}
                         </button>
@@ -232,16 +236,16 @@ export default function InstructorOverviewPage() {
                   </thead>
                   <tbody>
                     {sortedRows.map((row) => (
-                      <tr key={row.courseId} className="border-t border-slate-100">
+                      <tr key={row.courseId} className="border-t border-line">
                         <td className="px-3 py-2">
                           <Link
                             to={`/instructor/courses/${encodeURIComponent(row.courseId)}`}
-                            className="text-indigo-700 hover:underline"
+                            className="text-brand-ink hover:underline"
                           >
                             {row.title}
                           </Link>
                         </td>
-                        <td className="px-3 py-2">{row.status}</td>
+                        <td className="px-3 py-2">{statusLabel(row.status)}</td>
                         <td className="px-3 py-2">{row.enrollments}</td>
                         <td className="px-3 py-2">{formatUsd(row.revenueCents)}</td>
                         <td className="px-3 py-2">{row.completions}</td>

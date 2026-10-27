@@ -118,17 +118,26 @@ describe("InstructorOverviewPage (instructor)", () => {
     await screen.findByText("Bravo draft");
     const draftRow = screen.getByText("Bravo draft").closest("tr")!;
     const cells = within(draftRow).getAllByRole("cell").map((c) => c.textContent);
-    expect(cells).toEqual(["Bravo draft", "DRAFT", "0", "$0.00", "0", "0", "0%"]);
+    expect(cells).toEqual(["Bravo draft", "Draft", "0", "$0.00", "0", "0", "0%"]);
     const alphaRow = screen.getByText("Alpha course").closest("tr")!;
     expect(within(alphaRow).getAllByRole("cell").map((c) => c.textContent)).toEqual([
       "Alpha course",
-      "PUBLISHED",
+      "Published",
       "4",
       "$79.96",
       "1",
       "1",
       "25%",
     ]);
+  });
+
+  it("lets keyboard users scroll the wide table and gives the sort buttons room", async () => {
+    stubApi();
+    renderPage();
+
+    const region = await screen.findByRole("region", { name: /your courses table/i });
+    expect(region.getAttribute("tabindex")).toBe("0");
+    expect(screen.getByRole("button", { name: /enrollments/i }).className).toContain("py-2");
   });
 
   it("sorts by a column when its header button is pressed and marks aria-sort", async () => {
@@ -160,7 +169,7 @@ describe("InstructorOverviewPage (instructor)", () => {
     stubApi((url) => (url === "/api/v1/my/courses" ? jsonResponse(200, []) : undefined));
     renderPage();
 
-    expect(await screen.findByText(/nothing to show yet/i)).toBeTruthy();
+    expect(await screen.findByText(/you have no courses yet/i)).toBeTruthy();
     expect(screen.queryByRole("table")).toBeNull();
   });
 

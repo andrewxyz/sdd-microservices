@@ -93,10 +93,10 @@ export default function InstructorCoursePage() {
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-8">
-      <Link to="/instructor" className="text-indigo-700 hover:underline text-sm">
+      <Link to="/instructor" className="text-brand-ink hover:underline text-sm">
         ← Back to dashboard
       </Link>
-      <h1 className="text-3xl font-bold text-slate-900 mt-2 mb-6">{heading}</h1>
+      <h1 className="text-3xl font-bold text-ink mt-2 mb-6">{heading}</h1>
 
       {state.kind !== "loading" && (
         <RefreshBar
@@ -129,11 +129,11 @@ export default function InstructorCoursePage() {
             state.detail.totals.revenueCents === 0 &&
             state.detail.totals.completions === 0 &&
             state.detail.totals.certificates === 0 && (
-              <p className="text-slate-500 mb-6">No activity yet for this course.</p>
+              <p className="text-ink-muted mb-6">No activity yet for this course.</p>
             )}
 
           <section aria-label="Funnel" className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 mb-3">Funnel</h2>
+            <h2 className="text-xl font-semibold text-ink mb-3">Funnel</h2>
             <FunnelBars
               enrolled={state.detail.funnel.enrolled}
               completed={state.detail.funnel.completed}
@@ -143,7 +143,7 @@ export default function InstructorCoursePage() {
 
           <section aria-label="Enrollments per day">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <h2 className="text-xl font-semibold text-slate-900">Enrollments per day</h2>
+              <h2 className="text-xl font-semibold text-ink">Enrollments per day</h2>
               <div className="flex gap-2">
                 {RANGES.map((range) => (
                   <button
@@ -152,7 +152,7 @@ export default function InstructorCoursePage() {
                     aria-pressed={days === range}
                     onClick={() => setDays(range)}
                     className={`px-3 py-1 rounded-full text-sm border cursor-pointer ${
-                      days === range ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"
+                      days === range ? "bg-brand text-on-brand border-brand" : "bg-surface text-ink-body border-line-strong"
                     }`}
                   >
                     {range} days

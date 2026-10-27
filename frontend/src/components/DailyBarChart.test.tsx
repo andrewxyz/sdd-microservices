@@ -36,6 +36,8 @@ describe("DailyBarChart", () => {
     const wrapper = table.parentElement as HTMLElement;
     expect(wrapper.className).toContain("sr-only");
 
+    expect(wrapper.getAttribute("tabindex")).toBeNull();
+
     const toggle = screen.getByRole("button", { name: /show data table/i });
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(toggle);
@@ -56,5 +58,16 @@ describe("DailyBarChart", () => {
     );
 
     expect(container.querySelectorAll("svg rect")).toHaveLength(3);
+  });
+});
+
+describe("DailyBarChart data table scrolling", () => {
+  it("becomes a focusable, named region once shown so keyboard users can scroll it", () => {
+    render(<DailyBarChart series={SERIES} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /show data table/i }));
+
+    const region = screen.getByRole("region", { name: /enrollments per day table/i });
+    expect(region.getAttribute("tabindex")).toBe("0");
   });
 });
