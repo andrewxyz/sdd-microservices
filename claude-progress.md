@@ -78,3 +78,14 @@ The filename is a course convention; any coding agent can use it. Nothing update
 - Next best step: ask the user to review, then commit/merge; then T069 via /speckit-constitution
 - Harness observations (honest): (1) I did not run `./init.sh` at the start of this implementation session; the baseline was last proven earlier the same day, so a regression between would not have been caught by the harness. (2) The feature list and progress log did help me keep one feature in view across a very long session and a context reset. (3) Most real defects came from checking names in source, not from the harness: wrong internal path, role names, `/my/courses`, `sim-success` token, db naming, Dockerfile pom list, ProvisionScriptIT service list, Spring Cloud circuit breaker ids. (4) Nothing enforced the rules automatically; they held because I followed CLAUDE.md. A pre-commit hook or a CI check would enforce them.
 - Graphify observations (honest): used once, in the plan phase (one query, about 1.5k tokens of output, noisy file pointers); I still read the actual files. Not used during implement. No evidence it saved tokens on this feature; spec 007 found the same. The real cost drivers here were long WSL Maven and Docker runs and repeated test reruns, which graphify cannot reduce.
+
+## Session 005 - UI review and theme (not a spec)
+
+- Goal: use the newly added ui-ux-pro-max skill to review the frontend and re-theme it.
+- Done: accessibility fixes (scroll regions focusable, contrast, form error links, progress bar name, friendly
+  status text); semantic token layer in `frontend/src/styles.css`; three themes tried (Motion-Driven,
+  Minimalism & Swiss, Neumorphism); Neumorphism light-only kept by the user.
+- Verified: typecheck, 161 Vitest tests, build, headed Edge at desktop and 375px, contrast computed for every
+  text and control pair.
+- Not verified: reduced motion in a browser; Account, Verify, Learn, Course Detail, My Courses pages by eye.
+- Open: chart readability (no value axis); Inter font not loaded.

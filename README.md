@@ -393,6 +393,28 @@ and records evidence before it stops. Completed specs 001-008 are listed as `pas
 merge history; `sec-001` to `sec-005` track the security leads and hardening notes from the audits.
 This works alongside spec-kit: spec-kit defines *what* to build, the harness keeps *sessions* reliable.
 
+## UI/UX design skill (ui-ux-pro-max)
+
+The repo includes the [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) skill pack
+in `.claude/skills/` (`ui-ux-pro-max` plus the companion `ui-styling`, `design`, `design-system`, `brand`,
+`banner-design` and `slides`). It gives an agent searchable UI data (styles, palettes, font pairings, UX
+rules, chart types) through `python .claude/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain style`
+(Python 3, no packages, no network).
+
+It was used to review and then re-skin the web app. The current theme is **Neumorphism, light only**
+(it deliberately does not follow the operating system colour scheme):
+
+- All colours, shadows, radii and motion live as semantic tokens in `frontend/src/styles.css`
+  (`bg-surface`, `text-ink-muted`, `shadow-card`, `shadow-inset`, `bg-brand` ...). Components use only these
+  utilities, never raw palette colours, so a new look is mostly a change to that one file.
+- Contrast is held to WCAG values even though the style is soft: text 4.5:1, borders, focus rings and
+  chart fills 3:1. Inputs keep a visible border, links stay underlined, focus is a 2px outline, and
+  reduced-motion turns transitions off.
+- Changing the style again: ask the agent for a target style (for example "Minimalism & Swiss Style"),
+  then check contrast and view the pages in a browser before accepting it.
+
+Details, decisions and the styles tried are in the wiki page "UI/UX Pro Max".
+
 ## Governance
 
 `.specify/memory/constitution.md` holds the rules this codebase is held to: service boundaries, the
