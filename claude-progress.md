@@ -84,7 +84,8 @@ The filename is a course convention; any coding agent can use it. Nothing update
 - Goal: use the newly added ui-ux-pro-max skill to review the frontend and re-theme it.
 - Done: accessibility fixes (scroll regions focusable, contrast, form error links, progress bar name, friendly
   status text); semantic token layer in `frontend/src/styles.css`; three themes tried (Motion-Driven,
-  Minimalism & Swiss, Neumorphism); Neumorphism light-only kept by the user.
+  Minimalism & Swiss, Neumorphism, then Soft UI Evolution, HUD / Sci-Fi FUI, Gen Z Chaos and Shopify
+  Polaris tried from the style CSV); Shopify Polaris (light only) kept by the user.
 - Verified: typecheck, 161 Vitest tests, build, headed Edge at desktop and 375px, contrast computed for every
   text and control pair.
 - Not verified: reduced motion in a browser; Account, Verify, Learn, Course Detail, My Courses pages by eye.

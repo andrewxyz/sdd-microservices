@@ -401,14 +401,14 @@ in `.claude/skills/` (`ui-ux-pro-max` plus the companion `ui-styling`, `design`,
 rules, chart types) through `python .claude/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain style`
 (Python 3, no packages, no network).
 
-It was used to review and then re-skin the web app. The current theme is **Neumorphism, light only**
+It was used to review and then re-skin the web app. The current theme is **Shopify Polaris, light only**
 (it deliberately does not follow the operating system colour scheme):
 
 - All colours, shadows, radii and motion live as semantic tokens in `frontend/src/styles.css`
   (`bg-surface`, `text-ink-muted`, `shadow-card`, `shadow-inset`, `bg-brand` ...). Components use only these
   utilities, never raw palette colours, so a new look is mostly a change to that one file.
 - Contrast is held to WCAG values even though the style is soft: text 4.5:1, borders, focus rings and
-  chart fills 3:1. Inputs keep a visible border, links stay underlined, focus is a 2px outline, and
+  chart fills 3:1. Inputs keep a visible border, links stay underlined, focus is a 2px blue outline, and
   reduced-motion turns transitions off.
 - Changing the style again: ask the agent for a target style (for example "Minimalism & Swiss Style"),
   then check contrast and view the pages in a browser before accepting it.
