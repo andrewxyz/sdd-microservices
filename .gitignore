@@ -30,3 +30,7 @@ desktop.ini
 graphify-out/
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
+
+# Python bytecode (skill scripts)
+__pycache__/
+*.pyc
