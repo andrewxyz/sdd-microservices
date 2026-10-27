@@ -1,0 +1,53 @@
+{
+  "run_id": "run-2",
+  "repo": "sdd-microservices",
+  "target": "C:/Users/andri.mardiana/Belajar/claude/github-spec-kit/sdd-microservices",
+  "source_ref": {
+    "commit": "ea2fd6c2298563a87ae66cda51c319c87b69b1ec",
+    "branch": "master",
+    "worktree_dirty": true,
+    "dirty_note": "Only untracked .claude/skills/security-audit/ and docs/security-audit/ (the audit skill and run-1 results); no reviewed source differs from the commit."
+  },
+  "profile": "standard",
+  "scope_paths": [
+    "frontend/src",
+    "frontend/nginx/default.conf.template",
+    "frontend/Dockerfile",
+    "frontend/package.json",
+    "frontend/scripts/gen-api.mjs",
+    "frontend/index.html",
+    "frontend/vite.config.ts"
+  ],
+  "context_only_paths": [
+    "backend (gateway and auth-service covered by run-1)",
+    "frontend/package-lock.json (not read)"
+  ],
+  "budget": 28,
+  "budget_note": "Parent-proposed ceiling on agent invocations. The parent mapped the small frontend itself instead of launching the four reconnaissance agents (disclosed deviation to save cost); the skill's reserves are kept: one post-wave critic, one final-clean critic, and verifier calls.",
+  "execution_policy": "sandboxed-source-and-local-only",
+  "execution_note": "No OS-enforced sandbox exists on this Windows host, so target-controlled code (npm, node, vitest, browsers) is NOT executed; every check is source-only and decisive runtime facts become needs_validation.",
+  "selected_companions": [
+    "CLIENT-SIDE.md",
+    "WEB-PROTOCOL-AND-AUTH.md"
+  ],
+  "prior_runs": [
+    "C:/Users/andri.mardiana/security-audit-skill/sdd-microservices/run-1"
+  ],
+  "shared_file_owners": {
+    "run-metadata.json": "parent",
+    "architecture.md": "parent",
+    "coverage-ledger.json": "parent",
+    "findings.json": "parent",
+    "REPORT.md": "parent",
+    "FINDINGS-DETAIL.md": "parent",
+    "NEEDS-VALIDATION.md": "parent"
+  },
+  "agents_spent": 8,
+  "run_status": "complete",
+  "coverage_statement": "partial: the single frontend gap the final-clean critic found (docker-compose frontend entry) was covered by an extra hunter and no further critic was run, so no clean-coverage claim; reconnaissance was done by the parent, not four agents; both critics were given a stale run-1 scope text",
+  "final_records": {
+    "confirmed": 0,
+    "needs_validation": 0,
+    "rejected": 1
+  }
+}

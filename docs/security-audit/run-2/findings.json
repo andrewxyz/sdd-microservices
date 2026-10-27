@@ -1,0 +1,55 @@
+[
+  {
+    "verdict": "rejected",
+    "fingerprint": "frontend/login-returnto-unvalidated-navigate",
+    "title": "Login returnTo query parameter passed unvalidated to navigate()",
+    "description": "After login, LoginPage calls navigate(returnTo,{replace:true}) with the raw returnTo query value. The candidate hinged on how react-router 8.4.0 treats absolute, protocol-relative or javascript: targets. The installed library source shows it rejects external targets, so no off-origin redirect or script execution results.",
+    "claimed_root_cause": "No destination policy (single leading '/', no '//' or scheme) is applied to returnTo before navigate().",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "frontend/src/pages/LoginPage.tsx",
+        "line": 17,
+        "scope": "LoginPage",
+        "description": "returnTo is read from URLSearchParams(location.search), default '/'; an attacker can craft the link"
+      },
+      {
+        "kind": "propagation",
+        "file": "frontend/src/pages/LoginPage.tsx",
+        "line": 29,
+        "scope": "onSubmit",
+        "description": "login() succeeds with the victim's own credentials; returnTo is unchanged"
+      },
+      {
+        "kind": "sink",
+        "file": "frontend/src/pages/LoginPage.tsx",
+        "line": 30,
+        "scope": "onSubmit",
+        "description": "navigate(returnTo,{replace:true}) goes through react-router's useNavigateUnstable (BrowserRouter, frontend/src/main.tsx:14), whose external-navigation check throws before any history push"
+      }
+    ],
+    "evidence": [
+      {
+        "file": "frontend/node_modules/react-router/dist/development/lib/hooks.js",
+        "line": 294,
+        "description": "useNavigateUnstable calls validateNavigationTarget(to, createHref(path), currentUrl, 'reject') before navigator.push/replace at line 295"
+      },
+      {
+        "file": "frontend/node_modules/react-router/dist/development/lib/router/navigation.js",
+        "line": 39,
+        "description": "With policy 'reject', throws Error('External navigation is not allowed') if the original or resolved URL is not same-origin; covers https://x, //x and javascript:"
+      },
+      {
+        "file": "frontend/node_modules/react-router/dist/development/lib/router/navigation.js",
+        "line": 2,
+        "description": "Installed react-router is v8.4.0 (header comment); frontend/package.json:21 pins 8.4.0"
+      },
+      {
+        "file": "frontend/src/pages/LoginPage.tsx",
+        "line": 31,
+        "description": "The thrown error lands in the catch block and shows a generic error; the user stays on the SPA origin"
+      }
+    ],
+    "reason": "Source reading of the installed react-router 8.4.0 settles the blocker (re-checked by the parent). navigate() rejects any external target with a thrown error, so the claimed off-origin redirect or script execution does not occur. Residual effect is a same-origin in-app path or a cosmetic error after a successful login. A '/'-prefix check on returnTo would be harmless defence in depth but is not a vulnerability."
+  }
+]

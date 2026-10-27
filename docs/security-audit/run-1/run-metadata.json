@@ -1,0 +1,53 @@
+{
+  "run_id": "run-1",
+  "repo": "sdd-microservices",
+  "target": "C:/Users/andri.mardiana/Belajar/claude/github-spec-kit/sdd-microservices",
+  "source_ref": {
+    "commit": "ea2fd6c2298563a87ae66cda51c319c87b69b1ec",
+    "branch": "master",
+    "worktree_dirty": true,
+    "dirty_note": "Only an untracked .claude/skills/security-audit/ folder (the audit skill itself); no reviewed source differs from the commit."
+  },
+  "profile": "standard",
+  "scope_paths": [
+    "backend/api-gateway",
+    "backend/auth-service",
+    "backend/config-repo/api-gateway.yml",
+    "backend/config-repo/application.yml",
+    "backend/config-repo/application-local.yml",
+    "backend/config-repo/auth-service.yml",
+    "docker-compose.yml (api-gateway, auth-service, frontend proxy entries only)",
+    ".env.example",
+    "frontend/nginx/default.conf.template (edge in front of the gateway)"
+  ],
+  "context_only_paths": [
+    "backend/platform-common",
+    "backend/shared-events"
+  ],
+  "budget": 40,
+  "budget_note": "Maximum agent invocations across all phases; proposed by the parent because the user set none. Reserved before hunting: 4 reconnaissance, one post-wave critic, one distinct final-clean critic, and verifier calls.",
+  "execution_policy": "sandboxed-source-and-local-only",
+  "execution_note": "No OS-enforced sandbox is available on this Windows host (no network namespace, no resource limits, no read-only mounts). Target-controlled code is therefore NOT executed; every check is source-only and decisive runtime facts become needs_validation.",
+  "selected_companions": [
+    "WEB-PROTOCOL-AND-AUTH.md",
+    "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md"
+  ],
+  "prior_runs": [],
+  "shared_file_owners": {
+    "run-metadata.json": "parent",
+    "architecture.md": "parent",
+    "coverage-ledger.json": "parent",
+    "findings.json": "parent",
+    "REPORT.md": "parent",
+    "FINDINGS-DETAIL.md": "parent",
+    "NEEDS-VALIDATION.md": "parent"
+  },
+  "agents_spent": 34,
+  "run_status": "complete",
+  "coverage_statement": "partial: 3 units deferred (budget_cannot_reserve_critics_and_validation); final-clean critic not run; no clean-coverage claim",
+  "final_records": {
+    "confirmed": 0,
+    "needs_validation": 9,
+    "rejected": 1
+  }
+}

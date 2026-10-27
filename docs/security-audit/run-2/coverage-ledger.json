@@ -1,0 +1,2850 @@
+[
+  {
+    "coverage_id": "build%2C%20dependencies%20and%20API-type%20generation%20%28package.json%2C%20gen-api.mjs%2C%20Dockerfile%2C%20vite.config.ts%29::Dependency%20pinning%20and%20ranges%3B%20npm%20ci%3B%20build%20script%20inputs%3B%20dev%20proxy%20exposure::frontend%2Fbuild::ATTACK-CLASSES.md%23Obvious%20things",
+    "canonical_refs": {
+      "surface": "build, dependencies and API-type generation (package.json, gen-api.mjs, Dockerfile, vite.config.ts)",
+      "boundary": "Dependency pinning and ranges; npm ci; build script inputs; dev proxy exposure",
+      "subsystem": "frontend/build",
+      "attack_class": "ATTACK-CLASSES.md#Obvious things"
+    },
+    "surface": "build, dependencies and API-type generation (package.json, gen-api.mjs, Dockerfile, vite.config.ts)",
+    "boundary": "Dependency pinning and ranges; npm ci; build script inputs; dev proxy exposure",
+    "subsystem": "frontend/build",
+    "attack_class": "Obvious things (build and dependency configuration)",
+    "starting_paths": [
+      "frontend/package.json",
+      "frontend/scripts/gen-api.mjs",
+      "frontend/Dockerfile",
+      "frontend/vite.config.ts",
+      "frontend/.gitignore"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser-side class is the primary subject of this unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol or identity class is the primary subject of this unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM clobbering",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Prototype pollution and gadget chain",
+        "reason": "No deep-merge or path-assignment helper in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#postMessage origin and source trust",
+        "reason": "No postMessage send or receive in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site WebSocket request use",
+        "reason": "No WebSocket in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Credentialed CORS trust",
+        "reason": "All calls are same-origin /api with no credentials mode; CORS is a gateway concern covered in run-1"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker registration and scope takeover",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker cache and identity confusion",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-context storage and broadcast confusion",
+        "reason": "No storage event listener or BroadcastChannel (grep); sessionStorage is per-tab"
+      },
+      {
+        "block": "CLIENT-SIDE.md#XS-Leaks and cross-origin state oracles",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Window and opener state disclosure",
+        "reason": "No window.open or opener use in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Clickjacking",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "nginx and the gateway use framework HTTP parsers; no custom parser"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication is a Bearer header held in JS memory, not an ambient cookie"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "The SPA sets no cookies (grep document.cookie)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Tokens are never verified or decoded client-side; verification is the gateway (run-1)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password-reset UI or endpoint call in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native or binary code in the frontend"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "Client code with no server work; availability of the nginx edge is a deployment concern"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI or release workflow in the frontend source; dependency and build review runs under the ordinary Obvious-things unit"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud account, IAM or infrastructure code"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in the frontend"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h4-edge",
+    "reviewed_paths": [
+      "frontend/.gitignore",
+      "frontend/Dockerfile",
+      "frontend/package.json",
+      "frontend/scripts/gen-api.mjs",
+      "frontend/vite.config.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h4-edge",
+        "reviewed_paths": [
+          "frontend/package.json",
+          "frontend/Dockerfile"
+        ],
+        "invariant": "Dependencies are reproducibly pinned; the image build installs from the lockfile",
+        "method": "source",
+        "result": "Dockerfile copies package*.json and runs npm ci, so the lockfile governs the build. Only tailwindcss and @tailwindcss/vite use ^4.3.3 ranges (build-time only); all others are exact. No install scripts or git/URL dependencies. The lockfile was not audited for CVEs offline.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h4-edge",
+        "reviewed_paths": [
+          "frontend/scripts/gen-api.mjs"
+        ],
+        "invariant": "The build-script has no attacker-controlled input reaching exec, eval or dynamic import",
+        "method": "source",
+        "result": "gen-api.mjs uses execFileSync('npx', ['--yes','openapi-typescript', input, ...], {shell:true}) with input paths from a hardcoded in-repo list; no env, argv or network input. Developer-run only, not part of the Dockerfile build. npx --yes fetches an unpinned openapi-typescript at dev time (hardening note).",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h4-edge",
+        "reviewed_paths": [
+          "frontend/vite.config.ts",
+          "frontend/.gitignore"
+        ],
+        "invariant": "Dev proxy and server are not exposed in production, and local secrets are git-ignored",
+        "method": "source",
+        "result": "The vite dev and preview servers use the default localhost binding; the proxy targets localhost:9080 for dev only; production serves static files via nginx. .gitignore covers node_modules, dist and *.local. No env or key files in frontend/. Grep of src found no hardcoded secrets, eval or Function.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_hunter_group": "h4-edge"
+  },
+  {
+    "coverage_id": "checkout%2C%20payment%20polling%20and%20enrol%20flow%20%28useCheckout%2C%20EnrollPanel%29::Idempotency%20key%20lifecycle%2C%20payment%20token%20handling%2C%20outcome%20polling%2C%20double-submit::frontend%2Fsrc%2Fhooks%2Bsrc%2Fcomponents::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "checkout, payment polling and enrol flow (useCheckout, EnrollPanel)",
+      "boundary": "Idempotency key lifecycle, payment token handling, outcome polling, double-submit",
+      "subsystem": "frontend/src/hooks+src/components",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "checkout, payment polling and enrol flow (useCheckout, EnrollPanel)",
+    "boundary": "Idempotency key lifecycle, payment token handling, outcome polling, double-submit",
+    "subsystem": "frontend/src/hooks+src/components",
+    "attack_class": "Business logic (checkout state machine)",
+    "starting_paths": [
+      "frontend/src/hooks/useCheckout.ts",
+      "frontend/src/components/EnrollPanel.tsx",
+      "frontend/src/pages/CourseDetailPage.tsx",
+      "frontend/src/api/endpoints.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser-side class is the primary subject of this unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol or identity class is the primary subject of this unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM clobbering",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Prototype pollution and gadget chain",
+        "reason": "No deep-merge or path-assignment helper in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#postMessage origin and source trust",
+        "reason": "No postMessage send or receive in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site WebSocket request use",
+        "reason": "No WebSocket in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Credentialed CORS trust",
+        "reason": "All calls are same-origin /api with no credentials mode; CORS is a gateway concern covered in run-1"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker registration and scope takeover",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker cache and identity confusion",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-context storage and broadcast confusion",
+        "reason": "No storage event listener or BroadcastChannel (grep); sessionStorage is per-tab"
+      },
+      {
+        "block": "CLIENT-SIDE.md#XS-Leaks and cross-origin state oracles",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Window and opener state disclosure",
+        "reason": "No window.open or opener use in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Clickjacking",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "nginx and the gateway use framework HTTP parsers; no custom parser"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication is a Bearer header held in JS memory, not an ambient cookie"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "The SPA sets no cookies (grep document.cookie)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Tokens are never verified or decoded client-side; verification is the gateway (run-1)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password-reset UI or endpoint call in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native or binary code in the frontend"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "Client code with no server work; availability of the nginx edge is a deployment concern"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI or release workflow in the frontend source; dependency and build review runs under the ordinary Obvious-things unit"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud account, IAM or infrastructure code"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in the frontend"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h3-api",
+    "reviewed_paths": [
+      "frontend/src/api/endpoints.ts",
+      "frontend/src/components/EnrollPanel.tsx",
+      "frontend/src/hooks/useCheckout.ts",
+      "frontend/src/pages/CourseDetailPage.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h3-api",
+        "reviewed_paths": [
+          "frontend/src/hooks/useCheckout.ts",
+          "frontend/src/components/EnrollPanel.tsx"
+        ],
+        "invariant": "One idempotency key per logical attempt; fresh key only after a terminal DECLINED/FAILED or choice change; double-submit cannot create two distinct charges; polling terminates",
+        "method": "source",
+        "result": "currentKey() sets keyRef synchronously, so a rapid double click replays the same key. The key is cleared on choice change and after DECLINED/FAILED, and kept on network failure or 503 (safe replay). The button is disabled while submitting or confirming. Polling stops at a 15s deadline and ends in pending or failed. The paymentToken is only a simulator label, not a credential. Server enforcement of key and course binding is backend scope.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h3-api",
+        "reviewed_paths": [
+          "frontend/src/pages/CourseDetailPage.tsx",
+          "frontend/src/api/endpoints.ts"
+        ],
+        "invariant": "Idempotency key and choice state cannot leak across courses; the enrolled UI state is only UX",
+        "method": "source",
+        "result": "CourseDetailPage sets pageState to loading on a courseId change, which unmounts EnrollPanel and resets the useCheckout refs. alreadyEnrolled is derived from the server's progress endpoint (200 or 403) and is not trusted for authorization; the gateway enforces access.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_hunter_group": "h3-api"
+  },
+  {
+    "coverage_id": "client.ts%20request%28%29%3A%20401%20handling%2C%20single-flight%20refresh%20and%20retry%2C%20unauthorised%20redirect::Refresh-token%20rotation%20from%20the%20browser%3B%20retry%20safety%20for%20non-idempotent%20calls%3B%20unauthorised%20handler::frontend%2Fsrc%2Fapi::WEB-PROTOCOL-AND-AUTH.md%23Session%20fixation%20and%20invalidation",
+    "canonical_refs": {
+      "surface": "client.ts request(): 401 handling, single-flight refresh and retry, unauthorised redirect",
+      "boundary": "Refresh-token rotation from the browser; retry safety for non-idempotent calls; unauthorised handler",
+      "subsystem": "frontend/src/api",
+      "attack_class": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation"
+    },
+    "surface": "client.ts request(): 401 handling, single-flight refresh and retry, unauthorised redirect",
+    "boundary": "Refresh-token rotation from the browser; retry safety for non-idempotent calls; unauthorised handler",
+    "subsystem": "frontend/src/api",
+    "attack_class": "Session fixation and invalidation (client refresh lifecycle)",
+    "starting_paths": [
+      "frontend/src/api/client.ts",
+      "frontend/src/api/endpoints.ts",
+      "frontend/src/auth/AuthProvider.tsx",
+      "frontend/src/api/client.singleflight.test.ts",
+      "frontend/src/api/client.refreshfail.test.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser-side class is the primary subject of this unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM clobbering",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Prototype pollution and gadget chain",
+        "reason": "No deep-merge or path-assignment helper in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#postMessage origin and source trust",
+        "reason": "No postMessage send or receive in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site WebSocket request use",
+        "reason": "No WebSocket in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Credentialed CORS trust",
+        "reason": "All calls are same-origin /api with no credentials mode; CORS is a gateway concern covered in run-1"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker registration and scope takeover",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker cache and identity confusion",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-context storage and broadcast confusion",
+        "reason": "No storage event listener or BroadcastChannel (grep); sessionStorage is per-tab"
+      },
+      {
+        "block": "CLIENT-SIDE.md#XS-Leaks and cross-origin state oracles",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Window and opener state disclosure",
+        "reason": "No window.open or opener use in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Clickjacking",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "nginx and the gateway use framework HTTP parsers; no custom parser"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication is a Bearer header held in JS memory, not an ambient cookie"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "The SPA sets no cookies (grep document.cookie)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Tokens are never verified or decoded client-side; verification is the gateway (run-1)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password-reset UI or endpoint call in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native or binary code in the frontend"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "Client code with no server work; availability of the nginx edge is a deployment concern"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI or release workflow in the frontend source; dependency and build review runs under the ordinary Obvious-things unit"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud account, IAM or infrastructure code"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in the frontend"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h1-session",
+    "reviewed_paths": [
+      "frontend/src/api/client.ts",
+      "frontend/src/auth/AuthProvider.tsx",
+      "frontend/src/auth/session.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h1-session",
+        "reviewed_paths": [
+          "frontend/src/api/client.ts",
+          "frontend/src/auth/AuthProvider.tsx",
+          "frontend/src/auth/session.ts"
+        ],
+        "invariant": "A 401 triggers at most one shared refresh and one retry, and a failed refresh clears the session and redirects. The client has no path that keeps a revoked or other user's credential alive.",
+        "method": "source",
+        "result": "request() refreshes only when the failed call carried a token (line 89). refreshOnce() shares one promise across concurrent callers, and the retry sets skipAuthRetry, so there is no refresh loop. A failed refresh calls clear() and the unauthorised handler. Rotated pairs are stored together. Retrying after a 401 is safe because the gateway rejected the original request. No client-side invariant failure with security impact found; a refresh finishing after logout can write tokens back (hardening).",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_hunter_group": "h1-session"
+  },
+  {
+    "coverage_id": "docker-compose.yml%20frontend%20service%20and%20.env.example%20GATEWAY_URL::Host%20port%209100%3A80%20publication%2C%20GATEWAY_URL%20env%20substitution%20into%20the%20nginx%20template%2C%20healthcheck%2C%20depends_on%2C%20default%20upstream%20value::frontend%2Fdeploy::ATTACK-CLASSES.md%23Obvious%20things",
+    "canonical_refs": {
+      "surface": "docker-compose.yml frontend service and .env.example GATEWAY_URL",
+      "boundary": "Host port 9100:80 publication, GATEWAY_URL env substitution into the nginx template, healthcheck, depends_on, default upstream value",
+      "subsystem": "frontend/deploy",
+      "attack_class": "ATTACK-CLASSES.md#Obvious things"
+    },
+    "surface": "docker-compose.yml frontend service and .env.example GATEWAY_URL",
+    "boundary": "Host port 9100:80 publication, GATEWAY_URL env substitution into the nginx template, healthcheck, depends_on, default upstream value",
+    "subsystem": "frontend/deploy",
+    "attack_class": "Obvious things (deployment configuration)",
+    "starting_paths": [
+      "docker-compose.yml",
+      ".env.example",
+      "frontend/nginx/default.conf.template",
+      "frontend/Dockerfile"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser-side class is the primary subject of this unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM clobbering",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Prototype pollution and gadget chain",
+        "reason": "No deep-merge or path-assignment helper in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#postMessage origin and source trust",
+        "reason": "No postMessage send or receive in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site WebSocket request use",
+        "reason": "No WebSocket in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Credentialed CORS trust",
+        "reason": "All calls are same-origin /api with no credentials mode; CORS is a gateway concern covered in run-1"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker registration and scope takeover",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker cache and identity confusion",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-context storage and broadcast confusion",
+        "reason": "No storage event listener or BroadcastChannel (grep); sessionStorage is per-tab"
+      },
+      {
+        "block": "CLIENT-SIDE.md#XS-Leaks and cross-origin state oracles",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Window and opener state disclosure",
+        "reason": "No window.open or opener use in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Clickjacking",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "nginx and the gateway use framework HTTP parsers; no custom parser"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication is a Bearer header held in JS memory, not an ambient cookie"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "The SPA sets no cookies (grep document.cookie)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Tokens are never verified or decoded client-side; verification is the gateway (run-1)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password-reset UI or endpoint call in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native or binary code in the frontend"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "Client code with no server work; availability of the nginx edge is a deployment concern"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI or release workflow in the frontend source; dependency and build review runs under the ordinary Obvious-things unit"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud account, IAM or infrastructure code"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in the frontend"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 2,
+    "status": "covered",
+    "agent_id": "hunt-h5-deploy",
+    "reviewed_paths": [
+      ".env.example",
+      ".gitignore",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RemoteAddressClientResolver.java",
+      "docker-compose.yml",
+      "frontend/Dockerfile",
+      "frontend/nginx/default.conf.template"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h5-deploy",
+        "reviewed_paths": [
+          ".env.example",
+          "docker-compose.yml",
+          ".gitignore"
+        ],
+        "invariant": "No real secrets committed; .env is git-ignored; required values fail closed",
+        "method": "source",
+        "result": ".env.example holds only change-me placeholders and the non-secret GATEWAY_URL. .gitignore ignores .env and keeps .env.example. The frontend service uses no secret; other services use ${VAR:?} so a blank value is rejected.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h5-deploy",
+        "reviewed_paths": [
+          "docker-compose.yml",
+          "frontend/nginx/default.conf.template"
+        ],
+        "invariant": "GATEWAY_URL substitution cannot be influenced by a request or lower-trust principal",
+        "method": "source",
+        "result": "GATEWAY_URL is operator-set compose env (default http://api-gateway:9080). NGINX_ENVSUBST_TEMPLATE_VARS limits substitution to that one variable. proxy_pass has no URI part and no request-derived variable, so no SSRF or upstream selection from a client.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h5-deploy",
+        "reviewed_paths": [
+          "docker-compose.yml",
+          "frontend/Dockerfile",
+          "frontend/nginx/default.conf.template"
+        ],
+        "invariant": "Frontend exposure is limited to the intended port, with no debug or admin endpoint and no sensitive build output",
+        "method": "source",
+        "result": "Only 9100:80 is published for the frontend. nginx serves static dist files and proxies /api/ only; no /debug, /env or /metrics locations. The multi-stage Dockerfile leaves only dist and the template in the final image. The healthcheck needs no credentials.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h5-deploy",
+        "reviewed_paths": [
+          "frontend/nginx/default.conf.template",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RemoteAddressClientResolver.java"
+        ],
+        "invariant": "Host and forwarded-header trust: client-supplied Host or X-Forwarded-For must not decide identity, absolute URLs or authorization downstream",
+        "method": "source",
+        "result": "nginx forwards a client X-Forwarded-For chain appended with the real peer, but the gateway's RemoteAddressClientResolver ignores X-Forwarded-For and auth-service uses getRemoteAddr(); no backend consumer of XFF or X-Real-IP found.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h5-deploy",
+        "reviewed_paths": [
+          "frontend/nginx/default.conf.template"
+        ],
+        "invariant": "Edge security headers apply to every location, and no CORS wildcard or permissive config exists at the edge",
+        "method": "source",
+        "result": "Server-level CSP, nosniff, Referrer-Policy and X-Frame-Options apply to /api/ and /; location = /index.html repeats them. No Access-Control-* header is set. There is no TLS listener (listen 80 only); TLS termination is a deployment fact outside the repo.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_hunter_group": "h5-deploy"
+  },
+  {
+    "coverage_id": "error%20handling%3A%20problem.ts%20parsing%20and%20ErrorNotice%20display%20of%20server%20detail%20and%20correlationId::Mapping%20server%20errors%20to%20UI%20text%3B%20what%20internal%20detail%20reaches%20the%20user::frontend%2Fsrc%2Fapi%2Bsrc%2Fcomponents::ATTACK-CLASSES.md%23Feature%20abuse%20and%20data%20leakage",
+    "canonical_refs": {
+      "surface": "error handling: problem.ts parsing and ErrorNotice display of server detail and correlationId",
+      "boundary": "Mapping server errors to UI text; what internal detail reaches the user",
+      "subsystem": "frontend/src/api+src/components",
+      "attack_class": "ATTACK-CLASSES.md#Feature abuse and data leakage"
+    },
+    "surface": "error handling: problem.ts parsing and ErrorNotice display of server detail and correlationId",
+    "boundary": "Mapping server errors to UI text; what internal detail reaches the user",
+    "subsystem": "frontend/src/api+src/components",
+    "attack_class": "Feature abuse and data leakage (error display)",
+    "starting_paths": [
+      "frontend/src/api/problem.ts",
+      "frontend/src/components/ErrorNotice.tsx",
+      "frontend/src/components/Field.tsx",
+      "frontend/src/pages/LoginPage.tsx",
+      "frontend/src/pages/RegisterPage.tsx"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser-side class is the primary subject of this unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol or identity class is the primary subject of this unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM clobbering",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Prototype pollution and gadget chain",
+        "reason": "No deep-merge or path-assignment helper in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#postMessage origin and source trust",
+        "reason": "No postMessage send or receive in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site WebSocket request use",
+        "reason": "No WebSocket in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Credentialed CORS trust",
+        "reason": "All calls are same-origin /api with no credentials mode; CORS is a gateway concern covered in run-1"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker registration and scope takeover",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker cache and identity confusion",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-context storage and broadcast confusion",
+        "reason": "No storage event listener or BroadcastChannel (grep); sessionStorage is per-tab"
+      },
+      {
+        "block": "CLIENT-SIDE.md#XS-Leaks and cross-origin state oracles",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Window and opener state disclosure",
+        "reason": "No window.open or opener use in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Clickjacking",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "nginx and the gateway use framework HTTP parsers; no custom parser"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication is a Bearer header held in JS memory, not an ambient cookie"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "The SPA sets no cookies (grep document.cookie)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Tokens are never verified or decoded client-side; verification is the gateway (run-1)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password-reset UI or endpoint call in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native or binary code in the frontend"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "Client code with no server work; availability of the nginx edge is a deployment concern"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI or release workflow in the frontend source; dependency and build review runs under the ordinary Obvious-things unit"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud account, IAM or infrastructure code"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in the frontend"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h2-render",
+    "reviewed_paths": [
+      "frontend/src/api/problem.ts",
+      "frontend/src/components/ErrorNotice.tsx",
+      "frontend/src/components/Field.tsx",
+      "frontend/src/pages/LoginPage.tsx",
+      "frontend/src/pages/RegisterPage.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h2-render",
+        "reviewed_paths": [
+          "frontend/src/api/problem.ts",
+          "frontend/src/components/ErrorNotice.tsx",
+          "frontend/src/components/Field.tsx",
+          "frontend/src/pages/LoginPage.tsx",
+          "frontend/src/pages/RegisterPage.tsx"
+        ],
+        "invariant": "Server error detail and internals must not reach users beyond a friendly message and an opaque reference code; login errors must not form an account oracle",
+        "method": "source",
+        "result": "ApiError.message comes from a fixed friendlyMessage(status) table; ErrorNotice shows only message and correlationId as a React text node. LoginPage maps 401 to a generic message and other statuses to fixed text. RegisterPage shows fixed strings; the 409 already-registered oracle is product behaviour. Server detail is shown only in EnrollPanel and ReviewForm for 400/403, as text. No stack or internal fields are rendered.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_hunter_group": "h2-render"
+  },
+  {
+    "coverage_id": "frontend%3A%20anything%20not%20covered%20by%20the%20other%20units::Half-finished%2C%20test-only%20or%20fallback%20paths%20in%20the%20frontend%20source::frontend%2Fsrc::ATTACK-CLASSES.md%23Wildcard",
+    "canonical_refs": {
+      "surface": "frontend: anything not covered by the other units",
+      "boundary": "Half-finished, test-only or fallback paths in the frontend source",
+      "subsystem": "frontend/src",
+      "attack_class": "ATTACK-CLASSES.md#Wildcard"
+    },
+    "surface": "frontend: anything not covered by the other units",
+    "boundary": "Half-finished, test-only or fallback paths in the frontend source",
+    "subsystem": "frontend/src",
+    "attack_class": "Wildcard",
+    "starting_paths": [
+      "frontend/src/components/StarRating.tsx",
+      "frontend/src/components/ReviewForm.tsx",
+      "frontend/src/components/EmptyState.tsx",
+      "frontend/src/components/ProgressBar.tsx",
+      "frontend/src/styles.css",
+      "frontend/src/test/setup.ts",
+      "frontend/src/main.tsx"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Wildcard",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser-side class is the primary subject of this unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol or identity class is the primary subject of this unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM clobbering",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Prototype pollution and gadget chain",
+        "reason": "No deep-merge or path-assignment helper in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#postMessage origin and source trust",
+        "reason": "No postMessage send or receive in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site WebSocket request use",
+        "reason": "No WebSocket in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Credentialed CORS trust",
+        "reason": "All calls are same-origin /api with no credentials mode; CORS is a gateway concern covered in run-1"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker registration and scope takeover",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker cache and identity confusion",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-context storage and broadcast confusion",
+        "reason": "No storage event listener or BroadcastChannel (grep); sessionStorage is per-tab"
+      },
+      {
+        "block": "CLIENT-SIDE.md#XS-Leaks and cross-origin state oracles",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Window and opener state disclosure",
+        "reason": "No window.open or opener use in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Clickjacking",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "nginx and the gateway use framework HTTP parsers; no custom parser"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication is a Bearer header held in JS memory, not an ambient cookie"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "The SPA sets no cookies (grep document.cookie)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Tokens are never verified or decoded client-side; verification is the gateway (run-1)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password-reset UI or endpoint call in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native or binary code in the frontend"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "Client code with no server work; availability of the nginx edge is a deployment concern"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI or release workflow in the frontend source; dependency and build review runs under the ordinary Obvious-things unit"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud account, IAM or infrastructure code"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in the frontend"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h4-edge",
+    "reviewed_paths": [
+      "frontend/src/components/EmptyState.tsx",
+      "frontend/src/components/ProgressBar.tsx",
+      "frontend/src/components/ReviewForm.tsx",
+      "frontend/src/components/StarRating.tsx",
+      "frontend/src/main.tsx",
+      "frontend/src/styles.css",
+      "frontend/src/test/setup.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h4-edge",
+        "reviewed_paths": [
+          "frontend/src/components/ReviewForm.tsx",
+          "frontend/src/components/StarRating.tsx"
+        ],
+        "invariant": "Review UI renders server text as text and builds navigation and API inputs safely",
+        "method": "source",
+        "result": "ReviewForm builds the sign-in link with encodeURIComponent('/courses/'+courseId), an internal path. The comment goes to React text state with maxLength 500 (backend enforces rules). StarRating uses toFixed and repeat; a server average outside 0-5 could throw a RangeError (UI crash on bad server data, no security impact). Delete is confirmed with window.confirm and sent as a bearer call.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h4-edge",
+        "reviewed_paths": [
+          "frontend/src/main.tsx",
+          "frontend/src/test/setup.ts",
+          "frontend/src/components/EmptyState.tsx",
+          "frontend/src/components/ProgressBar.tsx",
+          "frontend/src/styles.css"
+        ],
+        "invariant": "No test-only, debug or fallback path is reachable in the production bundle",
+        "method": "source",
+        "result": "main.tsx only mounts App in StrictMode inside BrowserRouter with no debug flag or global exposure. test/setup.ts is loaded only by vitest. Greps found no production sinks (dangerouslySetInnerHTML, innerHTML, eval, import.meta.env); the only window.location use is same-origin pathname+search in client.ts. EmptyState, ProgressBar and styles.css were not read in full; greps found no sinks in them.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_hunter_group": "h4-edge"
+  },
+  {
+    "coverage_id": "ids%20and%20parameters%20from%20the%20URL%20interpolated%20into%20API%20paths%20%28courseId%2C%20lessonId%2C%20reviewId%2C%20courseIds%2C%20page%29::endpoints.ts%20builds%20request%20paths%20without%20encoding%3B%20useParams%20values%20reach%20%2Fapi%2F...%20with%20the%20user%27s%20bearer%20token::frontend%2Fsrc%2Fapi%2Bsrc%2Fpages::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "ids and parameters from the URL interpolated into API paths (courseId, lessonId, reviewId, courseIds, page)",
+      "boundary": "endpoints.ts builds request paths without encoding; useParams values reach /api/... with the user's bearer token",
+      "subsystem": "frontend/src/api+src/pages",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "ids and parameters from the URL interpolated into API paths (courseId, lessonId, reviewId, courseIds, page)",
+    "boundary": "endpoints.ts builds request paths without encoding; useParams values reach /api/... with the user's bearer token",
+    "subsystem": "frontend/src/api+src/pages",
+    "attack_class": "Injection (path and query construction)",
+    "starting_paths": [
+      "frontend/src/api/endpoints.ts",
+      "frontend/src/pages/CourseDetailPage.tsx",
+      "frontend/src/pages/LearnPage.tsx",
+      "frontend/src/pages/CatalogPage.tsx",
+      "frontend/src/components/ReviewForm.tsx",
+      "frontend/src/api/client.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser-side class is the primary subject of this unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol or identity class is the primary subject of this unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM clobbering",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Prototype pollution and gadget chain",
+        "reason": "No deep-merge or path-assignment helper in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#postMessage origin and source trust",
+        "reason": "No postMessage send or receive in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site WebSocket request use",
+        "reason": "No WebSocket in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Credentialed CORS trust",
+        "reason": "All calls are same-origin /api with no credentials mode; CORS is a gateway concern covered in run-1"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker registration and scope takeover",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker cache and identity confusion",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-context storage and broadcast confusion",
+        "reason": "No storage event listener or BroadcastChannel (grep); sessionStorage is per-tab"
+      },
+      {
+        "block": "CLIENT-SIDE.md#XS-Leaks and cross-origin state oracles",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Window and opener state disclosure",
+        "reason": "No window.open or opener use in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Clickjacking",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "nginx and the gateway use framework HTTP parsers; no custom parser"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication is a Bearer header held in JS memory, not an ambient cookie"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "The SPA sets no cookies (grep document.cookie)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Tokens are never verified or decoded client-side; verification is the gateway (run-1)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password-reset UI or endpoint call in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native or binary code in the frontend"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "Client code with no server work; availability of the nginx edge is a deployment concern"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI or release workflow in the frontend source; dependency and build review runs under the ordinary Obvious-things unit"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud account, IAM or infrastructure code"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in the frontend"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h3-api",
+    "reviewed_paths": [
+      "frontend/src/api/client.ts",
+      "frontend/src/api/endpoints.ts",
+      "frontend/src/components/ReviewForm.tsx",
+      "frontend/src/pages/CatalogPage.tsx",
+      "frontend/src/pages/CourseDetailPage.tsx",
+      "frontend/src/pages/LearnPage.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h3-api",
+        "reviewed_paths": [
+          "frontend/src/api/endpoints.ts",
+          "frontend/src/api/client.ts",
+          "frontend/src/pages/CourseDetailPage.tsx",
+          "frontend/src/pages/LearnPage.tsx"
+        ],
+        "invariant": "URL-derived ids reach /api paths only as a single path segment, or the impact of a traversal is bounded",
+        "method": "source",
+        "result": "courseId from useParams is interpolated unencoded in endpoints.ts. A decoded %2F or .. in the router param could re-point a request to another same-origin /api path with the victim's bearer. client.ts always prefixes /api, so the request cannot leave the origin. The victim's own bearer goes only to the victim's own gateway, the suffix is fixed by the helper, and bodies and lesson ids come from server data. No reachable state-changing target, no exfiltration to an attacker and no cross-principal effect found; recorded as hardening.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h3-api",
+        "reviewed_paths": [
+          "frontend/src/pages/CatalogPage.tsx",
+          "frontend/src/components/ReviewForm.tsx"
+        ],
+        "invariant": "Query strings are built safely; reviewId comes from server data",
+        "method": "source",
+        "result": "CatalogPage builds its query through URLSearchParams and page is Number(...)||0. ReviewForm uses existing.id from the server's ReviewView for update and delete. No user-controlled URL text reaches the review update or delete paths.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_hunter_group": "h3-api"
+  },
+  {
+    "coverage_id": "nginx%20edge%20for%20the%20SPA%3A%20security%20headers%2C%20location%20blocks%2C%20API%20proxy%2C%20caching::CSP%2C%20frame%20and%20referrer%20policy%3B%20add_header%20inheritance%3B%20X-Forwarded-For%20and%20Host%20forwarding%3B%20cache%20headers%20on%20index.html%20and%20%2Fapi::frontend%2Fnginx::CLIENT-SIDE.md%23Clickjacking",
+    "canonical_refs": {
+      "surface": "nginx edge for the SPA: security headers, location blocks, API proxy, caching",
+      "boundary": "CSP, frame and referrer policy; add_header inheritance; X-Forwarded-For and Host forwarding; cache headers on index.html and /api",
+      "subsystem": "frontend/nginx",
+      "attack_class": "CLIENT-SIDE.md#Clickjacking"
+    },
+    "surface": "nginx edge for the SPA: security headers, location blocks, API proxy, caching",
+    "boundary": "CSP, frame and referrer policy; add_header inheritance; X-Forwarded-For and Host forwarding; cache headers on index.html and /api",
+    "subsystem": "frontend/nginx",
+    "attack_class": "Clickjacking and response-header policy",
+    "starting_paths": [
+      "frontend/nginx/default.conf.template",
+      "frontend/Dockerfile",
+      "frontend/index.html"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [
+      "CLIENT-SIDE.md#Clickjacking",
+      "CLIENT-SIDE.md#Core discipline",
+      "CLIENT-SIDE.md#Universal moves",
+      "CLIENT-SIDE.md#Validation rules",
+      "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+      "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+      "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+      "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM clobbering",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Prototype pollution and gadget chain",
+        "reason": "No deep-merge or path-assignment helper in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#postMessage origin and source trust",
+        "reason": "No postMessage send or receive in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site WebSocket request use",
+        "reason": "No WebSocket in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Credentialed CORS trust",
+        "reason": "All calls are same-origin /api with no credentials mode; CORS is a gateway concern covered in run-1"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker registration and scope takeover",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker cache and identity confusion",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-context storage and broadcast confusion",
+        "reason": "No storage event listener or BroadcastChannel (grep); sessionStorage is per-tab"
+      },
+      {
+        "block": "CLIENT-SIDE.md#XS-Leaks and cross-origin state oracles",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Window and opener state disclosure",
+        "reason": "No window.open or opener use in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "nginx and the gateway use framework HTTP parsers; no custom parser"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication is a Bearer header held in JS memory, not an ambient cookie"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "The SPA sets no cookies (grep document.cookie)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Tokens are never verified or decoded client-side; verification is the gateway (run-1)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password-reset UI or endpoint call in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native or binary code in the frontend"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "Client code with no server work; availability of the nginx edge is a deployment concern"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI or release workflow in the frontend source; dependency and build review runs under the ordinary Obvious-things unit"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud account, IAM or infrastructure code"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in the frontend"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h4-edge",
+    "reviewed_paths": [
+      "frontend/Dockerfile",
+      "frontend/index.html",
+      "frontend/nginx/default.conf.template"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h4-edge",
+        "reviewed_paths": [
+          "frontend/nginx/default.conf.template"
+        ],
+        "invariant": "Anti-framing and response-header policy applies to every response, including add_header inheritance",
+        "method": "source",
+        "result": "The server block sets CSP default-src 'self', nosniff, Referrer-Policy no-referrer and X-Frame-Options DENY with always. location /api/ and location / define no add_header and inherit them; location = /index.html repeats all four plus Cache-Control no-cache. XFO DENY blocks framing in modern browsers even though the CSP has no frame-ancestors. try_files falls back to /index.html through that location. No inline scripts in index.html.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h4-edge",
+        "reviewed_paths": [
+          "frontend/nginx/default.conf.template",
+          "frontend/Dockerfile"
+        ],
+        "invariant": "Host and X-Forwarded-For forwarding and caching do not let a client spoof identity or poison a shared cache",
+        "method": "source",
+        "result": "/api/ sets Host $host, X-Real-IP $remote_addr and X-Forwarded-For $proxy_add_x_forwarded_for (appends to the client chain; safe only if the gateway uses the trusted hop, reviewed in run-1). nginx has no proxy_cache, so no shared cache to poison and no /api caching at the edge. Host is not used to build URLs because the SPA uses relative /api paths. GATEWAY_URL is operator-set at container start.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h4-edge",
+        "reviewed_paths": [
+          "frontend/index.html",
+          "frontend/Dockerfile"
+        ],
+        "invariant": "index.html is revalidated and static assets are not private-response cacheable",
+        "method": "source",
+        "result": "Cache-Control no-cache is on location = /index.html. Hashed bundles carry default validators and no per-user data. /api responses carry no edge Cache-Control; any directive comes from the gateway (run-1). The nginx:alpine and node:24-alpine tags are floating (hardening).",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_hunter_group": "h4-edge"
+  },
+  {
+    "coverage_id": "public%20certificate%20verification%3A%20%2Fverify%2F%3Acode%20and%20the%20unauthenticated%20verification%20view::What%20a%20verification%20code%20reveals%3B%20code%20format%20handling%3B%20display%20of%20holder%20data::frontend%2Fsrc%2Fpages::ATTACK-CLASSES.md%23Feature%20abuse%20and%20data%20leakage",
+    "canonical_refs": {
+      "surface": "public certificate verification: /verify/:code and the unauthenticated verification view",
+      "boundary": "What a verification code reveals; code format handling; display of holder data",
+      "subsystem": "frontend/src/pages",
+      "attack_class": "ATTACK-CLASSES.md#Feature abuse and data leakage"
+    },
+    "surface": "public certificate verification: /verify/:code and the unauthenticated verification view",
+    "boundary": "What a verification code reveals; code format handling; display of holder data",
+    "subsystem": "frontend/src/pages",
+    "attack_class": "Feature abuse and data leakage (public verification)",
+    "starting_paths": [
+      "frontend/src/pages/VerifyPage.tsx",
+      "frontend/src/api/endpoints.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser-side class is the primary subject of this unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol or identity class is the primary subject of this unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM clobbering",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Prototype pollution and gadget chain",
+        "reason": "No deep-merge or path-assignment helper in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#postMessage origin and source trust",
+        "reason": "No postMessage send or receive in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site WebSocket request use",
+        "reason": "No WebSocket in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Credentialed CORS trust",
+        "reason": "All calls are same-origin /api with no credentials mode; CORS is a gateway concern covered in run-1"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker registration and scope takeover",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker cache and identity confusion",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-context storage and broadcast confusion",
+        "reason": "No storage event listener or BroadcastChannel (grep); sessionStorage is per-tab"
+      },
+      {
+        "block": "CLIENT-SIDE.md#XS-Leaks and cross-origin state oracles",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Window and opener state disclosure",
+        "reason": "No window.open or opener use in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Clickjacking",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "nginx and the gateway use framework HTTP parsers; no custom parser"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication is a Bearer header held in JS memory, not an ambient cookie"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "The SPA sets no cookies (grep document.cookie)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Tokens are never verified or decoded client-side; verification is the gateway (run-1)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password-reset UI or endpoint call in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native or binary code in the frontend"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "Client code with no server work; availability of the nginx edge is a deployment concern"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI or release workflow in the frontend source; dependency and build review runs under the ordinary Obvious-things unit"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud account, IAM or infrastructure code"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in the frontend"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h3-api",
+    "reviewed_paths": [
+      "frontend/src/api/endpoints.ts",
+      "frontend/src/pages/VerifyPage.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h3-api",
+        "reviewed_paths": [
+          "frontend/src/pages/VerifyPage.tsx",
+          "frontend/src/api/endpoints.ts"
+        ],
+        "invariant": "The public verification view reveals only course title and issue date; the code is encoded into the path; invalid and error states do not leak extra detail",
+        "method": "source",
+        "result": "VerifyPage renders only result.courseTitle and result.issuedAt as React text. The code is trimmed, uppercased and passed through encodeURIComponent, so it stays a single path segment. A 404 maps to a generic not-found; other errors go to ErrorNotice. What the backend returns and whether verification is rate-limited or enumerable is outside this frontend unit.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_hunter_group": "h3-api"
+  },
+  {
+    "coverage_id": "returnTo%20query%20parameter%20after%20login%20and%20route%20guard%20redirects::Destination%20policy%20for%20navigate%28returnTo%29%3B%20RequireAuth%20route%20guard%20%28UX%20only%29::frontend%2Fsrc%2Fpages%2Bsrc%2Fauth::CLIENT-SIDE.md%23Client-side%20navigation%20confusion",
+    "canonical_refs": {
+      "surface": "returnTo query parameter after login and route guard redirects",
+      "boundary": "Destination policy for navigate(returnTo); RequireAuth route guard (UX only)",
+      "subsystem": "frontend/src/pages+src/auth",
+      "attack_class": "CLIENT-SIDE.md#Client-side navigation confusion"
+    },
+    "surface": "returnTo query parameter after login and route guard redirects",
+    "boundary": "Destination policy for navigate(returnTo); RequireAuth route guard (UX only)",
+    "subsystem": "frontend/src/pages+src/auth",
+    "attack_class": "Client-side navigation confusion",
+    "starting_paths": [
+      "frontend/src/pages/LoginPage.tsx",
+      "frontend/src/auth/RequireAuth.tsx",
+      "frontend/src/App.tsx",
+      "frontend/src/pages/CourseDetailPage.tsx",
+      "frontend/src/components/ReviewForm.tsx",
+      "frontend/src/pages/RegisterPage.tsx"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "CLIENT-SIDE.md#Client-side navigation confusion",
+      "CLIENT-SIDE.md#Core discipline",
+      "CLIENT-SIDE.md#Universal moves",
+      "CLIENT-SIDE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol or identity class is the primary subject of this unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM clobbering",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Prototype pollution and gadget chain",
+        "reason": "No deep-merge or path-assignment helper in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#postMessage origin and source trust",
+        "reason": "No postMessage send or receive in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site WebSocket request use",
+        "reason": "No WebSocket in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Credentialed CORS trust",
+        "reason": "All calls are same-origin /api with no credentials mode; CORS is a gateway concern covered in run-1"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker registration and scope takeover",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker cache and identity confusion",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-context storage and broadcast confusion",
+        "reason": "No storage event listener or BroadcastChannel (grep); sessionStorage is per-tab"
+      },
+      {
+        "block": "CLIENT-SIDE.md#XS-Leaks and cross-origin state oracles",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Window and opener state disclosure",
+        "reason": "No window.open or opener use in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Clickjacking",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "nginx and the gateway use framework HTTP parsers; no custom parser"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication is a Bearer header held in JS memory, not an ambient cookie"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "The SPA sets no cookies (grep document.cookie)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Tokens are never verified or decoded client-side; verification is the gateway (run-1)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password-reset UI or endpoint call in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native or binary code in the frontend"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "Client code with no server work; availability of the nginx edge is a deployment concern"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI or release workflow in the frontend source; dependency and build review runs under the ordinary Obvious-things unit"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud account, IAM or infrastructure code"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in the frontend"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunt-h2-render",
+    "reviewed_paths": [
+      "frontend/src/App.tsx",
+      "frontend/src/api/client.ts",
+      "frontend/src/auth/RequireAuth.tsx",
+      "frontend/src/components/ReviewForm.tsx",
+      "frontend/src/pages/CourseDetailPage.tsx",
+      "frontend/src/pages/LoginPage.tsx",
+      "frontend/src/pages/RegisterPage.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h2-render",
+        "reviewed_paths": [
+          "frontend/src/pages/LoginPage.tsx",
+          "frontend/src/auth/RequireAuth.tsx",
+          "frontend/src/App.tsx",
+          "frontend/src/pages/CourseDetailPage.tsx",
+          "frontend/src/components/ReviewForm.tsx",
+          "frontend/src/pages/RegisterPage.tsx",
+          "frontend/src/api/client.ts"
+        ],
+        "invariant": "A navigate() destination derived from the returnTo query parameter must be restricted to same-origin in-app paths (no absolute, protocol-relative or javascript:/data: values)",
+        "method": "source",
+        "result": "LoginPage reads returnTo from location.search and passes it unvalidated to navigate(returnTo,{replace:true}) after a successful login. All in-app producers build same-origin paths with encodeURIComponent, but an attacker-crafted /login?returnTo=<value> is attacker controlled and no scheme or destination check exists. How react-router 8.4.0 navigate() treats absolute or protocol-relative values is library behaviour not established from source. Other redirects use constants. RequireAuth is UX-only; the gateway enforces access.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "frontend/login-returnto-unvalidated-navigate"
+    ],
+    "unresolved": [],
+    "_hunter_group": "h2-render"
+  },
+  {
+    "coverage_id": "server-supplied%20text%20rendered%20by%20React%20%28course%2C%20lesson%2C%20review%2C%20certificate%2C%20account%20and%20error%20fields%29::React%20text%20escaping%3B%20absence%20of%20raw-HTML%20sinks%3B%20URLs%20built%20from%20server%20data::frontend%2Fsrc%2Fpages%2Bsrc%2Fcomponents::CLIENT-SIDE.md%23DOM-based%20XSS",
+    "canonical_refs": {
+      "surface": "server-supplied text rendered by React (course, lesson, review, certificate, account and error fields)",
+      "boundary": "React text escaping; absence of raw-HTML sinks; URLs built from server data",
+      "subsystem": "frontend/src/pages+src/components",
+      "attack_class": "CLIENT-SIDE.md#DOM-based XSS"
+    },
+    "surface": "server-supplied text rendered by React (course, lesson, review, certificate, account and error fields)",
+    "boundary": "React text escaping; absence of raw-HTML sinks; URLs built from server data",
+    "subsystem": "frontend/src/pages+src/components",
+    "attack_class": "DOM-based XSS",
+    "starting_paths": [
+      "frontend/src/pages/LearnPage.tsx",
+      "frontend/src/components/ReviewList.tsx",
+      "frontend/src/components/CourseCard.tsx",
+      "frontend/src/pages/CourseDetailPage.tsx",
+      "frontend/src/pages/AccountPage.tsx",
+      "frontend/src/pages/MyCoursesPage.tsx",
+      "frontend/src/pages/CatalogPage.tsx",
+      "frontend/src/components/ErrorNotice.tsx",
+      "frontend/src/pages/LearnPage.xss.test.tsx"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [
+      "CLIENT-SIDE.md#DOM-based XSS",
+      "CLIENT-SIDE.md#DOM clobbering",
+      "CLIENT-SIDE.md#Core discipline",
+      "CLIENT-SIDE.md#Universal moves",
+      "CLIENT-SIDE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol or identity class is the primary subject of this unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Prototype pollution and gadget chain",
+        "reason": "No deep-merge or path-assignment helper in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#postMessage origin and source trust",
+        "reason": "No postMessage send or receive in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site WebSocket request use",
+        "reason": "No WebSocket in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Credentialed CORS trust",
+        "reason": "All calls are same-origin /api with no credentials mode; CORS is a gateway concern covered in run-1"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker registration and scope takeover",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker cache and identity confusion",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-context storage and broadcast confusion",
+        "reason": "No storage event listener or BroadcastChannel (grep); sessionStorage is per-tab"
+      },
+      {
+        "block": "CLIENT-SIDE.md#XS-Leaks and cross-origin state oracles",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Window and opener state disclosure",
+        "reason": "No window.open or opener use in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Clickjacking",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "nginx and the gateway use framework HTTP parsers; no custom parser"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication is a Bearer header held in JS memory, not an ambient cookie"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "The SPA sets no cookies (grep document.cookie)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Tokens are never verified or decoded client-side; verification is the gateway (run-1)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password-reset UI or endpoint call in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native or binary code in the frontend"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "Client code with no server work; availability of the nginx edge is a deployment concern"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI or release workflow in the frontend source; dependency and build review runs under the ordinary Obvious-things unit"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud account, IAM or infrastructure code"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in the frontend"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h2-render",
+    "reviewed_paths": [
+      "frontend/src/components/CourseCard.tsx",
+      "frontend/src/components/EnrollPanel.tsx",
+      "frontend/src/components/ErrorNotice.tsx",
+      "frontend/src/components/ProgressBar.tsx",
+      "frontend/src/components/ReviewList.tsx",
+      "frontend/src/pages/AccountPage.tsx",
+      "frontend/src/pages/CatalogPage.tsx",
+      "frontend/src/pages/CourseDetailPage.tsx",
+      "frontend/src/pages/LearnPage.tsx",
+      "frontend/src/pages/MyCoursesPage.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h2-render",
+        "reviewed_paths": [
+          "frontend/src/pages/LearnPage.tsx",
+          "frontend/src/components/ReviewList.tsx",
+          "frontend/src/components/CourseCard.tsx",
+          "frontend/src/pages/CourseDetailPage.tsx",
+          "frontend/src/pages/AccountPage.tsx",
+          "frontend/src/pages/MyCoursesPage.tsx",
+          "frontend/src/pages/CatalogPage.tsx",
+          "frontend/src/components/ErrorNotice.tsx",
+          "frontend/src/components/ProgressBar.tsx",
+          "frontend/src/components/EnrollPanel.tsx"
+        ],
+        "invariant": "Server-supplied strings must reach the DOM only as React text children, with no raw-HTML sink, executable URL built from server data, or attacker-controlled id/name attributes",
+        "method": "source",
+        "result": "Grep over non-test frontend/src finds no dangerouslySetInnerHTML, innerHTML, eval, document.write, href=, src=, iframe or img. Titles, lesson content, reviews and error detail are JSX text interpolation. Links use react-router Link with in-app paths. ProgressBar sets a numeric width style. Field id derives from developer-set props. CSP default-src 'self' (nginx) is an extra layer.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_hunter_group": "h2-render"
+  },
+  {
+    "coverage_id": "sessionStorage%20refresh%20token%20and%20in-memory%20access%20token%20%28session.ts%2C%20AuthProvider%20restore%2Flogin%2Fregister%2Flogout%29::Token%20storage%20scope%3B%20revocation%20and%20clearing%20on%20logout%2C%20failed%20refresh%20and%20account%20switch::frontend%2Fsrc%2Fauth::CLIENT-SIDE.md%23Browser-storage%20disclosure%20and%20stale%20authorization",
+    "canonical_refs": {
+      "surface": "sessionStorage refresh token and in-memory access token (session.ts, AuthProvider restore/login/register/logout)",
+      "boundary": "Token storage scope; revocation and clearing on logout, failed refresh and account switch",
+      "subsystem": "frontend/src/auth",
+      "attack_class": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization"
+    },
+    "surface": "sessionStorage refresh token and in-memory access token (session.ts, AuthProvider restore/login/register/logout)",
+    "boundary": "Token storage scope; revocation and clearing on logout, failed refresh and account switch",
+    "subsystem": "frontend/src/auth",
+    "attack_class": "Browser-storage disclosure and stale authorization",
+    "starting_paths": [
+      "frontend/src/auth/session.ts",
+      "frontend/src/auth/AuthProvider.tsx",
+      "frontend/src/auth/useAuth.ts",
+      "frontend/src/api/client.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [
+      "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+      "CLIENT-SIDE.md#Core discipline",
+      "CLIENT-SIDE.md#Universal moves",
+      "CLIENT-SIDE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol or identity class is the primary subject of this unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#DOM clobbering",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Prototype pollution and gadget chain",
+        "reason": "No deep-merge or path-assignment helper in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#postMessage origin and source trust",
+        "reason": "No postMessage send or receive in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site WebSocket request use",
+        "reason": "No WebSocket in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Credentialed CORS trust",
+        "reason": "All calls are same-origin /api with no credentials mode; CORS is a gateway concern covered in run-1"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker registration and scope takeover",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker cache and identity confusion",
+        "reason": "No service worker registered (grep serviceWorker)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-context storage and broadcast confusion",
+        "reason": "No storage event listener or BroadcastChannel (grep); sessionStorage is per-tab"
+      },
+      {
+        "block": "CLIENT-SIDE.md#XS-Leaks and cross-origin state oracles",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Window and opener state disclosure",
+        "reason": "No window.open or opener use in frontend source (grep)"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Clickjacking",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Client-side navigation confusion",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "nginx and the gateway use framework HTTP parsers; no custom parser"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication is a Bearer header held in JS memory, not an ambient cookie"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by a sibling unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "The SPA sets no cookies (grep document.cookie)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Tokens are never verified or decoded client-side; verification is the gateway (run-1)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password-reset UI or endpoint call in frontend source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native or binary code in the frontend"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "Client code with no server work; availability of the nginx edge is a deployment concern"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI or release workflow in the frontend source; dependency and build review runs under the ordinary Obvious-things unit"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud account, IAM or infrastructure code"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in the frontend"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h1-session",
+    "reviewed_paths": [
+      "frontend/src/api/client.ts",
+      "frontend/src/auth/AuthProvider.tsx",
+      "frontend/src/auth/session.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h1-session",
+        "reviewed_paths": [
+          "frontend/src/auth/session.ts",
+          "frontend/src/auth/AuthProvider.tsx",
+          "frontend/src/api/client.ts"
+        ],
+        "invariant": "Tokens are cleared on logout, failed refresh and unauthorised redirect, and a new login overwrites the old credentials. A less-privileged same-origin reader cannot obtain tokens it should not have.",
+        "method": "source",
+        "result": "The access token lives only in a module variable; the refresh token is in per-tab sessionStorage; nothing is written to localStorage. logout() revokes server-side (errors ignored) and always clears in finally. A failed restore or refresh clears; login and register overwrite both tokens. Only same-origin script can read the token and nginx sends CSP default-src 'self', so no weaker reader was found.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_hunter_group": "h1-session"
+  }
+]

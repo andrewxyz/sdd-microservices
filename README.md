@@ -324,6 +324,32 @@ What to watch out for, from using it on this repo:
   than just reading the handful of relevant files directly — the tool pays off more on a long-lived
   project queried many times, less on a one-off task.
 
+## Security audits
+
+Two source-only audits were run with the Cloudflare
+[security-audit skill](https://github.com/cloudflare/security-audit-skill), kept in
+`.claude/skills/security-audit/` and started with "do a security audit on …". Results live in
+[docs/security-audit/](docs/security-audit/): each run folder has `REPORT.md` (read this first),
+`NEEDS-VALIDATION.md`, `FINDINGS-DETAIL.md`, `findings.json` and `coverage-ledger.json`.
+
+| Run | Scope | Confirmed | Needs validation | Rejected |
+|---|---|---|---|---|
+| run-1 | api-gateway + auth-service | 0 | 9 | 1 |
+| run-2 | frontend | 0 | 0 | 1 |
+
+- **Source-only.** This Windows host has no sandbox, so no target code was run. "Needs validation"
+  means a lead that source reading alone cannot settle, not a confirmed vulnerability. Nothing is
+  rated by severity until a lead is reproduced.
+- **Top leads from run-1** to validate on a throwaway stack: the admin-only role-change route
+  possibly bypassable with a non-normalised path (`//`, `/./`), service ports published on the host
+  (a caller could skip the gateway and forge `X-User-Id`), a non-atomic refresh-token rotation, and
+  a login throttle keyed on the gateway's address.
+- **run-2** found no frontend vulnerability. Its one lead (`returnTo` open redirect) was rejected
+  because the installed react-router rejects external navigation targets. Hardening notes cover
+  encoding path ids, a tighter CSP, and pinning image tags.
+- Both runs are **partial coverage**: budget-capped and not re-checked by a final clean pass, so
+  they make no claim that nothing was missed.
+
 ## Governance
 
 `.specify/memory/constitution.md` holds the rules this codebase is held to: service boundaries, the

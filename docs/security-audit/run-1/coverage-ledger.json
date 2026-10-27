@@ -1,0 +1,3059 @@
+[
+  {
+    "coverage_id": "Dot-segment%2C%20encoded-slash%20and%20double-slash%20path%20forms%20reaching%20unauthenticated%20%2Fapi%2Fv1%2Finternal%2Faccounts%2F%7Bid%7D%20through%20the%20gateway%20auth%20route::Gateway%20PathPattern%20matching%20and%20lb%3A%2F%2F%20forwarding%20of%20the%20raw%20path%20versus%20Tomcat%20normalisation%20in%20auth-service%3B%20nginx%20proxy_pass%20without%20URI%20passes%20the%20client%20form%20unchanged::backend%2Fapi-gateway%2Bbackend%2Fauth-service::WEB-PROTOCOL-AND-AUTH.md%23Request%20framing%20and%20desynchronization",
+    "canonical_refs": {
+      "surface": "Dot-segment, encoded-slash and double-slash path forms reaching unauthenticated /api/v1/internal/accounts/{id} through the gateway auth route",
+      "boundary": "Gateway PathPattern matching and lb:// forwarding of the raw path versus Tomcat normalisation in auth-service; nginx proxy_pass without URI passes the client form unchanged",
+      "subsystem": "backend/api-gateway+backend/auth-service",
+      "attack_class": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization"
+    },
+    "surface": "Dot-segment, encoded-slash and double-slash path forms reaching unauthenticated /api/v1/internal/accounts/{id} through the gateway auth route",
+    "boundary": "Gateway PathPattern matching and lb:// forwarding of the raw path versus Tomcat normalisation in auth-service; nginx proxy_pass without URI passes the client form unchanged",
+    "subsystem": "backend/api-gateway+backend/auth-service",
+    "attack_class": "Access control (path canonicalisation differential to internal endpoint)",
+    "starting_paths": [
+      "backend/config-repo/api-gateway.yml",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/InternalAccountController.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/JwtAuthenticationGlobalFilter.java",
+      "frontend/nginx/default.conf.template"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "No HTTP cache in scope (no CDN or cache layer in source)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "No HTTP cache in scope (no CDN or cache layer in source)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication uses a Bearer header held in JS memory, not an ambient cookie; no cookie-authenticated mutation exists in scope"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by the session-lifecycle unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "No cookies are set by the in-scope services"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Not selected for this unit; owned by the gateway JWT unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow exists in scoped source (recon 1b, 1c)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up authentication in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn/passkeys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password reset, recovery or email-change endpoint exists in scoped source (recon 1b section 4)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates in scoped source"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Owned by the forwarded-header unit; this unit is about path canonicalisation"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Owned by the forwarded-header unit"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 3,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "budget_cannot_reserve_critics_and_validation: proposed by the post-wave-2 critic; the same normalisation question is folded into the verification scope of the route-role-metadata-path-normalization-bypass lead"
+    ],
+    "_priority": 3,
+    "_hunter_group": "deferred"
+  },
+  {
+    "coverage_id": "JWT_SIGNING_SECRET%2C%20ADMIN_PASSWORD%2C%20EUREKA_URL%20credentials%20and%20profile%20defaults%20in%20.env.example%20and%20docker-compose.yml::Placeholder%20defaults%20accepted%20by%20startup%20checks%3B%20one%20HS256%20secret%20shared%20by%20two%20services::deployment%20configuration::ATTACK-CLASSES.md%23Cryptography%20and%20secrets",
+    "canonical_refs": {
+      "surface": "JWT_SIGNING_SECRET, ADMIN_PASSWORD, EUREKA_URL credentials and profile defaults in .env.example and docker-compose.yml",
+      "boundary": "Placeholder defaults accepted by startup checks; one HS256 secret shared by two services",
+      "subsystem": "deployment configuration",
+      "attack_class": "ATTACK-CLASSES.md#Cryptography and secrets"
+    },
+    "surface": "JWT_SIGNING_SECRET, ADMIN_PASSWORD, EUREKA_URL credentials and profile defaults in .env.example and docker-compose.yml",
+    "boundary": "Placeholder defaults accepted by startup checks; one HS256 secret shared by two services",
+    "subsystem": "deployment configuration",
+    "attack_class": "Cryptography and secrets (deployment configuration)",
+    "starting_paths": [
+      ".env.example",
+      "docker-compose.yml",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtSigningKey.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtProperties.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/BootstrapAdministrator.java"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunt-h5-deployment",
+    "reviewed_paths": [
+      "docker-compose.yml",
+      ".env.example",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtSigningKey.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtProperties.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/BootstrapAdministrator.java",
+      "scripts/up.sh"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h5-deployment",
+        "reviewed_paths": [
+          "docker-compose.yml",
+          ".env.example"
+        ],
+        "invariant": "Secrets are required (no default) and the same JWT secret is injected into both services only from env",
+        "method": "source",
+        "result": "Compose uses ${VAR:?} for all secrets with no hardcoded defaults; EUREKA_URL credentials are env-only; .env is git-ignored. SPRING_PROFILES_ACTIVE defaults to local only in .env.example.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h5-deployment",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtSigningKey.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtProperties.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/BootstrapAdministrator.java",
+          "scripts/up.sh"
+        ],
+        "invariant": "Startup checks reject weak or placeholder signing and admin secrets",
+        "method": "source",
+        "result": "Both JWT classes enforce only >=32 bytes; the .env.example placeholder (45 bytes) passes; BootstrapAdministrator checks non-blank only; up.sh checks presence only. An operator copying .env.example unchanged runs with a public HS256 key and known admin password.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "deploy/placeholder-secrets-accepted-at-startup"
+    ],
+    "unresolved": [],
+    "_priority": 2,
+    "_hunter_group": "h5-deployment",
+    "_hardening": [
+      "Postgres 9432, RabbitMQ 9672/9673 and Mailpit 9025/9825 are published on all interfaces with .env.example placeholder passwords; bind to 127.0.0.1.",
+      "Actuator is served on the main service ports and refresh is exposed under the local profile, the .env.example default; move management to an internal port and default to a non-local profile.",
+      "No TLS anywhere (browser to nginx to gateway to services); Eureka/config basic-auth travels in clear on the Docker network.",
+      "CORS allowed-headers '*' with credentials and an explicit origin list; list the needed headers.",
+      "scripts/seed-demo.sh defaults ADMIN_PASSWORD to the placeholder if unset.",
+      "One HS256 secret is shared by signer and verifier; consider asymmetric keys."
+    ],
+    "_final_decisions": {
+      "deploy/placeholder-secrets-accepted-at-startup": "rejected"
+    }
+  },
+  {
+    "coverage_id": "Request%20size%2C%20header%20size%2C%20connection%20and%20timeout%20limits%20across%20nginx%2C%20gateway%20and%20auth-service%2C%20plus%20unbounded%20email%2C%20password%20and%20token%20fields::No%20client_max_body_size%20or%20limit_req%20in%20nginx%3B%20no%20body%2C%20length%20or%20%40Valid%20limits%20in%20register%2C%20login%2C%20refresh%20and%20logout%3B%20the%20gateway%20limiter%20charges%20only%20requests%20that%20pass%20authentication::frontend%2Fnginx%2Bbackend%2Fapi-gateway%2Bbackend%2Fauth-service::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Unbounded%20buffering%20and%20cardinality",
+    "canonical_refs": {
+      "surface": "Request size, header size, connection and timeout limits across nginx, gateway and auth-service, plus unbounded email, password and token fields",
+      "boundary": "No client_max_body_size or limit_req in nginx; no body, length or @Valid limits in register, login, refresh and logout; the gateway limiter charges only requests that pass authentication",
+      "subsystem": "frontend/nginx+backend/api-gateway+backend/auth-service",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unbounded buffering and cardinality"
+    },
+    "surface": "Request size, header size, connection and timeout limits across nginx, gateway and auth-service, plus unbounded email, password and token fields",
+    "boundary": "No client_max_body_size or limit_req in nginx; no body, length or @Valid limits in register, login, refresh and logout; the gateway limiter charges only requests that pass authentication",
+    "subsystem": "frontend/nginx+backend/api-gateway+backend/auth-service",
+    "attack_class": "Resource exhaustion (unbounded input and buffering)",
+    "starting_paths": [
+      "frontend/nginx/default.conf.template",
+      "backend/config-repo/api-gateway.yml",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RegisterController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LoginController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java",
+      "backend/auth-service/src/main/resources/db/migration/V1__create_accounts.sql"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unbounded buffering and cardinality",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Pre-authentication work imbalance",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Superlinear parsing, matching, or evaluation",
+        "reason": "No regex/recursive evaluation of attacker input identified in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification",
+        "reason": "No decompression or archive handling in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Database and downstream query amplification",
+        "reason": "Only primary-key and unique-index derived queries in auth-service; no fan-out"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#File descriptor, handle, and temporary-resource leaks",
+        "reason": "No file/handle handling in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Detached work after cancellation",
+        "reason": "No long-running background work in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Worker, pool, and priority starvation",
+        "reason": "No worker pool or priority queue in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock",
+        "reason": "Unhandled exceptions return a generic 500 per request, not a process exit (verify only if a unit finds otherwise)"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Retry storm and fail-open amplification",
+        "reason": "No retry loops in scoped source"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Poison-record and head-of-line blocking",
+        "reason": "No queue consumers in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unsafe recovery and capacity rollback",
+        "reason": "No restore/recovery path in scope"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Quota-accounting scope and reset gaps",
+        "reason": "Owned by the rate-limit unit"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 3,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "budget_cannot_reserve_critics_and_validation: proposed by the post-wave-2 critic; input-size and cap gaps are recorded as hardening from earlier hunters"
+    ],
+    "_priority": 3,
+    "_hunter_group": "deferred"
+  },
+  {
+    "coverage_id": "api-gateway%3A%20Authorization%20header%20on%20every%20protected%20route::JwtVerifier%20signature%2C%20exp%2C%20sub%20and%20role%20claims%3B%20JwtSigningKey::backend%2Fapi-gateway::WEB-PROTOCOL-AND-AUTH.md%23JWT%20verification%20and%20claim%20binding",
+    "canonical_refs": {
+      "surface": "api-gateway: Authorization header on every protected route",
+      "boundary": "JwtVerifier signature, exp, sub and role claims; JwtSigningKey",
+      "subsystem": "backend/api-gateway",
+      "attack_class": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding"
+    },
+    "surface": "api-gateway: Authorization header on every protected route",
+    "boundary": "JwtVerifier signature, exp, sub and role claims; JwtSigningKey",
+    "subsystem": "backend/api-gateway",
+    "attack_class": "JWT verification and claim binding",
+    "starting_paths": [
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtVerifier.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtSigningKey.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/JwtAuthenticationGlobalFilter.java"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "No custom HTTP parser; only nginx to Spring Cloud Gateway (framework parsers) unless a unit selects it"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "No HTTP cache in scope (no CDN or cache layer in source)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "No HTTP cache in scope (no CDN or cache layer in source)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Not selected for this unit; owned by the forwarded-header unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by the forwarded-header unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication uses a Bearer header held in JS memory, not an ambient cookie; no cookie-authenticated mutation exists in scope"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by the session-lifecycle unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "No cookies are set by the in-scope services"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow exists in scoped source (recon 1b, 1c)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up authentication in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn/passkeys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password reset, recovery or email-change endpoint exists in scoped source (recon 1b section 4)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates in scoped source"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h1-gateway-authz",
+    "reviewed_paths": [
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtVerifier.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtSigningKey.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/JwtAuthenticationGlobalFilter.java"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h1-gateway-authz",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtVerifier.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtSigningKey.java"
+        ],
+        "invariant": "Only tokens signed with the server-held HMAC key, unexpired, with sub and string role are accepted; algorithm and key source are server-pinned",
+        "method": "source",
+        "result": "SignedJWT.parse rejects alg=none; MACVerifier is built from the server key and accepts only HMAC; no kid/jku/x5u selection; exp mandatory; sub and role required; failures return no token content; key >= 32 bytes. No bypass. Missing iss/aud/nbf is hardening (no second token consumer in scope).",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h1-gateway-authz",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/JwtAuthenticationGlobalFilter.java"
+        ],
+        "invariant": "Verified claims, not client input, determine downstream identity; the credential is not forwarded",
+        "method": "source",
+        "result": "Filter strips X-User-Id/X-User-Role before the public check; protected routes remove Authorization and set both headers from verified sub/role; only the first Authorization header is read; no route or no metadata means protected. No flaw.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_priority": 1,
+    "_hunter_group": "h1-gateway-authz",
+    "_hardening": [
+      "JwtVerifier does not check iss, aud, nbf or validate role against the enum; add a fixed issuer/audience if a second consumer appears.",
+      "MACVerifier accepts HS384/HS512 with the same key; pin to HS256.",
+      "JwtSigningKey checks length only, not entropy or placeholder values.",
+      "Route metadata accepts the string 'true'; an unexpected roles type yields an empty role list (any authenticated caller), so roles fail open if the shape changes.",
+      "Authorization is kept on public routes (only identity headers are stripped), so a client bearer token is forwarded downstream; not exploitable here."
+    ]
+  },
+  {
+    "coverage_id": "api-gateway%3A%20error%20bodies%20and%20log%20lines%20built%20from%20request%20data::GatewayErrorHandler%20problem%20body%20and%20logging%20of%20request%20path%20and%20exception::backend%2Fapi-gateway::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "api-gateway: error bodies and log lines built from request data",
+      "boundary": "GatewayErrorHandler problem body and logging of request path and exception",
+      "subsystem": "backend/api-gateway",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "api-gateway: error bodies and log lines built from request data",
+    "boundary": "GatewayErrorHandler problem body and logging of request path and exception",
+    "subsystem": "backend/api-gateway",
+    "attack_class": "Injection (gateway error and log sinks)",
+    "starting_paths": [
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayErrorHandler.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayProblem.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/CorrelationIdGlobalFilter.java"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h2-gateway-edge",
+    "reviewed_paths": [
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayErrorHandler.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayProblem.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/CorrelationIdGlobalFilter.java",
+      "backend/platform-common/src/main/java/com/example/learnhub/common/correlation/CorrelationIds.java"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h2-gateway-edge",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayErrorHandler.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayProblem.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/CorrelationIdGlobalFilter.java",
+          "backend/platform-common/src/main/java/com/example/learnhub/common/correlation/CorrelationIds.java"
+        ],
+        "invariant": "Request-derived data cannot inject into the JSON problem body, response headers or log lines",
+        "method": "source",
+        "result": "Problem body is a Map serialised by Jackson (path escaped); detail is a fixed phrase; the only hand-built JSON interpolates a correlation id that is generated or pattern-validated. Logged path is raw and only on 5xx, with no CR/LF. No injection sink.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_priority": 4,
+    "_hunter_group": "h2-gateway-edge",
+    "_hardening": [
+      "TokenBucketRateLimiter.evictIdle scans every bucket on every request (O(n)); evict on a schedule or size cap.",
+      "To fix shared buckets: trust X-Forwarded-For only from the known nginx peer and have nginx overwrite rather than append it.",
+      "GatewayErrorHandler fallback JSON concatenates correlationId; safe today (generated or pattern-validated) but fragile if the pattern loosens."
+    ]
+  },
+  {
+    "coverage_id": "api-gateway%3A%20rate%20limiting%20of%20all%20routes%20%28general%20and%20strict%20buckets%29::TokenBucketRateLimiter%20keyed%20by%20client%20address%3B%20refresh%20and%20eviction::backend%2Fapi-gateway::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Quota-accounting%20scope%20and%20reset%20gaps",
+    "canonical_refs": {
+      "surface": "api-gateway: rate limiting of all routes (general and strict buckets)",
+      "boundary": "TokenBucketRateLimiter keyed by client address; refresh and eviction",
+      "subsystem": "backend/api-gateway",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Quota-accounting scope and reset gaps"
+    },
+    "surface": "api-gateway: rate limiting of all routes (general and strict buckets)",
+    "boundary": "TokenBucketRateLimiter keyed by client address; refresh and eviction",
+    "subsystem": "backend/api-gateway",
+    "attack_class": "Quota-accounting scope and reset gaps",
+    "starting_paths": [
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/TokenBucketRateLimiter.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RateLimitGlobalFilter.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RemoteAddressClientResolver.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/GatewayConfiguration.java",
+      "backend/config-repo/api-gateway.yml"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Quota-accounting scope and reset gaps",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unbounded buffering and cardinality",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Superlinear parsing, matching, or evaluation",
+        "reason": "No regex/recursive evaluation of attacker input identified in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification",
+        "reason": "No decompression or archive handling in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Database and downstream query amplification",
+        "reason": "Only primary-key and unique-index derived queries in auth-service; no fan-out"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#File descriptor, handle, and temporary-resource leaks",
+        "reason": "No file/handle handling in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Detached work after cancellation",
+        "reason": "No long-running background work in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Pre-authentication work imbalance",
+        "reason": "Not selected for this unit; owned by the pre-auth work unit"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Worker, pool, and priority starvation",
+        "reason": "No worker pool or priority queue in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock",
+        "reason": "Unhandled exceptions return a generic 500 per request, not a process exit (verify only if a unit finds otherwise)"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Retry storm and fail-open amplification",
+        "reason": "No retry loops in scoped source"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Poison-record and head-of-line blocking",
+        "reason": "No queue consumers in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unsafe recovery and capacity rollback",
+        "reason": "No restore/recovery path in scope"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunt-h2-gateway-edge",
+    "reviewed_paths": [
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/TokenBucketRateLimiter.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RateLimitGlobalFilter.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RemoteAddressClientResolver.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/GatewayConfiguration.java",
+      "backend/config-repo/api-gateway.yml",
+      "frontend/nginx/default.conf.template"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h2-gateway-edge",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/TokenBucketRateLimiter.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RateLimitGlobalFilter.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RemoteAddressClientResolver.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/GatewayConfiguration.java",
+          "backend/config-repo/api-gateway.yml",
+          "frontend/nginx/default.conf.template"
+        ],
+        "invariant": "One principal's request volume must not consume another principal's rate-limit budget; bucket state is bounded and evicted",
+        "method": "source",
+        "result": "Key is the TCP peer address only (XFF ignored). Behind nginx every browser user shares one peer, so one bucket (200 tokens, 100/s general; 10, 2/s strict for certificate verify). One client can drain it and cause 429 for everyone, including login/refresh. Refill/consume is synchronised and correct. Deployment topology decides, hence candidate.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "gateway-ratelimit-shared-bucket-behind-proxy"
+    ],
+    "unresolved": [],
+    "_priority": 3,
+    "_hunter_group": "h2-gateway-edge",
+    "_hardening": [
+      "TokenBucketRateLimiter.evictIdle scans every bucket on every request (O(n)); evict on a schedule or size cap.",
+      "To fix shared buckets: trust X-Forwarded-For only from the known nginx peer and have nginx overwrite rather than append it.",
+      "GatewayErrorHandler fallback JSON concatenates correlationId; safe today (generated or pattern-validated) but fragile if the pattern loosens."
+    ],
+    "_final_decisions": {
+      "gateway-ratelimit-shared-bucket-behind-proxy": "needs_validation"
+    }
+  },
+  {
+    "coverage_id": "api-gateway%3A%20route%20table%20and%20per-route%20metadata%20%28public%2C%20roles%29::Protected-by-default%20policy%3B%20ADMINISTRATOR%20role%20metadata%3B%20identity-header%20strip%20then%20inject::backend%2Fapi-gateway::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "api-gateway: route table and per-route metadata (public, roles)",
+      "boundary": "Protected-by-default policy; ADMINISTRATOR role metadata; identity-header strip then inject",
+      "subsystem": "backend/api-gateway",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "api-gateway: route table and per-route metadata (public, roles)",
+    "boundary": "Protected-by-default policy; ADMINISTRATOR role metadata; identity-header strip then inject",
+    "subsystem": "backend/api-gateway",
+    "attack_class": "Access control",
+    "starting_paths": [
+      "backend/config-repo/api-gateway.yml",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/JwtAuthenticationGlobalFilter.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/IdentityHeaders.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/GatewayConfiguration.java"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunt-h1-gateway-authz",
+    "reviewed_paths": [
+      "backend/config-repo/api-gateway.yml",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/JwtAuthenticationGlobalFilter.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RoleChangeController.java",
+      "frontend/nginx/default.conf.template",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/IdentityHeaders.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/GatewayConfiguration.java"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h1-gateway-authz",
+        "reviewed_paths": [
+          "backend/config-repo/api-gateway.yml",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/JwtAuthenticationGlobalFilter.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RoleChangeController.java",
+          "frontend/nginx/default.conf.template"
+        ],
+        "invariant": "ADMINISTRATOR-only paths cannot be reached by a non-admin through a differently spelled path",
+        "method": "source",
+        "result": "Role gate is metadata on Path=/api/v1/auth/accounts/**; auth-service never checks the role header. A path like /api/v1/auth//accounts/{id}/role or /./ may miss the admin predicate and hit the generic auth route (any valid token) while Tomcat normalises it to the admin controller. Not executed, so candidate.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h1-gateway-authz",
+        "reviewed_paths": [
+          "backend/config-repo/api-gateway.yml",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/IdentityHeaders.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/GatewayConfiguration.java"
+        ],
+        "invariant": "Protected by default; public metadata only on intended routes; identity headers stripped on every route; auth before rate limit",
+        "method": "source",
+        "result": "Public routes limited to echo ping, register/login/refresh, GET courses/categories/certificate verify/reviews. Unrouted paths 404. Header strip is case-insensitive on all routes. Public path predicates are exact and do not widen. reviews-write covers POST/PUT/DELETE only.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "api-gateway/route-role-metadata-path-normalization-bypass"
+    ],
+    "unresolved": [
+      "Whether Spring Cloud Gateway PathRoutePredicate treats // and /./ as non-matching for /api/v1/auth/accounts/**, and whether auth-service Tomcat normalises them, was not executed."
+    ],
+    "_priority": 1,
+    "_hunter_group": "h1-gateway-authz",
+    "_hardening": [
+      "JwtVerifier does not check iss, aud, nbf or validate role against the enum; add a fixed issuer/audience if a second consumer appears.",
+      "MACVerifier accepts HS384/HS512 with the same key; pin to HS256.",
+      "JwtSigningKey checks length only, not entropy or placeholder values.",
+      "Route metadata accepts the string 'true'; an unexpected roles type yields an empty role list (any authenticated caller), so roles fail open if the shape changes.",
+      "Authorization is kept on public routes (only identity headers are stripped), so a client bearer token is forwarded downstream; not exploitable here."
+    ],
+    "_final_decisions": {
+      "api-gateway/route-role-metadata-path-normalization-bypass": "needs_validation"
+    }
+  },
+  {
+    "coverage_id": "auth-service%20and%20api-gateway%3A%20issued%20sessions%20after%20an%20account-state%20change%20%28role%20demotion%2C%20last-admin%20change%29::ChangeRoleService%20updates%20the%20role%20without%20touching%20refresh%20tokens%3B%20gateway%20trusts%20the%20role%20claim%20of%20a%20900%20s%20access%20JWT%20with%20no%20revocation%20or%20account-state%20lookup%3B%20rotation%20re-reads%20the%20current%20role::backend%2Fauth-service%2Bbackend%2Fapi-gateway::WEB-PROTOCOL-AND-AUTH.md%23Session%20fixation%20and%20invalidation",
+    "canonical_refs": {
+      "surface": "auth-service and api-gateway: issued sessions after an account-state change (role demotion, last-admin change)",
+      "boundary": "ChangeRoleService updates the role without touching refresh tokens; gateway trusts the role claim of a 900 s access JWT with no revocation or account-state lookup; rotation re-reads the current role",
+      "subsystem": "backend/auth-service+backend/api-gateway",
+      "attack_class": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation"
+    },
+    "surface": "auth-service and api-gateway: issued sessions after an account-state change (role demotion, last-admin change)",
+    "boundary": "ChangeRoleService updates the role without touching refresh tokens; gateway trusts the role claim of a 900 s access JWT with no revocation or account-state lookup; rotation re-reads the current role",
+    "subsystem": "backend/auth-service+backend/api-gateway",
+    "attack_class": "Session fixation and invalidation (role-change and stale-privilege lifecycle)",
+    "starting_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RotateRefreshTokenService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RevokeSessionService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtIssuer.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtVerifier.java"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "No custom HTTP parser; only nginx to Spring Cloud Gateway (framework parsers) unless a unit selects it"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "No HTTP cache in scope (no CDN or cache layer in source)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "No HTTP cache in scope (no CDN or cache layer in source)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Not selected for this unit; owned by the forwarded-header unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by the forwarded-header unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication uses a Bearer header held in JS memory, not an ambient cookie; no cookie-authenticated mutation exists in scope"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "No cookies are set by the in-scope services"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Not selected for this unit; owned by the gateway JWT unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow exists in scoped source (recon 1b, 1c)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up authentication in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn/passkeys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates in scoped source"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password reset, recovery or email-change endpoint exists in scoped source (recon 1b section 4)"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 2,
+    "status": "candidate",
+    "agent_id": "hunt-h7-lifecycle",
+    "reviewed_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RotateRefreshTokenService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtIssuer.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtVerifier.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RevokeSessionService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java",
+      "backend/auth-service/src/main/resources/db/migration/V1__create_accounts.sql",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/AccountRepository.java"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h7-lifecycle",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RotateRefreshTokenService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtIssuer.java"
+        ],
+        "invariant": "After a role change, a refresh cannot mint a token carrying the old role",
+        "method": "source",
+        "result": "Rotation reloads the Account and issues the JWT from account.getRole() (RotateRefreshTokenService:45,51); demotion takes effect at the next refresh. Not a finding.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h7-lifecycle",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtVerifier.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtIssuer.java"
+        ],
+        "invariant": "A demoted account's already-issued access JWT stops conferring the old role",
+        "method": "source",
+        "result": "The gateway verifies signature, exp, sub, role only, with no revocation or account lookup; a demoted admin's token stays valid at most 900 s, documented as accepted design (JwtIssuer:16-19, FR-021). Hardening, not a finding.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h7-lifecycle",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RevokeSessionService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java"
+        ],
+        "invariant": "Refresh tokens are revoked or bound on privilege or account-state change",
+        "method": "source",
+        "result": "Neither ChangeRoleService nor logout revokes other sessions; harmless because rotation re-reads the role. Logout revokes only the presented token and checks ownership (RevokeSessionService:28). Not a finding.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h7-lifecycle",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java",
+          "backend/auth-service/src/main/resources/db/migration/V1__create_accounts.sql",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/AccountRepository.java"
+        ],
+        "invariant": "The last-administrator invariant holds under concurrent role changes",
+        "method": "source",
+        "result": "Non-atomic check-then-act: count at :31, save at :37-38; no @Transactional, @Version, lock or DB constraint. Two concurrent demotions of two admins can both read count=2 and commit, leaving zero administrators. Candidate raised as needs_validation.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "auth-service/ChangeRoleService-last-admin-check-then-act-race"
+    ],
+    "unresolved": [],
+    "_priority": 2,
+    "_hunter_group": "h7-lifecycle",
+    "_hardening": [
+      "A demoted or compromised admin's access JWT stays valid up to 900 s (accepted design, FR-021); consider a shorter ADMINISTRATOR TTL or a role-version claim.",
+      "ChangeRoleService does not revoke the target's refresh tokens; harmless today, defence in depth.",
+      "The refresh path has no enabled/disabled account flag (none exists in scope)."
+    ],
+    "_final_decisions": {
+      "auth-service/ChangeRoleService-last-admin-check-then-act-race": "needs_validation"
+    }
+  },
+  {
+    "coverage_id": "auth-service%3A%20JSON%20request%20bodies%20of%20register%2C%20login%2C%20refresh%2C%20logout%20and%20role%20change::Bean%20validation%20%28%40Valid%29%20and%20generic%20error%20mapping%20in%20ProblemDetailsAdvice::backend%2Fauth-service::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "auth-service: JSON request bodies of register, login, refresh, logout and role change",
+      "boundary": "Bean validation (@Valid) and generic error mapping in ProblemDetailsAdvice",
+      "subsystem": "backend/auth-service",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "auth-service: JSON request bodies of register, login, refresh, logout and role change",
+    "boundary": "Bean validation (@Valid) and generic error mapping in ProblemDetailsAdvice",
+    "subsystem": "backend/auth-service",
+    "attack_class": "Injection (request-body validation and error mapping)",
+    "starting_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RegisterController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LoginController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RefreshController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LogoutController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RoleChangeController.java",
+      "backend/platform-common/src/main/java/com/example/learnhub/common/error/ProblemDetailsAdvice.java"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "covered",
+        "agent_id": "hunt-h3-auth-credentials",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RegisterController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LoginController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RefreshController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LogoutController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RoleChangeController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/domain/Account.java",
+          "backend/auth-service/src/main/resources/db/migration/V1__create_accounts.sql",
+          "backend/platform-common/src/main/java/com/example/learnhub/common/error/ProblemDetailsAdvice.java"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunt-h3-auth-credentials",
+            "reviewed_paths": [
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RegisterController.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LoginController.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RefreshController.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LogoutController.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RoleChangeController.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/domain/Account.java",
+              "backend/auth-service/src/main/resources/db/migration/V1__create_accounts.sql"
+            ],
+            "invariant": "Untrusted body fields reach no query/shell/template/log sink unsafely and constraint annotations are enforced",
+            "method": "source",
+            "result": "No @Valid anywhere in auth-service, so @NotBlank/@NotNull are inert: null fields give an NPE and generic 500, blank or malformed emails register, an over-320-char email gives a DB-error 500. Persistence uses parameterised derived queries, so no injection. Robustness/data-quality only.",
+            "artifact": null
+          },
+          {
+            "agent_id": "hunt-h3-auth-credentials",
+            "reviewed_paths": [
+              "backend/platform-common/src/main/java/com/example/learnhub/common/error/ProblemDetailsAdvice.java"
+            ],
+            "invariant": "Error mapping does not leak internals or reflect attacker input",
+            "method": "source",
+            "result": "Unexpected exceptions are logged server-side and return a fixed generic 500; ResponseStatusException reasons are server-authored; no leak found.",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [],
+        "unresolved": [],
+        "reassignment_reason": "Post-wave-2 critic: closed on a thin read; the unit did not examine request-size, field-length and token-length bounds or the oversize-value 500 path."
+      }
+    ],
+    "wave": 2,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "budget_cannot_reserve_critics_and_validation: reopened by the post-wave-2 critic, not re-hunted (budget)"
+    ],
+    "_priority": 4,
+    "_hunter_group": "h3-auth-credentials",
+    "_hardening": [
+      "No @Valid on any request body, so @NotBlank/@NotNull are inert; add @Valid, @Email and @Size limits.",
+      "JwtIssuer and gateway verifier use no iss/aud/nbf.",
+      "PasswordHasher uses default BCrypt cost 10 with no maximum password length; consider a cap and cost 12+.",
+      "Add a dummy BCrypt match when the account is unknown to remove the login timing difference.",
+      "RegisterController accepts and returns an unvalidated email (empty or whitespace can persist)."
+    ]
+  },
+  {
+    "coverage_id": "auth-service%3A%20PATCH%20%2Fauth%2Faccounts%2F%7Bid%7D%2Frole%2C%20GET%20%2Finternal%2Faccounts%2F%7Bid%7D%2C%20bootstrap%20administrator::Authorisation%20relies%20on%20gateway%20metadata%20only%3B%20unauthenticated%20internal%20lookup%3B%20first-admin%20creation::backend%2Fauth-service::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "auth-service: PATCH /auth/accounts/{id}/role, GET /internal/accounts/{id}, bootstrap administrator",
+      "boundary": "Authorisation relies on gateway metadata only; unauthenticated internal lookup; first-admin creation",
+      "subsystem": "backend/auth-service",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "auth-service: PATCH /auth/accounts/{id}/role, GET /internal/accounts/{id}, bootstrap administrator",
+    "boundary": "Authorisation relies on gateway metadata only; unauthenticated internal lookup; first-admin creation",
+    "subsystem": "backend/auth-service",
+    "attack_class": "Access control (role change, internal lookup, bootstrap)",
+    "starting_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RoleChangeController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/InternalAccountController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AccountLookupService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/BootstrapAdministrator.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/MeController.java"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h4-auth-privilege",
+    "reviewed_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RoleChangeController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java",
+      "backend/config-repo/api-gateway.yml",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/InternalAccountController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/AccountSummaryView.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AccountLookupService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/BootstrapAdministrator.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/MeController.java"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h4-auth-privilege",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RoleChangeController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java",
+          "backend/config-repo/api-gateway.yml"
+        ],
+        "invariant": "Only ADMINISTRATOR can change roles; the body cannot widen the target beyond the path account",
+        "method": "source",
+        "result": "Service performs no role check; authority rests on gateway route auth-admin (design, peer-owned). Body binds only a Role enum; target comes from the path. Last-admin guard is non-atomic (hardening).",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h4-auth-privilege",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/InternalAccountController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/AccountSummaryView.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AccountLookupService.java"
+        ],
+        "invariant": "Internal account lookup is not reachable by an external principal and discloses nothing sensitive",
+        "method": "source",
+        "result": "No gateway route matches /api/v1/internal/**; endpoint returns only id and email and needs an unguessable UUID. Direct-port reachability is owned by the deployment unit.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h4-auth-privilege",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/BootstrapAdministrator.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/MeController.java"
+        ],
+        "invariant": "First-admin creation cannot be triggered by a request; /me returns only the caller's own account",
+        "method": "source",
+        "result": "Bootstrap is an ApplicationRunner reading env at startup, creating an admin only when none exists; /me uses the gateway-injected X-User-Id only, no id parameter.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_priority": 1,
+    "_hunter_group": "h4-auth-privilege",
+    "_hardening": [
+      "Reuse of a consumed refresh token returns 401 but does not revoke the descendant tokens or family.",
+      "ChangeRoleService last-admin guard is count-then-save without a transaction.",
+      "A role change or demotion does not revoke the target's refresh tokens or outstanding access JWT (up to 900 s).",
+      "auth-service enforces no role check itself; assert X-User-Role there too (defence in depth).",
+      "RoleChangeController lacks @Valid, so a null role gives an NPE/500."
+    ]
+  },
+  {
+    "coverage_id": "auth-service%3A%20POST%20%2Fauth%2Frefresh%20and%20POST%20%2Fauth%2Flogout%20refresh-token%20lifecycle::RotateRefreshTokenService%20single-use%20rotation%3B%20RevokeSessionService%3B%20reuse%20handling::backend%2Fauth-service::WEB-PROTOCOL-AND-AUTH.md%23Session%20fixation%20and%20invalidation",
+    "canonical_refs": {
+      "surface": "auth-service: POST /auth/refresh and POST /auth/logout refresh-token lifecycle",
+      "boundary": "RotateRefreshTokenService single-use rotation; RevokeSessionService; reuse handling",
+      "subsystem": "backend/auth-service",
+      "attack_class": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation"
+    },
+    "surface": "auth-service: POST /auth/refresh and POST /auth/logout refresh-token lifecycle",
+    "boundary": "RotateRefreshTokenService single-use rotation; RevokeSessionService; reuse handling",
+    "subsystem": "backend/auth-service",
+    "attack_class": "Session fixation and invalidation",
+    "starting_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RotateRefreshTokenService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RevokeSessionService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/RefreshTokens.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/domain/RefreshTokenRecord.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RefreshController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LogoutController.java"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+      "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "No custom HTTP parser; only nginx to Spring Cloud Gateway (framework parsers) unless a unit selects it"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "No HTTP cache in scope (no CDN or cache layer in source)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "No HTTP cache in scope (no CDN or cache layer in source)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+        "reason": "Not selected for this unit; owned by the forwarded-header unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+        "reason": "Not selected for this unit; owned by the forwarded-header unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication uses a Bearer header held in JS memory, not an ambient cookie; no cookie-authenticated mutation exists in scope"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "No cookies are set by the in-scope services"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Not selected for this unit; owned by the gateway JWT unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow exists in scoped source (recon 1b, 1c)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up authentication in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn/passkeys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates in scoped source"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunt-h4-auth-privilege",
+    "reviewed_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RotateRefreshTokenService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/domain/RefreshTokenRecord.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/RefreshTokenRepository.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RevokeSessionService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LogoutController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/RefreshTokens.java"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h4-auth-privilege",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RotateRefreshTokenService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/domain/RefreshTokenRecord.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/RefreshTokenRepository.java"
+        ],
+        "invariant": "A refresh token is single-use: only one of two concurrent presentations may succeed",
+        "method": "source",
+        "result": "rotate() does findByTokenHash, isUsable, markUsed, save as separate steps with no @Transactional, @Version, conditional UPDATE or lock, so two concurrent presentations can both mint a new pair. Needs a running DB race to confirm.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h4-auth-privilege",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RevokeSessionService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LogoutController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/RefreshTokens.java"
+        ],
+        "invariant": "Logout revokes only the caller's own session; tokens are high-entropy and hashed at rest",
+        "method": "source",
+        "result": "Logout checks record.accountId equals X-User-Id; 32-byte SecureRandom tokens with SHA-256 hash and unique index. Reuse of a consumed token gives 401 with no family revocation (hardening). Access JWT stays valid up to 900 s after logout (design).",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "auth-service/refresh-token-rotation-non-atomic-double-spend"
+    ],
+    "unresolved": [],
+    "_priority": 1,
+    "_hunter_group": "h4-auth-privilege",
+    "_hardening": [
+      "Reuse of a consumed refresh token returns 401 but does not revoke the descendant tokens or family.",
+      "ChangeRoleService last-admin guard is count-then-save without a transaction.",
+      "A role change or demotion does not revoke the target's refresh tokens or outstanding access JWT (up to 900 s).",
+      "auth-service enforces no role check itself; assert X-User-Role there too (defence in depth).",
+      "RoleChangeController lacks @Valid, so a null role gives an NPE/500."
+    ],
+    "_final_decisions": {
+      "auth-service/refresh-token-rotation-non-atomic-double-spend": "needs_validation"
+    }
+  },
+  {
+    "coverage_id": "auth-service%3A%20POST%20%2Fauth%2Fregister%20and%20POST%20%2Fauth%2Flogin%20credential%20handling::PasswordHasher%20%28BCrypt%29%2C%20PasswordStrengthRule%2C%20JwtIssuer%20and%20JwtProperties%20secret%20handling::backend%2Fauth-service::ATTACK-CLASSES.md%23Cryptography%20and%20secrets",
+    "canonical_refs": {
+      "surface": "auth-service: POST /auth/register and POST /auth/login credential handling",
+      "boundary": "PasswordHasher (BCrypt), PasswordStrengthRule, JwtIssuer and JwtProperties secret handling",
+      "subsystem": "backend/auth-service",
+      "attack_class": "ATTACK-CLASSES.md#Cryptography and secrets"
+    },
+    "surface": "auth-service: POST /auth/register and POST /auth/login credential handling",
+    "boundary": "PasswordHasher (BCrypt), PasswordStrengthRule, JwtIssuer and JwtProperties secret handling",
+    "subsystem": "backend/auth-service",
+    "attack_class": "Cryptography and secrets (auth credentials and tokens)",
+    "starting_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/PasswordHasher.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/domain/PasswordStrengthRule.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtIssuer.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtProperties.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AuthenticateService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h3-auth-credentials",
+    "reviewed_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/PasswordHasher.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/domain/PasswordStrengthRule.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtIssuer.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtProperties.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AuthenticateService.java"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h3-auth-credentials",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/PasswordHasher.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/domain/PasswordStrengthRule.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java"
+        ],
+        "invariant": "Passwords are stored with a strong adaptive hash and a minimum strength is enforced",
+        "method": "source",
+        "result": "BCrypt strength 10 with per-hash salt, constant-time matches(); rule requires >=10 chars, a letter and a digit before hashing; BCrypt uses only the first 72 bytes so cost is constant; nothing logged. No flaw.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h3-auth-credentials",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtIssuer.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtProperties.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AuthenticateService.java"
+        ],
+        "invariant": "The signing secret is validated, never logged, and tokens carry a bounded lifetime",
+        "method": "source",
+        "result": "No default secret; <32 UTF-8 bytes rejected; key held as SecretKeySpec and not logged; HS256 with sub, role, iat, exp (900 s). No iss/aud is hardening. Placeholder acceptance is owned by the deployment unit.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_priority": 2,
+    "_hunter_group": "h3-auth-credentials",
+    "_hardening": [
+      "No @Valid on any request body, so @NotBlank/@NotNull are inert; add @Valid, @Email and @Size limits.",
+      "JwtIssuer and gateway verifier use no iss/aud/nbf.",
+      "PasswordHasher uses default BCrypt cost 10 with no maximum password length; consider a cap and cost 12+.",
+      "Add a dummy BCrypt match when the account is unknown to remove the login timing difference.",
+      "RegisterController accepts and returns an unvalidated email (empty or whitespace can persist)."
+    ]
+  },
+  {
+    "coverage_id": "auth-service%3A%20check-then-act%20sequences%20%28refresh%20rotation%2C%20register%2C%20last-admin%20demotion%29::Transactionality%20and%20uniqueness%20constraints%20around%20read-check-write%20sequences::backend%2Fauth-service::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "auth-service: check-then-act sequences (refresh rotation, register, last-admin demotion)",
+      "boundary": "Transactionality and uniqueness constraints around read-check-write sequences",
+      "subsystem": "backend/auth-service",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "auth-service: check-then-act sequences (refresh rotation, register, last-admin demotion)",
+    "boundary": "Transactionality and uniqueness constraints around read-check-write sequences",
+    "subsystem": "backend/auth-service",
+    "attack_class": "Business logic (races and state machines)",
+    "starting_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RotateRefreshTokenService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java",
+      "backend/auth-service/src/main/resources/db/migration/V1__create_accounts.sql",
+      "backend/auth-service/src/main/resources/db/migration/V2__create_refresh_tokens.sql"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunt-h4-auth-privilege",
+    "reviewed_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RotateRefreshTokenService.java",
+      "backend/auth-service/src/main/resources/db/migration/V2__create_refresh_tokens.sql",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java",
+      "backend/auth-service/src/main/resources/db/migration/V1__create_accounts.sql",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h4-auth-privilege",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RotateRefreshTokenService.java",
+          "backend/auth-service/src/main/resources/db/migration/V2__create_refresh_tokens.sql"
+        ],
+        "invariant": "Refresh rotation is atomic against concurrent use",
+        "method": "source",
+        "result": "Not atomic; the schema has only a unique token_hash index, nothing enforces single use. Same root cause as the refresh candidate.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h4-auth-privilege",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java",
+          "backend/auth-service/src/main/resources/db/migration/V1__create_accounts.sql"
+        ],
+        "invariant": "Concurrent registrations cannot create duplicate emails",
+        "method": "source",
+        "result": "existsBy then save is racy but the unique index on lower(email) (V1:11) is authoritative, so no duplicate; a losing racer gets a constraint-violation error. Role is hard-coded to STUDENT.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h4-auth-privilege",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java"
+        ],
+        "invariant": "The platform is never left with zero administrators",
+        "method": "source",
+        "result": "Guard is countByRole then save with no transaction, lock or constraint; two admins demoting each other concurrently could leave zero. Admin-only trigger, no privilege gain; bootstrap recreates an admin on restart. Hardening only.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "auth-service/refresh-token-rotation-non-atomic-double-spend"
+    ],
+    "unresolved": [],
+    "_priority": 2,
+    "_hunter_group": "h4-auth-privilege",
+    "_hardening": [
+      "Reuse of a consumed refresh token returns 401 but does not revoke the descendant tokens or family.",
+      "ChangeRoleService last-admin guard is count-then-save without a transaction.",
+      "A role change or demotion does not revoke the target's refresh tokens or outstanding access JWT (up to 900 s).",
+      "auth-service enforces no role check itself; assert X-User-Role there too (defence in depth).",
+      "RoleChangeController lacks @Valid, so a null role gives an NPE/500."
+    ],
+    "_final_decisions": {
+      "auth-service/refresh-token-rotation-non-atomic-double-spend": "needs_validation"
+    }
+  },
+  {
+    "coverage_id": "auth-service%3A%20login%20before%20authentication%20%28BCrypt%20cost%2C%20throttle%20map%2C%20password%20length%29::LoginAttemptWindow%20per-email%20and%20per-address%20keys%3B%20BCrypt%20work%20before%20any%20bound::backend%2Fauth-service::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Pre-authentication%20work%20imbalance",
+    "canonical_refs": {
+      "surface": "auth-service: login before authentication (BCrypt cost, throttle map, password length)",
+      "boundary": "LoginAttemptWindow per-email and per-address keys; BCrypt work before any bound",
+      "subsystem": "backend/auth-service",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Pre-authentication work imbalance"
+    },
+    "surface": "auth-service: login before authentication (BCrypt cost, throttle map, password length)",
+    "boundary": "LoginAttemptWindow per-email and per-address keys; BCrypt work before any bound",
+    "subsystem": "backend/auth-service",
+    "attack_class": "Pre-authentication work imbalance",
+    "starting_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/LoginAttemptWindow.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LoginController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/PasswordHasher.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AuthenticateService.java"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Pre-authentication work imbalance",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unbounded buffering and cardinality",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Quota-accounting scope and reset gaps",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Superlinear parsing, matching, or evaluation",
+        "reason": "No regex/recursive evaluation of attacker input identified in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification",
+        "reason": "No decompression or archive handling in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Database and downstream query amplification",
+        "reason": "Only primary-key and unique-index derived queries in auth-service; no fan-out"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#File descriptor, handle, and temporary-resource leaks",
+        "reason": "No file/handle handling in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Detached work after cancellation",
+        "reason": "No long-running background work in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Worker, pool, and priority starvation",
+        "reason": "No worker pool or priority queue in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock",
+        "reason": "Unhandled exceptions return a generic 500 per request, not a process exit (verify only if a unit finds otherwise)"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Retry storm and fail-open amplification",
+        "reason": "No retry loops in scoped source"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Poison-record and head-of-line blocking",
+        "reason": "No queue consumers in scope"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unsafe recovery and capacity rollback",
+        "reason": "No restore/recovery path in scope"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunt-h3-auth-credentials",
+    "reviewed_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/LoginAttemptWindow.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LoginController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AuthenticateService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/PasswordHasher.java",
+      "backend/config-repo/api-gateway.yml"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h3-auth-credentials",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/LoginAttemptWindow.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LoginController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AuthenticateService.java"
+        ],
+        "invariant": "Throttle keys are scoped to the real client and throttle state is bounded",
+        "method": "source",
+        "result": "The per-address key is getRemoteAddr() with no forward-headers strategy, so behind the gateway all clients share one key: 5 failures in 60 s throttle every login. failuresByKey is a ConcurrentHashMap whose keys are never evicted (only cleared on a successful login for that email), so attacker-chosen emails grow it. Per-email key also allows targeted lockout.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h3-auth-credentials",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/PasswordHasher.java",
+          "backend/config-repo/api-gateway.yml"
+        ],
+        "invariant": "BCrypt work before authentication is bounded",
+        "method": "source",
+        "result": "BCrypt runs only when the account exists and the key is not throttled; cost is fixed (72-byte input) and limited by the 5-failure throttle and the shared gateway bucket. No further pre-auth amplification.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "auth-service/LoginAttemptWindow-shared-gateway-address-key-global-lockout",
+      "auth-service/LoginAttemptWindow-unbounded-failure-map"
+    ],
+    "unresolved": [],
+    "_priority": 3,
+    "_hunter_group": "h3-auth-credentials",
+    "_hardening": [
+      "No @Valid on any request body, so @NotBlank/@NotNull are inert; add @Valid, @Email and @Size limits.",
+      "JwtIssuer and gateway verifier use no iss/aud/nbf.",
+      "PasswordHasher uses default BCrypt cost 10 with no maximum password length; consider a cap and cost 12+.",
+      "Add a dummy BCrypt match when the account is unknown to remove the login timing difference.",
+      "RegisterController accepts and returns an unvalidated email (empty or whitespace can persist)."
+    ],
+    "_final_decisions": {
+      "auth-service/LoginAttemptWindow-shared-gateway-address-key-global-lockout": "needs_validation",
+      "auth-service/LoginAttemptWindow-unbounded-failure-map": "needs_validation"
+    }
+  },
+  {
+    "coverage_id": "auth-service%3A%20register%20409%20versus%20login%20401%20responses%20and%20timing::Account%20existence%20disclosure%3B%20AuthenticateService%20early%20exit%20when%20no%20account::backend%2Fauth-service::ATTACK-CLASSES.md%23Feature%20abuse%20and%20data%20leakage",
+    "canonical_refs": {
+      "surface": "auth-service: register 409 versus login 401 responses and timing",
+      "boundary": "Account existence disclosure; AuthenticateService early exit when no account",
+      "subsystem": "backend/auth-service",
+      "attack_class": "ATTACK-CLASSES.md#Feature abuse and data leakage"
+    },
+    "surface": "auth-service: register 409 versus login 401 responses and timing",
+    "boundary": "Account existence disclosure; AuthenticateService early exit when no account",
+    "subsystem": "backend/auth-service",
+    "attack_class": "Feature abuse and data leakage (account enumeration)",
+    "starting_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RegisterController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LoginController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AuthenticateService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunt-h3-auth-credentials",
+    "reviewed_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AuthenticateService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RegisterController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LoginController.java"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h3-auth-credentials",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AuthenticateService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RegisterController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LoginController.java"
+        ],
+        "invariant": "Account existence is not disclosed to anonymous callers by response or timing",
+        "method": "source",
+        "result": "Register returns 409 'already exists' before the strength check (deliberate, FR-002). Login returns an identical 401 for unknown email and wrong password, but skips BCrypt when the account is missing (no dummy hash), so timing differs by about one BCrypt round.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "auth-service/account-enumeration-register-409-and-login-timing"
+    ],
+    "unresolved": [],
+    "_priority": 5,
+    "_hunter_group": "h3-auth-credentials",
+    "_hardening": [
+      "No @Valid on any request body, so @NotBlank/@NotNull are inert; add @Valid, @Email and @Size limits.",
+      "JwtIssuer and gateway verifier use no iss/aud/nbf.",
+      "PasswordHasher uses default BCrypt cost 10 with no maximum password length; consider a cap and cost 12+.",
+      "Add a dummy BCrypt match when the account is unknown to remove the login timing difference.",
+      "RegisterController accepts and returns an unvalidated email (empty or whitespace can persist)."
+    ],
+    "_final_decisions": {
+      "auth-service/account-enumeration-register-409-and-login-timing": "needs_validation"
+    }
+  },
+  {
+    "coverage_id": "both%20services%3A%20anything%20not%20covered%20by%20the%20other%20units::Compatibility%2C%20fallback%2C%20test-only%20and%20half-finished%20paths%20in%20api-gateway%20and%20auth-service::backend%2Fapi-gateway%2Bbackend%2Fauth-service::ATTACK-CLASSES.md%23Wildcard",
+    "canonical_refs": {
+      "surface": "both services: anything not covered by the other units",
+      "boundary": "Compatibility, fallback, test-only and half-finished paths in api-gateway and auth-service",
+      "subsystem": "backend/api-gateway+backend/auth-service",
+      "attack_class": "ATTACK-CLASSES.md#Wildcard"
+    },
+    "surface": "both services: anything not covered by the other units",
+    "boundary": "Compatibility, fallback, test-only and half-finished paths in api-gateway and auth-service",
+    "subsystem": "backend/api-gateway+backend/auth-service",
+    "attack_class": "Wildcard",
+    "starting_paths": [
+      "backend/api-gateway/src/main",
+      "backend/auth-service/src/main",
+      "backend/api-gateway/src/test",
+      "backend/auth-service/src/test"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Wildcard",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "covered",
+        "agent_id": "hunt-h6-wildcard",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/GatewayConfiguration.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/JwtAuthenticationGlobalFilter.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/IdentityHeaders.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtSigningKey.java",
+          "backend/api-gateway/src/main/resources/application.yml",
+          "backend/config-repo/api-gateway.yml",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RotateRefreshTokenService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RevokeSessionService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtIssuer.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LogoutController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/MeController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RoleChangeController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ViewOwnAccountService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AuthenticateService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/BootstrapAdministrator.java",
+          "backend/auth-service/src/main/resources/db/migration/V1__create_accounts.sql",
+          "backend/auth-service/src/main/resources/db/migration/V2__create_refresh_tokens.sql",
+          "backend/auth-service/src/main/resources/application.yml",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/InternalAccountController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AccountLookupService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/AccountSummaryView.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayErrorHandler.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtVerifier.java"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunt-h6-wildcard",
+            "reviewed_paths": [
+              "backend/api-gateway/src/main/java/com/example/learnhub/gateway/GatewayConfiguration.java",
+              "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/JwtAuthenticationGlobalFilter.java",
+              "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/IdentityHeaders.java",
+              "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtSigningKey.java",
+              "backend/api-gateway/src/main/resources/application.yml",
+              "backend/config-repo/api-gateway.yml"
+            ],
+            "invariant": "No hidden, compatibility or fallback path lets a request skip route policy or identity-header stripping",
+            "method": "source",
+            "result": "Grep of both main trees for TODO/hack/legacy/bypass/@Profile/ConditionalOn/permitAll found no bypass or conditional security path. Strip runs before the public check; no-route falls to the token check (fail closed). PATCH on /api/v1/reviews/** matches no route. No gateway route reaches /api/v1/internal/**.",
+            "artifact": null
+          },
+          {
+            "agent_id": "hunt-h6-wildcard",
+            "reviewed_paths": [
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RotateRefreshTokenService.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RevokeSessionService.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtIssuer.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LogoutController.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/api/MeController.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RoleChangeController.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ViewOwnAccountService.java"
+            ],
+            "invariant": "Valid-account actions cannot affect other accounts' sessions or roles; the role claim is bound to account state at issuance and refresh",
+            "method": "source",
+            "result": "Logout requires the token's account to equal the caller; refresh re-reads the role from the DB. A demoted role stays valid up to 900 s (documented FR-021, hardening).",
+            "artifact": null
+          },
+          {
+            "agent_id": "hunt-h6-wildcard",
+            "reviewed_paths": [
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AuthenticateService.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/application/BootstrapAdministrator.java",
+              "backend/auth-service/src/main/resources/db/migration/V1__create_accounts.sql",
+              "backend/auth-service/src/main/resources/db/migration/V2__create_refresh_tokens.sql",
+              "backend/auth-service/src/main/resources/application.yml",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/api/InternalAccountController.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AccountLookupService.java",
+              "backend/auth-service/src/main/java/com/example/learnhub/auth/api/AccountSummaryView.java",
+              "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayErrorHandler.java",
+              "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtVerifier.java"
+            ],
+            "invariant": "Environment and data-state assumptions do not open an identity or isolation gap",
+            "method": "source",
+            "result": "DB enforces unique lower(email) and a role CHECK; internal lookup returns only id and email; error bodies are fixed; no test-only class or config packaged in src/main.",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [],
+        "unresolved": [],
+        "reassignment_reason": "Post-wave-1 critic: unit closed on a thin read; the wildcard pass touched many files shallowly and left lifecycle and fallback paths unexamined."
+      }
+    ],
+    "wave": 2,
+    "status": "candidate",
+    "agent_id": "hunt-h8-reassign",
+    "reviewed_paths": [
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/InternalAccountController.java",
+      "backend/config-repo/api-gateway.yml",
+      "backend/api-gateway/src/test/java/com/example/learnhub/gateway/RealGatewayConfigTest.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RoleChangeController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/BootstrapAdministrator.java",
+      "backend/auth-service/src/main/resources/db/migration/V1__create_accounts.sql",
+      "backend/auth-service/src/test/java/com/example/learnhub/auth/RoleChangeIT.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtVerifier.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/JwtAuthenticationGlobalFilter.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/IdentityHeaders.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtSigningKey.java",
+      "backend/api-gateway/src/test/java/com/example/learnhub/gateway/filter/JwtAuthenticationFilterTest.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RegisterController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LoginController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/domain/PasswordStrengthRule.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/PasswordHasher.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AuthenticateService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LogoutController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RevokeSessionService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RotateRefreshTokenService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/RefreshTokens.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtIssuer.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtProperties.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/MeController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ViewOwnAccountService.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AccountLookupService.java",
+      "backend/auth-service/src/main/resources/db/migration/V2__create_refresh_tokens.sql",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayErrorHandler.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayProblem.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/CorrelationIdGlobalFilter.java",
+      "backend/platform-common/src/main/java/com/example/learnhub/common/correlation/CorrelationIds.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/GatewayConfiguration.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RateLimitGlobalFilter.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/TokenBucketRateLimiter.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RemoteAddressClientResolver.java",
+      "backend/api-gateway/src/test/resources/application.yml",
+      "backend/auth-service/src/test/resources/application.yml",
+      "backend/auth-service/src/test/java/com/example/learnhub/auth/support/AbstractAuthServiceIT.java"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/InternalAccountController.java",
+          "backend/config-repo/api-gateway.yml",
+          "backend/api-gateway/src/test/java/com/example/learnhub/gateway/RealGatewayConfigTest.java"
+        ],
+        "invariant": "The half-finished service-to-service endpoint /api/v1/internal/accounts/{id} is not reachable through the gateway",
+        "method": "source",
+        "result": "No gateway route matches /api/v1/internal/**; RealGatewayConfigTest asserts it (noRouteEverTargetsInternalPaths:293); no catch-all route exists. Direct-port bypass is the deployment lead.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ChangeRoleService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RoleChangeController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/BootstrapAdministrator.java",
+          "backend/auth-service/src/main/resources/db/migration/V1__create_accounts.sql",
+          "backend/auth-service/src/test/java/com/example/learnhub/auth/RoleChangeIT.java"
+        ],
+        "invariant": "The platform is never left with zero administrators and the bootstrap recovery works if it is",
+        "method": "source",
+        "result": "Independently found the same non-atomic last-admin guard (duplicate of the wave-1 lifecycle finding, consolidated). RoleChangeIT tests only sequential calls. Bootstrap would insert a new account with the configured email and could hit the unique lower(email) index.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtVerifier.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/JwtAuthenticationGlobalFilter.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/IdentityHeaders.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/JwtSigningKey.java",
+          "backend/api-gateway/src/test/java/com/example/learnhub/gateway/filter/JwtAuthenticationFilterTest.java"
+        ],
+        "invariant": "Gateway fallback and compatibility branches fail closed",
+        "method": "source",
+        "result": "Null route is protected; public flag parsed as Boolean or the string true, anything else stays protected; rolesOf accepts List or indexed Map; SignedJWT.parse rejects unsigned/alg=none; MACVerifier accepts only HMAC; identity headers stripped before the public branch. No fail-open branch. Tests do not cover alg=none, non-enum role or path normalisation.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/RegisterController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LoginController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RegisterAccountService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/domain/PasswordStrengthRule.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/PasswordHasher.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AuthenticateService.java"
+        ],
+        "invariant": "API-only inputs the SPA never sends (null, over-long) are rejected without a security-relevant effect",
+        "method": "source",
+        "result": "No @Valid: null email/password gives an NPE and generic 500 with no body leak; email over 320 chars gives a 500; no maximum password length but BCrypt cost is bounded. Registration check-then-insert is backstopped by the unique index. Robustness only.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LogoutController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RevokeSessionService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/RotateRefreshTokenService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/RefreshTokens.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtIssuer.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/infrastructure/JwtProperties.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/MeController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/ViewOwnAccountService.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/AccountLookupService.java",
+          "backend/auth-service/src/main/resources/db/migration/V2__create_refresh_tokens.sql"
+        ],
+        "invariant": "Session and lifecycle operations bind to the caller and the right principal",
+        "method": "source",
+        "result": "Logout checks the token record's account equals the caller and returns an identical 401 otherwise; refresh tokens are 256-bit SecureRandom stored only as SHA-256 hashes; /me reads only the gateway-injected id. Rotation race and post-demotion lifetime are owned by other leads.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayErrorHandler.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayProblem.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/CorrelationIdGlobalFilter.java",
+          "backend/platform-common/src/main/java/com/example/learnhub/common/correlation/CorrelationIds.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/GatewayConfiguration.java"
+        ],
+        "invariant": "Client-controlled correlation ID and error paths cannot inject into logs or JSON or leak internals",
+        "method": "source",
+        "result": "CorrelationIds.resolve accepts only ^[A-Za-z0-9._-]{8,64}$, so the concatenated JSON fallback is safe; problem detail is a fixed phrase per status; 5xx log includes error.toString() server-side only; EnvironmentChangeEvent resets rate-limit buckets (GatewayConfiguration:108-111), used in the actuator lead.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RateLimitGlobalFilter.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/TokenBucketRateLimiter.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RemoteAddressClientResolver.java"
+        ],
+        "invariant": "Fallback keys and strict-route selection in the rate limiter do not allow bypass",
+        "method": "source",
+        "result": "A null remote address maps to a shared 'unknown' bucket (not a bypass); XFF ignored; the strict bucket is chosen by route metadata only. Shared-bucket and unbounded-key issues are already reported.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/api-gateway/src/test/resources/application.yml",
+          "backend/auth-service/src/test/resources/application.yml",
+          "backend/auth-service/src/test/java/com/example/learnhub/auth/support/AbstractAuthServiceIT.java"
+        ],
+        "invariant": "Test-only configuration and fixtures cannot leak into runtime; test gaps identified",
+        "method": "source",
+        "result": "Test secrets live only in src/test/resources, not on the main classpath; test profiles disable the config client. Untested: concurrent last-admin demotion, concurrent refresh, alg=none and non-enum role tokens, admin-route path normalisation, null bodies, and actuator refresh auth.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "gateway/actuator-refresh-exposed-unauthenticated-in-default-profile",
+      "auth-service/ChangeRoleService-last-admin-check-then-act-race"
+    ],
+    "unresolved": [],
+    "_priority": 6,
+    "_hunter_group": "h8-reassign",
+    "_hardening": [
+      "Extend .gitignore to .env.*, *.pem, *.key, *.p12, *.jks and keystores, keeping .env.example re-included.",
+      "Add @Valid to request bodies and cap email and password length (BCrypt ignores bytes after 72).",
+      "Pin management.server.port to a non-published port or restrict actuator endpoints instead of exposing refresh on the app port, even under the local profile.",
+      "No TLS or HSTS end to end; terminate TLS in front of nginx for any non-local deployment.",
+      "Dependency CVE status of Spring Boot 3.5.15, Spring Cloud 2025.0.3 (end-of-line) and nimbus-jose-jwt 10.10 was not verified offline; run an SCA scan.",
+      "JwtVerifier does not check the role claim against the Role enum, or iss/aud/nbf.",
+      "toLowerCase() without Locale.ROOT in RegisterAccountService, AuthenticateService and BootstrapAdministrator."
+    ],
+    "_final_decisions": {
+      "gateway/actuator-refresh-exposed-unauthenticated-in-default-profile": "needs_validation",
+      "auth-service/ChangeRoleService-last-admin-check-then-act-race": "needs_validation"
+    }
+  },
+  {
+    "coverage_id": "host-published%20ports%20of%20auth-service%20%289001%29%20and%20api-gateway%20%289080%29%20in%20docker-compose.yml::Services%20trust%20X-User-Id%2FX-User-Role%20headers%20without%20authenticating%20the%20caller::backend%2Fauth-service%2Bbackend%2Fapi-gateway::ATTACK-CLASSES.md%23Chained%20vulnerabilities%20and%20trust%20boundaries",
+    "canonical_refs": {
+      "surface": "host-published ports of auth-service (9001) and api-gateway (9080) in docker-compose.yml",
+      "boundary": "Services trust X-User-Id/X-User-Role headers without authenticating the caller",
+      "subsystem": "backend/auth-service+backend/api-gateway",
+      "attack_class": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries"
+    },
+    "surface": "host-published ports of auth-service (9001) and api-gateway (9080) in docker-compose.yml",
+    "boundary": "Services trust X-User-Id/X-User-Role headers without authenticating the caller",
+    "subsystem": "backend/auth-service+backend/api-gateway",
+    "attack_class": "Chained vulnerabilities and trust boundaries (gateway bypass)",
+    "starting_paths": [
+      "docker-compose.yml",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/MeController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LogoutController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/InternalAccountController.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/security/IdentityHeaders.java"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunt-h5-deployment",
+    "reviewed_paths": [
+      "docker-compose.yml",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/MeController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LogoutController.java",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/api/InternalAccountController.java",
+      "backend/config-repo/api-gateway.yml"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h5-deployment",
+        "reviewed_paths": [
+          "docker-compose.yml",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/MeController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/LogoutController.java",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/api/InternalAccountController.java",
+          "backend/config-repo/api-gateway.yml"
+        ],
+        "invariant": "Only the gateway can reach services that trust X-User-Id/X-User-Role",
+        "method": "source",
+        "result": "Compose publishes auth-service 9001 and all business ports (9002-9007, 9099) on all host interfaces. MeController and LogoutController read X-User-Id from a plain @RequestHeader with no service-side authentication; InternalAccountController has no auth (protected only by lacking a gateway route). Reachability of the host port is a deployment fact.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "deploy/service-ports-published-bypass-gateway-header-trust"
+    ],
+    "unresolved": [],
+    "_priority": 1,
+    "_hunter_group": "h5-deployment",
+    "_hardening": [
+      "Postgres 9432, RabbitMQ 9672/9673 and Mailpit 9025/9825 are published on all interfaces with .env.example placeholder passwords; bind to 127.0.0.1.",
+      "Actuator is served on the main service ports and refresh is exposed under the local profile, the .env.example default; move management to an internal port and default to a non-local profile.",
+      "No TLS anywhere (browser to nginx to gateway to services); Eureka/config basic-auth travels in clear on the Docker network.",
+      "CORS allowed-headers '*' with credentials and an explicit origin list; list the needed headers.",
+      "scripts/seed-demo.sh defaults ADMIN_PASSWORD to the placeholder if unset.",
+      "One HS256 secret is shared by signer and verifier; consider asymmetric keys."
+    ],
+    "_final_decisions": {
+      "deploy/service-ports-published-bypass-gateway-header-trust": "needs_validation"
+    }
+  },
+  {
+    "coverage_id": "nginx%20%2Fapi%2F%20proxy%20to%20api-gateway%3A%20Host%2C%20X-Forwarded-For%2C%20X-Correlation-Id%2C%20client%20identity%20headers::Header%20normalisation%20between%20nginx%2C%20gateway%20CorrelationIdGlobalFilter%20and%20downstream%20services::backend%2Fapi-gateway::WEB-PROTOCOL-AND-AUTH.md%23Host%20and%20forwarded-header%20trust",
+    "canonical_refs": {
+      "surface": "nginx /api/ proxy to api-gateway: Host, X-Forwarded-For, X-Correlation-Id, client identity headers",
+      "boundary": "Header normalisation between nginx, gateway CorrelationIdGlobalFilter and downstream services",
+      "subsystem": "backend/api-gateway",
+      "attack_class": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust"
+    },
+    "surface": "nginx /api/ proxy to api-gateway: Host, X-Forwarded-For, X-Correlation-Id, client identity headers",
+    "boundary": "Header normalisation between nginx, gateway CorrelationIdGlobalFilter and downstream services",
+    "subsystem": "backend/api-gateway",
+    "attack_class": "Host and forwarded-header trust",
+    "starting_paths": [
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/CorrelationIdGlobalFilter.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RemoteAddressClientResolver.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayErrorHandler.java",
+      "frontend/nginx/default.conf.template"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+      "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+      "WEB-PROTOCOL-AND-AUTH.md#Response-header injection",
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "No HTTP cache in scope (no CDN or cache layer in source)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cache deception and private-response caching",
+        "reason": "No HTTP cache in scope (no CDN or cache layer in source)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "Authentication uses a Bearer header held in JS memory, not an ambient cookie; no cookie-authenticated mutation exists in scope"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+        "reason": "Not selected for this unit; owned by the session-lifecycle unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+        "reason": "No cookies are set by the in-scope services"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "Not selected for this unit; owned by the gateway JWT unit"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+        "reason": "No OAuth/OIDC flow exists in scoped source (recon 1b, 1c)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Step-up binding and bypass",
+        "reason": "No step-up authentication in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn/passkeys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Account linking and identity collision",
+        "reason": "No account linking in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+        "reason": "No password reset, recovery or email-change endpoint exists in scoped source (recon 1b section 4)"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "No API keys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+        "reason": "No API keys in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS in scoped source"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Certificate lifecycle fallback",
+        "reason": "No client certificates in scoped source"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunt-h2-gateway-edge",
+    "reviewed_paths": [
+      "frontend/nginx/default.conf.template",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/CorrelationIdGlobalFilter.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RemoteAddressClientResolver.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayErrorHandler.java",
+      "backend/platform-common/src/main/java/com/example/learnhub/common/correlation/CorrelationIds.java"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h2-gateway-edge",
+        "reviewed_paths": [
+          "frontend/nginx/default.conf.template",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/filter/CorrelationIdGlobalFilter.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/ratelimit/RemoteAddressClientResolver.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayErrorHandler.java",
+          "backend/platform-common/src/main/java/com/example/learnhub/common/correlation/CorrelationIds.java"
+        ],
+        "invariant": "No security decision depends on client-controlled Host, X-Forwarded-For, X-Real-IP or X-Correlation-Id; nginx and gateway agree on request framing",
+        "method": "source",
+        "result": "Nothing in the gateway consumes Host, XFF or X-Real-IP; no absolute URLs or reset links are built from Host. Client X-Correlation-Id is reused only if it matches ^[A-Za-z0-9._-]{8,64}$, else replaced. No framing divergence visible (nginx and Netty are standard servers). No finding.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "_priority": 2,
+    "_hunter_group": "h2-gateway-edge",
+    "_hardening": [
+      "TokenBucketRateLimiter.evictIdle scans every bucket on every request (O(n)); evict on a schedule or size cap.",
+      "To fix shared buckets: trust X-Forwarded-For only from the known nginx peer and have nginx overwrite rather than append it.",
+      "GatewayErrorHandler fallback JSON concatenates correlationId; safe today (generated or pattern-validated) but fragile if the pattern loosens."
+    ]
+  },
+  {
+    "coverage_id": "whole%20scope%3A%20CORS%2C%20actuator%20exposure%2C%20defaults%2C%20comments%2C%20debug%20and%20secrets-in-source%20checks::Basic%20exposure%20checklist%20across%20gateway%2C%20auth-service%2C%20config-repo%20and%20compose::backend%2Fapi-gateway%2Bbackend%2Fauth-service::ATTACK-CLASSES.md%23Obvious%20things",
+    "canonical_refs": {
+      "surface": "whole scope: CORS, actuator exposure, defaults, comments, debug and secrets-in-source checks",
+      "boundary": "Basic exposure checklist across gateway, auth-service, config-repo and compose",
+      "subsystem": "backend/api-gateway+backend/auth-service",
+      "attack_class": "ATTACK-CLASSES.md#Obvious things"
+    },
+    "surface": "whole scope: CORS, actuator exposure, defaults, comments, debug and secrets-in-source checks",
+    "boundary": "Basic exposure checklist across gateway, auth-service, config-repo and compose",
+    "subsystem": "backend/api-gateway+backend/auth-service",
+    "attack_class": "Obvious things",
+    "starting_paths": [
+      "backend/config-repo/api-gateway.yml",
+      "backend/config-repo/application.yml",
+      "backend/config-repo/application-local.yml",
+      "backend/config-repo/auth-service.yml",
+      ".env.example",
+      ".gitignore"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP-protocol/identity class is the primary subject of this unit; related classes are owned by sibling units"
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+        "reason": "No availability class is the primary subject of this unit; availability is owned by the rate-limit and pre-auth units"
+      },
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Pure managed Java target; no native or binary code"
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent in scope"
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "The SPA is out of scope; gateway CORS is reviewed as configuration under the ordinary Obvious-things class"
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+        "reason": "No CI, release or signing workflow in scope"
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "Docker Compose only; deployment config is reviewed under ordinary classes"
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No broker or RPC use in scope"
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant data store in these services"
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile or local IPC"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "covered",
+        "agent_id": "hunt-h5-deployment",
+        "reviewed_paths": [
+          "backend/config-repo/api-gateway.yml",
+          "backend/config-repo/application.yml",
+          "backend/config-repo/application-local.yml",
+          "backend/config-repo/auth-service.yml",
+          ".env.example",
+          ".gitignore",
+          "docker-compose.yml"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunt-h5-deployment",
+            "reviewed_paths": [
+              "backend/config-repo/api-gateway.yml",
+              "backend/config-repo/application.yml",
+              "backend/config-repo/application-local.yml",
+              "backend/config-repo/auth-service.yml",
+              ".env.example",
+              ".gitignore",
+              "docker-compose.yml"
+            ],
+            "invariant": "Basic exposure checklist: CORS, actuator, secrets in source, debug gating, gitignore, TODO/FIXME",
+            "method": "source",
+            "result": "CORS uses an explicit three-origin allow-list with credentials, no wildcard origin; actuator exposes health,info only (refresh only in the local profile); no hardcoded secrets, key blocks or security TODOs in gateway, auth-service or config-repo; .gitignore covers .env; no cookies, redirects or debug toggles in scope. TLS is not enforced (deployment hardening).",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [],
+        "unresolved": [],
+        "reassignment_reason": "Post-wave-1 critic: unit closed on a thin read; the obvious-things checklist was answered in one summary check without item-by-item evidence."
+      }
+    ],
+    "wave": 2,
+    "status": "candidate",
+    "agent_id": "hunt-h8-reassign",
+    "reviewed_paths": [
+      ".env.example",
+      "docker-compose.yml",
+      "backend/config-repo/auth-service.yml",
+      "backend/api-gateway/src/test/resources/application.yml",
+      "backend/auth-service/src/test/resources/application.yml",
+      "backend/api-gateway/src/main",
+      "backend/auth-service/src/main",
+      "backend/config-repo",
+      "backend/config-repo/application.yml",
+      "backend/config-repo/application-local.yml",
+      "backend/auth-service/src/main/resources/application.yml",
+      "backend/api-gateway/src/main/resources/application.yml",
+      "backend/auth-service/src/main/java/com/example/learnhub/auth/application/BootstrapAdministrator.java",
+      "backend/config-repo/api-gateway.yml",
+      ".gitignore",
+      "backend/pom.xml",
+      "backend/api-gateway/pom.xml",
+      "backend/auth-service/pom.xml",
+      "frontend/nginx/default.conf.template",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayErrorHandler.java",
+      "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayProblem.java"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          ".env.example",
+          "docker-compose.yml",
+          "backend/config-repo/auth-service.yml",
+          "backend/api-gateway/src/test/resources/application.yml",
+          "backend/auth-service/src/test/resources/application.yml"
+        ],
+        "invariant": "Item 1: no hardcoded passwords, keys or tokens in source",
+        "method": "source",
+        "result": ".env.example holds only change-me-* placeholders; compose uses ${VAR:?required} for every secret; auth-service.yml carries no secrets; the only literals are test fixtures under src/test; no BEGIN KEY or Bearer literals in main sources; .env not read.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main",
+          "backend/auth-service/src/main",
+          "backend/config-repo"
+        ],
+        "invariant": "Item 2: no TODO, FIXME, HACK or XXX security comments",
+        "method": "source",
+        "result": "Case-insensitive grep for TODO, FIXME, HACK, XXX, backdoor and insecure across both main trees and config-repo returned zero matches.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/config-repo/application.yml",
+          "backend/config-repo/application-local.yml",
+          "backend/auth-service/src/main/resources/application.yml",
+          "backend/api-gateway/src/main/resources/application.yml"
+        ],
+        "invariant": "Item 3: debug and dev mode is gated and cannot be enabled by request",
+        "method": "source",
+        "result": "No debug/trace/dev toggles in either service. The only profile-driven difference is application-local.yml adding actuator refresh; the profile is set by environment, not request. .env.example:8 defaults it to local (see actuator lead).",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          ".env.example",
+          "backend/auth-service/src/main/java/com/example/learnhub/auth/application/BootstrapAdministrator.java",
+          "backend/auth-service/src/test/resources/application.yml"
+        ],
+        "invariant": "Item 4: no test, example or seed credentials work in production",
+        "method": "source",
+        "result": "Compose requires ADMIN_*/JWT_SIGNING_SECRET but accepts the placeholder values (already reported as the placeholder-secrets lead); test credentials exist only under src/test.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/config-repo/application.yml",
+          "backend/config-repo/application-local.yml",
+          "backend/config-repo/api-gateway.yml",
+          "docker-compose.yml"
+        ],
+        "invariant": "Item 5: no unprotected /debug, /admin, /test, /status, /health, /metrics, /env or /config endpoint",
+        "method": "source",
+        "result": "Exposure is health,info with show-details never; no env/metrics/heapdump. Under the default local profile refresh is also exposed on the app port (9080, 9001), and gateway global filters do not cover actuator endpoints, so POST /actuator/refresh looks unauthenticated. Recorded as the actuator-refresh lead.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          ".gitignore",
+          ".env.example"
+        ],
+        "invariant": "Item 6: no .env, pem, key or credentials file is committed",
+        "method": "source",
+        "result": "git ls-files matches only .env.example; no .pem/.key/.p12/.jks/credentials*; git log -- .env shows no history; .env exists on disk only, ignored, not read.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          ".gitignore"
+        ],
+        "invariant": "Item 7: .gitignore covers secrets, uploads and local config",
+        "method": "source",
+        "result": "Covers .env and re-includes .env.example, but not .env.local, .env.*, *.pem, *.key, *.p12, *.jks or keystores. Hardening only; no such file exists now.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/pom.xml",
+          "backend/api-gateway/pom.xml",
+          "backend/auth-service/pom.xml"
+        ],
+        "invariant": "Item 8: dependencies are pinned and have no known-vulnerable versions",
+        "method": "source",
+        "result": "spring-boot-starter-parent 3.5.15, Spring Cloud 2025.0.3, nimbus-jose-jwt 10.10 pinned, WireMock 3.13.2; no version ranges or SNAPSHOT third-party deps; child poms declare no versions. CVE status cannot be verified offline; Spring Cloud 2025.0.3 is end-of-line (hardening).",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main",
+          "backend/auth-service/src/main"
+        ],
+        "invariant": "Item 9: no eval, exec, child process, dynamic class loading or SpEL on input",
+        "method": "source",
+        "result": "grep for Runtime.getRuntime, ProcessBuilder, ScriptEngine, Class.forName, ObjectInputStream, SpelExpressionParser returned zero matches; JPA access goes through Spring Data repositories.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/config-repo/api-gateway.yml"
+        ],
+        "invariant": "Item 10: CORS is not wildcard with credentials",
+        "method": "source",
+        "result": "allowed-origins is three explicit localhost origins with allow-credentials true and allowed-headers '*'; no wildcard origin; tokens travel in the Authorization header, not cookies.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main",
+          "backend/auth-service/src/main"
+        ],
+        "invariant": "Item 11: cookies carry HttpOnly, Secure and SameSite flags",
+        "method": "source",
+        "result": "No Set-Cookie, ResponseCookie or addCookie in either service; tokens are in the JSON body. Not applicable.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main",
+          "backend/auth-service/src/main",
+          "frontend/nginx/default.conf.template"
+        ],
+        "invariant": "Item 12: no open redirect via redirect, return, next, url or goto parameters",
+        "method": "source",
+        "result": "No sendRedirect, RedirectView or Location handling; no controller reads a redirect-style parameter; nginx proxy_pass uses a fixed GATEWAY_URL. Not applicable.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "frontend/nginx/default.conf.template",
+          "docker-compose.yml"
+        ],
+        "invariant": "Item 13: TLS is enforced and no HTTP-only endpoints carry sensitive data",
+        "method": "source",
+        "result": "nginx listens on 80 only and all hops are plain HTTP, including tokens and login passwords; no TLS or HSTS in compose. Deployment limitation for a Compose-only target (hardening).",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunt-h8-reassign",
+        "reviewed_paths": [
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayErrorHandler.java",
+          "backend/api-gateway/src/main/java/com/example/learnhub/gateway/error/GatewayProblem.java",
+          "backend/config-repo/application.yml",
+          "backend/auth-service/src/main"
+        ],
+        "invariant": "Item 14: error responses do not return stack traces, internal paths or SQL errors",
+        "method": "source",
+        "result": "Gateway returns a fixed detail phrase per status, never an exception message; neither service sets include-stacktrace/include-message/include-binding-errors and there is no custom ControllerAdvice, so Boot defaults (never) apply.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "gateway/actuator-refresh-exposed-unauthenticated-in-default-profile"
+    ],
+    "unresolved": [],
+    "_priority": 3,
+    "_hunter_group": "h8-reassign",
+    "_hardening": [
+      "Extend .gitignore to .env.*, *.pem, *.key, *.p12, *.jks and keystores, keeping .env.example re-included.",
+      "Add @Valid to request bodies and cap email and password length (BCrypt ignores bytes after 72).",
+      "Pin management.server.port to a non-published port or restrict actuator endpoints instead of exposing refresh on the app port, even under the local profile.",
+      "No TLS or HSTS end to end; terminate TLS in front of nginx for any non-local deployment.",
+      "Dependency CVE status of Spring Boot 3.5.15, Spring Cloud 2025.0.3 (end-of-line) and nimbus-jose-jwt 10.10 was not verified offline; run an SCA scan.",
+      "JwtVerifier does not check the role claim against the Role enum, or iss/aud/nbf.",
+      "toLowerCase() without Locale.ROOT in RegisterAccountService, AuthenticateService and BootstrapAdministrator."
+    ],
+    "_final_decisions": {
+      "gateway/actuator-refresh-exposed-unauthenticated-in-default-profile": "needs_validation"
+    }
+  }
+]
