@@ -83,6 +83,7 @@ mapped into that range; the Spring services use the same port inside and outside
 | certificate-service | 9005 | 9005 |
 | review-service | 9006 | 9006 |
 | notification-service | 9007 | 9007 |
+| analytics-service | 9008 | 9008 |
 | echo-service | 9099 | 9099 |
 | PostgreSQL | 9432 | 5432 |
 | RabbitMQ (AMQP) | 9672 | 5672 |
@@ -238,6 +239,28 @@ exclusively through same-origin `/api/` requests — no CORS configuration is ne
 See [`frontend/README.md`](frontend/README.md) for the dev-server setup, API type generation, demo
 data seeding, and the manual end-to-end walkthrough checklist.
 
+## Instructor dashboard
+
+`analytics-service` (port 9008) gives instructors a view of how their courses are doing, and
+administrators a platform-wide view. It is a read model: it consumes `payment.succeeded`,
+`enrollment.created`, `course.completed` and `certificate.issued` into per-course, per-UTC-day counters in
+its own `analytics` database, stores no student identity, and never calls another service while handling
+an event.
+
+- **Pages** (student web app, signed in as an instructor or administrator): `/instructor` shows totals and
+  a sortable table of your courses (drafts and archived included, zeros when idle); `/instructor/courses/:id`
+  shows the funnel (enrolled, completed, certificate issued) and enrollments per day for 7, 30 or 90 days
+  with a table alternative to the chart. Both show a "last updated" time and a Refresh button; figures
+  follow a payment, enrollment, completion or certificate within about 10 seconds.
+- **API** (through the gateway, `INSTRUCTOR` and `ADMINISTRATOR` only): `GET /api/v1/instructor/stats/summary`,
+  `/stats/courses`, `/stats/courses/{courseId}?days=7|30|90`. Contract:
+  `specs/009-instructor-dashboard/contracts/analytics-service.openapi.yaml`.
+- **Access**: an instructor only ever sees their own courses, and another instructor's course looks exactly
+  like one that does not exist (404). Students and visitors get 403 and 401. If course-service cannot confirm
+  who owns what, the answer is a 503 with a reference code and no numbers.
+- **Course list**: course-service gained one internal endpoint, `GET /api/v1/internal/courses?instructorId=`,
+  reachable only service to service (no gateway route).
+
 ## Building and testing
 
 ```bash
@@ -369,6 +392,28 @@ Each session reads the progress log and feature list, runs `./init.sh`, works on
 and records evidence before it stops. Completed specs 001-008 are listed as `passing` from their
 merge history; `sec-001` to `sec-005` track the security leads and hardening notes from the audits.
 This works alongside spec-kit: spec-kit defines *what* to build, the harness keeps *sessions* reliable.
+
+## UI/UX design skill (ui-ux-pro-max)
+
+The repo includes the [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) skill pack
+in `.claude/skills/` (`ui-ux-pro-max` plus the companion `ui-styling`, `design`, `design-system`, `brand`,
+`banner-design` and `slides`). It gives an agent searchable UI data (styles, palettes, font pairings, UX
+rules, chart types) through `python .claude/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain style`
+(Python 3, no packages, no network).
+
+It was used to review and then re-skin the web app. The current theme is **Shopify Polaris, light only**
+(it deliberately does not follow the operating system colour scheme):
+
+- All colours, shadows, radii and motion live as semantic tokens in `frontend/src/styles.css`
+  (`bg-surface`, `text-ink-muted`, `shadow-card`, `shadow-inset`, `bg-brand` ...). Components use only these
+  utilities, never raw palette colours, so a new look is mostly a change to that one file.
+- Contrast is held to WCAG values even though the style is soft: text 4.5:1, borders, focus rings and
+  chart fills 3:1. Inputs keep a visible border, links stay underlined, focus is a 2px blue outline, and
+  reduced-motion turns transitions off.
+- Changing the style again: ask the agent for a target style (for example "Minimalism & Swiss Style"),
+  then check contrast and view the pages in a browser before accepting it.
+
+Details, decisions and the styles tried are in the wiki page "UI/UX Pro Max".
 
 ## Governance
 

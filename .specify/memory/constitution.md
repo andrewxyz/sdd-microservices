@@ -1,42 +1,3 @@
-<!--
-Sync Impact Report (temporary; remove before committing the amended constitution)
-
-Version change: 1.1.0 → 1.2.0
-Bump rationale: MINOR. Three principles added and several sections materially expanded. No
-principle was removed, and no existing rule was redefined in a backward-incompatible way.
-
-Modified principles:
-- I. Monorepo Layout and Independent Deployability → unchanged title; `frontend/` is now defined
-  as its own application root with its own package.json instead of an empty placeholder
-- X. Simplicity → unchanged title; Vitest and Testing Library added to the approved
-  test-scope-only libraries alongside WireMock
-
-Added sections:
-- XI. Frontend Stack and Conventions
-- XII. Frontend Session and Security
-- XIII. Frontend-Backend Boundary
-
-Removed sections: none
-
-Other updates:
-- Preamble: the frontend is no longer described as "later"; its rules now live in this document
-- Technology Stack and Port Map: the "Frontend (future)" placeholder is replaced with the decided
-  stack; test tooling is split into backend and frontend; the frontend host port is fixed at 9100
-  (internal 80, nginx) in place of "9xxx (TBD)"
-- Development Workflow: specs 001-005 recorded complete, review-service recorded as deferred, the
-  student web app named as the next spec, instructor/admin/review UI deferred
-
-Templates reviewed:
-- .specify/templates/plan-template.md - no change needed (its Constitution Check is generic)
-- .specify/templates/spec-template.md - no change needed
-- .specify/templates/tasks-template.md - no change needed
-- .specify/templates/checklist-template.md - no change needed
-
-Follow-up TODOs (deferred code changes, out of scope for this command):
-- scripts/up.sh: the PORTS list does not yet include "9100:frontend"; add it with the frontend spec
-- docker-compose.yml: no frontend service yet; add it with the frontend spec
--->
-
 # LearnHub Constitution
 
 LearnHub is an online learning platform built as a monorepo: a Spring Cloud microservices backend
@@ -70,8 +31,8 @@ build may depend on files in the other folder.
 ### II. Service Ownership and Data Isolation
 
 The backend consists of three infrastructure services (`discovery-server`, `config-server`,
-`api-gateway`) and seven business services (`auth`, `course`, `enrollment`, `payment`,
-`certificate`, `review`, `notification`).
+`api-gateway`) and eight business services (`auth`, `course`, `enrollment`, `payment`,
+`certificate`, `review`, `notification`, `analytics`). `analytics` is a read-model service (XIV).
 
 - Each business service MUST own exactly one bounded context and its own PostgreSQL database.
 - A service MUST NOT read another service's database, and cross-service joins are forbidden. Data
@@ -201,6 +162,27 @@ frontend, Vitest and Testing Library.
   `specs/*/contracts/`, not hand-written, so that a contract change surfaces as a type error rather
   than a runtime surprise.
 
+### XIV. Read-Model Services
+
+A read-model service keeps a query-optimised view built from other services' events. The first one
+is `analytics-service`. Every read-model service MUST follow these rules, in addition to I-XIII:
+
+- It MUST build its state by consuming events from the `learning.events` exchange only. No other
+  service writes to it directly, and it MUST NOT populate its store from another service's API or
+  database.
+- It MUST store only the data its read model needs. Personal data (for example names, email
+  addresses) MUST NOT be stored unless a query requires it, and a stable identifier MUST be stored
+  in its place whenever that is enough.
+- It MUST obtain data owned by another service through that service's API (Feign) at query time,
+  when a client request needs it. It MUST NOT make a Feign call while processing an event: event
+  handling depends only on the event and the service's own database, so an unavailable upstream
+  cannot cause retries or dead-lettering.
+- Its Feign clients still carry the timeouts, circuit breaker and fallback required by V, and its
+  consumers keep the idempotency, retry and dead-letter rules of V.
+
+Rationale: this keeps event processing fast and independent of other services' availability, and it
+limits the personal data held outside the service that owns it.
+
 ## Technology Stack and Port Map
 
 **Backend**: Java 21; Maven multi-module; Spring Boot 3.5.15; Spring Cloud 2025.0.3; PostgreSQL 16;
@@ -234,6 +216,7 @@ cover every host port in this table.
 | certificate-service | 9005 | |
 | review-service | 9006 | Implemented (007-review-service) |
 | notification-service | 9007 | |
+| analytics-service | 9008 | Read-model service (XIV); database and login `analytics`, provisioned by db-init like the other services |
 | echo-service | 9099 | Platform verification service |
 | frontend | 9100 | Internal 80 (nginx); the Vite dev server also uses 9100 |
 | PostgreSQL | 9432 | Internal 5432 |
@@ -250,8 +233,10 @@ cover every host port in this table.
   enrollment, and progress with certificates and notifications. Spec 006 (the student web app) is
   complete. Spec 007 (`review-service`) is complete: enrolled students rate and comment on courses,
   edit or delete their own review, and anyone can browse a course's reviews and aggregate rating.
-- Instructor screens, administrator screens and the review UI come later, if at all. They MUST NOT
-  be folded into the student web app spec.
+  Spec 009 (the instructor dashboard) is complete: `analytics-service` and the first instructor
+  pages show instructors their own course statistics and administrators platform-wide totals.
+- Other administrator screens and course authoring in the web app come later, if at all. They MUST
+  NOT be folded into the student web app spec.
 - Each spec MUST go through specify, clarify, plan, tasks and implement on its own branch.
 - Every plan MUST include a Constitution Check. Any deviation from this constitution MUST be
   recorded in the plan with a written justification.
@@ -266,4 +251,4 @@ wording. Adding a technology, service or the frontend stack is a MINOR amendment
 plan review and pull request MUST verify compliance with this constitution, and unjustified
 complexity MUST be rejected.
 
-**Version**: 1.2.1 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-20
+**Version**: 1.3.2 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-27

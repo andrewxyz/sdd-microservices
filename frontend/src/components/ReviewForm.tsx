@@ -49,10 +49,10 @@ export default function ReviewForm({
   }
   if (status !== "authenticated") {
     return (
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-ink-muted">
         <Link
           to={`/login?returnTo=${encodeURIComponent(`/courses/${courseId}`)}`}
-          className="font-medium text-indigo-600 hover:text-indigo-800"
+          className="font-medium text-brand-ink hover:text-brand-ink"
         >
           Sign in
         </Link>{" "}
@@ -94,7 +94,7 @@ export default function ReviewForm({
         onChange={(e) => setRating(e.target.value)}
       />
       <div className="flex flex-col gap-1 mb-4">
-        <label htmlFor="comment" className="text-sm font-medium text-slate-700">
+        <label htmlFor="comment" className="text-sm font-medium text-ink-body">
           Comment (optional)
         </label>
         <textarea
@@ -104,9 +104,9 @@ export default function ReviewForm({
           maxLength={MAX_COMMENT}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          className="border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+          className="border border-line-strong shadow-inset rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-transparent transition-shadow"
         />
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-ink-muted">
           {comment.length}/{MAX_COMMENT}
         </span>
       </div>
@@ -115,7 +115,7 @@ export default function ReviewForm({
         <button
           type="submit"
           disabled={busy}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+          className="bg-brand hover:bg-brand-strong shadow-card active:shadow-inset disabled:opacity-60 text-on-brand px-5 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer"
         >
           {existing ? "Save changes" : "Submit review"}
         </button>
@@ -128,7 +128,7 @@ export default function ReviewForm({
                 void run(() => endpoints.deleteReview(existing.id!));
               }
             }}
-            className="border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-60 px-5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+            className="border border-danger-line text-danger-ink hover:bg-danger-soft disabled:opacity-60 px-5 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer"
           >
             Delete my review
           </button>

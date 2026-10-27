@@ -24,7 +24,7 @@ function isLevelOption(value: string): value is LevelOption {
 }
 
 const selectClass =
-  "border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow";
+  "border border-line-strong shadow-inset rounded-xl px-3 py-2 text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-focus focus:border-transparent transition-shadow";
 
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -138,17 +138,19 @@ export default function CatalogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-canvas">
       {/* Hero */}
-      <div className="bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-800 text-white py-14 px-4 text-center">
-        <h1 className="text-4xl font-bold mb-2 tracking-tight">Discover Your Next Skill</h1>
-        <p className="text-indigo-200 text-lg">Explore our growing library of courses</p>
+      <div className="bg-hero text-on-hero py-14 px-4">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-4xl font-bold mb-2 tracking-tight">Discover Your Next Skill</h1>
+          <p className="text-on-hero-muted text-lg">Explore our growing library of courses</p>
+        </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Filters */}
         <form
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-8 flex flex-wrap gap-3 items-center"
+          className="bg-surface rounded-2xl shadow-card p-4 mb-8 flex flex-wrap gap-3 items-center"
           onSubmit={(e) => e.preventDefault()}
         >
           <input
@@ -156,7 +158,7 @@ export default function CatalogPage() {
             placeholder="Search courses…"
             value={q}
             onChange={(e) => updateParam("q", e.target.value)}
-            className="flex-1 min-w-[180px] border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+            className="flex-1 min-w-[180px] border border-line-strong shadow-inset rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-transparent transition-shadow"
           />
           <select
             aria-label="Category"
@@ -182,12 +184,12 @@ export default function CatalogPage() {
             <option value="INTERMEDIATE">Intermediate</option>
             <option value="ADVANCED">Advanced</option>
           </select>
-          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-ink-body cursor-pointer">
             <input
               type="checkbox"
               checked={free}
               onChange={(e) => updateParam("free", e.target.checked ? "true" : null)}
-              className="accent-indigo-600 w-4 h-4"
+              className="accent-brand w-4 h-4"
             />
             Free only
           </label>
@@ -213,7 +215,7 @@ export default function CatalogPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                className="bg-brand hover:bg-brand-strong shadow-card active:shadow-inset text-on-brand px-5 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer"
               >
                 Clear filters
               </button>

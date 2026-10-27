@@ -208,6 +208,18 @@ spring:
               metadata:
                 public: true
 
+            # 009-instructor-dashboard: the instructor and administrator dashboard. Protected, and only
+            # these two roles get through (same mechanism as auth-admin); analytics-service checks the role
+            # again and decides which courses a caller may see. /api/v1/instructor/** shares no prefix with
+            # /api/v1/courses/**, so none of the route-order issues of the catalog and review routes apply.
+            - id: instructor
+              uri: lb://analytics-service
+              order: 23
+              predicates:
+                - Path=/api/v1/instructor/**
+              metadata:
+                roles: [INSTRUCTOR, ADMINISTRATOR]
+
   # Needed for the correlation ID to survive across reactive operators and reach log lines.
   reactor:
     context-propagation: auto

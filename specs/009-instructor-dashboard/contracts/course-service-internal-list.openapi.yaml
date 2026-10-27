@@ -1,0 +1,44 @@
+openapi: 3.0.3
+info:
+  title: LearnHub course-service internal list addendum (009-instructor-dashboard)
+  version: "1.0.0"
+  description: >
+    Adds a list of one instructor's courses to the internal API. Same rules as the 005 internal
+    contract: no gateway route reaches /api/v1/internal/**; consumed directly via lb://course-service
+    by analytics-service. The existing GET /internal/courses/{courseId} (with instructorId) is
+    unchanged and still defined in specs/005-progress-certificates-notifications/contracts/.
+servers:
+  - url: /api/v1
+paths:
+  /internal/courses:
+    get:
+      summary: Courses owned by one instructor, all statuses, newest first (no gateway route)
+      parameters:
+        - name: instructorId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: At most 200 courses, ordered by creation time descending
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 200
+                items: { $ref: "#/components/schemas/InstructorCourseItem" }
+        "400":
+          description: instructorId missing or not a UUID
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+components:
+  schemas:
+    InstructorCourseItem:
+      type: object
+      required: [courseId, status, title]
+      properties:
+        courseId: { type: string, format: uuid }
+        status: { type: string, enum: [DRAFT, PUBLISHED, ARCHIVED] }
+        title: { type: string }
+    ProblemDetail:
+      $ref: "../../001-platform-foundation/contracts/problem-details.schema.json"

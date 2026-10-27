@@ -1,4 +1,187 @@
 @import "tailwindcss";
 
-/* Lesson content must stay pre-wrapped; Tailwind's `whitespace-pre-wrap` handles this inline. */
-/* Dynamic progress bar width is set via inline style — no class needed. */
+/*
+ * Theme tokens (Shopify Polaris, light only). Components use the semantic utilities generated
+ * below (bg-surface, text-ink-muted, shadow-card, bg-brand ...) and never raw palette colours.
+ * Rules of the style: a merchant-admin look. Light grey page, white cards with a hairline edge and a
+ * barely-there shadow, near-black primary buttons, blue links and focus ring, 8-12px radii, purposeful
+ * green/red/amber status colours. Text >= 4.5:1, borders / focus / data marks >= 3:1.
+ * The app does not follow the operating system colour scheme.
+ */
+:root {
+  color-scheme: light;
+
+  /* surfaces: white cards on a light grey page */
+  --canvas: #f1f1f1;
+  --surface: #ffffff;
+  --surface-muted: #f7f7f7;
+  --surface-sunken: #e3e3e3;
+  --line: #e3e3e3; /* row separators and dividers */
+  --line-strong: #8a8a8a; /* input borders: 3:1 against surfaces */
+
+  /* text */
+  --ink: #1a1a1a;
+  --ink-body: #303030;
+  --ink-muted: #616161;
+  --ink-faint: #b5b5b5; /* decorative only, never text */
+
+  /* brand: near-black primary action; links and focus use Polaris blue */
+  --brand: #303030;
+  --brand-strong: #1a1a1a;
+  --brand-soft: #f1f1f1;
+  --brand-soft-strong: #e3e3e3;
+  --brand-ink: #005bd3; /* link and emphasis text on a surface */
+  --brand-accent: #8051ff;
+  --brand-graphic: #005bd3; /* bars, fills and borders that carry data: 3:1 */
+  --on-brand: #ffffff;
+
+  /* header and page banners */
+  --hero: #ffffff;
+  --on-hero: #1a1a1a;
+  --on-hero-muted: #616161;
+
+  /* status */
+  --danger-soft: #fee9e8;
+  --danger-soft-strong: #fdd2cf;
+  --danger-line: #c70a24;
+  --danger-ink: #8e0b21;
+  --success-soft: #cdfee1;
+  --success-soft-strong: #a7f3c4;
+  --success-line: #247a52;
+  --success-ink: #0c5132;
+  --success-solid: #247a52;
+  --success-solid-strong: #0c5132;
+  --warning-soft: #fff1c2;
+  --warning-soft-strong: #ffe28a;
+  --warning-line: #a16f00;
+  --warning-ink: #5e4200;
+  --star: #a16f00;
+
+  --focus: #005bd3;
+
+  /* shadow colour */
+  --outline: 26 26 26;
+
+  /* motion: restrained, 100-150ms */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@theme inline {
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-body: var(--ink-body);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-soft-strong: var(--brand-soft-strong);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-graphic: var(--brand-graphic);
+  --color-on-brand: var(--on-brand);
+  --color-hero: var(--hero);
+  --color-on-hero: var(--on-hero);
+  --color-on-hero-muted: var(--on-hero-muted);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-soft-strong: var(--danger-soft-strong);
+  --color-danger-line: var(--danger-line);
+  --color-danger-ink: var(--danger-ink);
+  --color-success-soft: var(--success-soft);
+  --color-success-soft-strong: var(--success-soft-strong);
+  --color-success-line: var(--success-line);
+  --color-success-ink: var(--success-ink);
+  --color-success-solid: var(--success-solid);
+  --color-success-solid-strong: var(--success-solid-strong);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-soft-strong: var(--warning-soft-strong);
+  --color-warning-line: var(--warning-line);
+  --color-warning-ink: var(--warning-ink);
+  --color-star: var(--star);
+  --color-focus: var(--focus);
+
+  /* Elevation: hairline edge plus a barely-there shadow (raised); inner shadow for wells and pressed. */
+  --shadow-card: 0 0 0 1px rgb(var(--outline) / 0.1), 0 1px 0 0 rgb(var(--outline) / 0.07);
+  --shadow-lift: 0 0 0 1px rgb(var(--outline) / 0.12), 0 3px 6px -3px rgb(var(--outline) / 0.3);
+  --shadow-overlay: 0 0 0 1px rgb(var(--outline) / 0.12), 0 8px 20px -4px rgb(var(--outline) / 0.3);
+  --shadow-inset: inset 0 1px 2px rgb(var(--outline) / 0.25);
+
+  /* 8-12px control and card radii. */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 1rem;
+}
+
+@layer base {
+  body {
+    background-color: var(--canvas);
+    color: var(--ink-body);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.01em;
+  }
+
+  /* One visible focus indicator for every interactive element. */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* Links inside pages are underlined (colour alone is not enough). */
+  main a:not([class*="bg-"]) {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+  main a:not([class*="bg-"]):hover {
+    text-decoration-thickness: 2px;
+  }
+
+  /* Figures line up in columns. */
+  table,
+  dd {
+    font-variant-numeric: tabular-nums;
+  }
+
+
+  button,
+  a,
+  input,
+  select {
+    transition-property: color, background-color, border-color, box-shadow;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-out);
+  }
+}
+
+/* Reduced motion: no transitions or animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

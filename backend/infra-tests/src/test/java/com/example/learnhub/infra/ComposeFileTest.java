@@ -146,7 +146,7 @@ class ComposeFileTest {
         List<String> required = List.of(
                 "POSTGRES_PASSWORD", "RABBITMQ_DEFAULT_PASS", "EUREKA_PASSWORD", "CONFIG_PASSWORD",
                 "AUTH_DB_PASSWORD", "COURSE_DB_PASSWORD", "ENROLLMENT_DB_PASSWORD", "PAYMENT_DB_PASSWORD",
-                "CERTIFICATE_DB_PASSWORD", "REVIEW_DB_PASSWORD", "NOTIFICATION_DB_PASSWORD");
+                "CERTIFICATE_DB_PASSWORD", "REVIEW_DB_PASSWORD", "NOTIFICATION_DB_PASSWORD", "ANALYTICS_DB_PASSWORD");
 
         for (String variable : required) {
             assertThat(raw).as("%s must use the ${VAR:?message} form", variable)

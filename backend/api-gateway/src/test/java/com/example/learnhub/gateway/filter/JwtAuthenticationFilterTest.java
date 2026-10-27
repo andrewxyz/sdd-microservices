@@ -261,6 +261,52 @@ class JwtAuthenticationFilterTest {
         assertThat(passed).isTrue();
     }
 
+    // ----------------------------------------------- the instructor dashboard route (specs/009)
+
+    private static final Map<String, Object> INSTRUCTOR_ROUTE_METADATA =
+            Map.of("roles", List.of("INSTRUCTOR", "ADMINISTRATOR"));
+
+    @Test
+    @DisplayName("the instructor dashboard route refuses a STUDENT token with 403")
+    void studentIsForbiddenOnTheInstructorRoute() {
+        ServerWebExchange exchange = exchangeForRoute(
+                routeWithMetadata(INSTRUCTOR_ROUTE_METADATA), "Bearer " + validToken("STUDENT"));
+
+        assertThatThrownBy(() -> filter.filter(exchange, ex -> Mono.empty()).block())
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("the instructor dashboard route refuses a request with no token with 401")
+    void anonymousIsUnauthorizedOnTheInstructorRoute() {
+        ServerWebExchange exchange = exchangeForRoute(routeWithMetadata(INSTRUCTOR_ROUTE_METADATA), null);
+
+        assertThatThrownBy(() -> filter.filter(exchange, ex -> Mono.empty()).block())
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.UNAUTHORIZED);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"INSTRUCTOR", "ADMINISTRATOR"})
+    @DisplayName("the instructor dashboard route passes INSTRUCTOR and ADMINISTRATOR tokens and forwards the verified identity")
+    void instructorsAndAdministratorsPassWithTheirIdentityForwarded(String role) {
+        AtomicBoolean passed = new AtomicBoolean(false);
+        String subject = UUID.randomUUID().toString();
+        ServerWebExchange exchange = exchangeForRoute(routeWithMetadata(INSTRUCTOR_ROUTE_METADATA),
+                "Bearer " + token(subject, role, Instant.now().plus(15, ChronoUnit.MINUTES)));
+
+        filter.filter(exchange, ex -> {
+            passed.set(true);
+            assertThat(ex.getRequest().getHeaders().getFirst(IdentityHeaders.USER_ID)).isEqualTo(subject);
+            assertThat(ex.getRequest().getHeaders().getFirst(IdentityHeaders.USER_ROLE)).isEqualTo(role);
+            assertThat(ex.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)).isFalse();
+            return Mono.empty();
+        }).block();
+
+        assertThat(passed).isTrue();
+    }
+
     // ------------------------------------------------------------------------------------ filter order
 
     @Test

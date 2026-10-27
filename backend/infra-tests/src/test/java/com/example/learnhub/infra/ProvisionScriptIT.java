@@ -33,7 +33,7 @@ class ProvisionScriptIT {
     private static final Path SCRIPT = Path.of("..", "docker", "db-init", "provision.sh");
 
     private static final List<String> SERVICES =
-            List.of("auth", "course", "enrollment", "payment", "certificate", "review", "notification");
+            List.of("auth", "course", "enrollment", "payment", "certificate", "review", "notification", "analytics");
 
     private static final String ADMIN_PASSWORD = "admin-secret";
     private static final String SERVICE_PASSWORD = "service-secret";

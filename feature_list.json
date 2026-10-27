@@ -211,15 +211,24 @@
       "id": "spec-009",
       "priority": 0,
       "area": "next-spec",
-      "title": "Spec 009 (feature description pending from the user)",
-      "user_visible_behavior": "To be defined when the user describes the feature.",
-      "status": "blocked",
+      "title": "Spec 009: instructor dashboard (analytics-service, gateway routes, course-service addition, instructor pages)",
+      "user_visible_behavior": "Instructors see totals, a per-course table, and per-course detail with funnel and daily enrollments; admins see platform-wide figures; students and visitors are refused.",
+      "status": "passing",
       "verification": [
-        "Run /speckit-specify with the user's description to create specs/009-<name>.",
-        "Then plan, tasks, implement test-first; fill in verification steps here."
+        "/speckit-clarify (optional), /speckit-plan, /speckit-tasks, /speckit-analyze, /speckit-implement test-first on branch 009-instructor-dashboard",
+        "mvn verify for analytics-service and course-service in WSL",
+        "cd frontend && npm run typecheck && npm test && npm run build",
+        "Browser run: instructor sees figures change within 10 s of a student paying and finishing; second instructor sees none; student refused; replayed event changes nothing"
       ],
-      "evidence": [],
-      "notes": "Blocked only on the user's feature description. Next spec folder number is 009. Do not start without it."
+      "evidence": [
+        "specs/009-instructor-dashboard/{spec,plan,research,data-model,quickstart,tasks}.md and contracts/",
+        "analytics-service: 52 unit tests + 13 Testcontainers IT classes pass (ingest idempotency, 20 concurrent events, out-of-order, UTC boundary, malformed to DLQ, access control, no personal data, fail-closed with circuit breaker)",
+        "course-service full suite, api-gateway full suite and infra-tests pass in WSL (mvn -pl analytics-service,course-service,api-gateway,infra-tests -am verify, then infra-tests re-run after adding analytics to ProvisionScriptIT)",
+        "frontend: typecheck clean, 31 test files / 155 tests pass, npm run build ok",
+        "live stack in WSL: scripts/smoke-test.sh earlier checks pass (28) and the new dashboard section passes 6/6 (figures within 10 s, second instructor 404, student 403, anonymous 401, analytics.q drained)",
+        "browser (playwright-cli, headed Edge): instructor overview, sort, course detail chart + table, 7-day toggle, Refresh, phone width without page scroll, rival 404, student not-allowed, course-service stopped gives 503 with reference code and no numbers, recovery on Refresh"
+      ],
+      "notes": "Complete except T069 (reconcile constitution Principle II, needs the user go-ahead). Everything is uncommitted on branch 009-instructor-dashboard. Backend suites of unchanged modules (auth, enrollment, payment, certificate, review, notification, echo, discovery, config) were not re-run; the full smoke test on the live stack exercised them."
     }
   ]
 }

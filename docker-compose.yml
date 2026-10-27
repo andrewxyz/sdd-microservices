@@ -44,6 +44,7 @@ services:
       CERTIFICATE_DB_PASSWORD: ${CERTIFICATE_DB_PASSWORD:?CERTIFICATE_DB_PASSWORD is required}
       REVIEW_DB_PASSWORD: ${REVIEW_DB_PASSWORD:?REVIEW_DB_PASSWORD is required}
       NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?NOTIFICATION_DB_PASSWORD is required}
+      ANALYTICS_DB_PASSWORD: ${ANALYTICS_DB_PASSWORD:?ANALYTICS_DB_PASSWORD is required}
     volumes:
       - ./backend/docker/db-init:/db-init:ro
     entrypoint: ["sh", "/db-init/provision.sh"]
@@ -418,6 +419,45 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:9007/actuator/health/readiness"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # Read-model service for the instructor dashboard (constitution Principle XIV): consumes payment,
+  # enrollment, completion and certificate events into per-course daily counters. Stores no personal data.
+  analytics-service:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: analytics-service
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?SPRING_PROFILES_ACTIVE is required}
+      CONFIG_SERVER_URL: http://config-server:9888
+      CONFIG_USER: ${CONFIG_USER:?CONFIG_USER is required}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:?CONFIG_PASSWORD is required}
+      EUREKA_URL: http://${EUREKA_USER:?EUREKA_USER is required}:${EUREKA_PASSWORD:?EUREKA_PASSWORD is required}@discovery-server:9761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/analytics
+      SPRING_DATASOURCE_USERNAME: analytics
+      SPRING_DATASOURCE_PASSWORD: ${ANALYTICS_DB_PASSWORD:?ANALYTICS_DB_PASSWORD is required}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:?RABBITMQ_DEFAULT_USER is required}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:?RABBITMQ_DEFAULT_PASS is required}
+    ports:
+      - "9008:9008"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9008/actuator/health/readiness"]
       interval: 5s
       timeout: 5s
       retries: 20

@@ -12,7 +12,7 @@ set -eu
 PGHOST="${PGHOST:-localhost}"
 PGPORT="${PGPORT:-5432}"
 
-SERVICES="auth course enrollment payment certificate review notification"
+SERVICES="auth course enrollment payment certificate review notification analytics"
 
 psql_admin() {
   psql --host="$PGHOST" --port="$PGPORT" --username="$POSTGRES_USER" --dbname=postgres \

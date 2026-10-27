@@ -2,9 +2,9 @@
 // Generates one TypeScript file per backend contract into src/api/generated/, then the committed
 // src/api/schema.ts barrel re-exports all of them as one surface.
 //
-// Why nine separate invocations instead of one: openapi-typescript's CLI takes exactly one
+// Why ten separate invocations instead of one: openapi-typescript's CLI takes exactly one
 // `[input]` document per run (confirmed via `openapi-typescript --help` — no multi-file or glob
-// merge exists). The nine backend contracts are independent OpenAPI documents (separate `info`,
+// merge exists). The ten backend contracts are independent OpenAPI documents (separate `info`,
 // separate `servers`), not fragments of one combined document, and some even reuse the same schema
 // name (`ProblemDetail`) for the same shared shape — bundling them into a single document first
 // would need a bundler tool this project does not otherwise need. Generating one file per contract
@@ -29,6 +29,7 @@ const contracts = [
   ["certificate", "specs/005-progress-certificates-notifications/contracts/certificate-service.openapi.yaml"],
   ["review", "specs/007-review-service/contracts/review-service.openapi.yaml"],
   ["reviewSummaries", "specs/008-review-ui/contracts/review-summaries.openapi.yaml"],
+  ["analytics", "specs/009-instructor-dashboard/contracts/analytics-service.openapi.yaml"],
 ];
 
 for (const [namespace, relativePath] of contracts) {

@@ -43,11 +43,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex items-center justify-center px-4 py-12">
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+    <div className="min-h-screen bg-canvas flex items-center justify-center px-4 py-12">
+      <div className="bg-surface rounded-2xl shadow-card p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-800">Create your account</h1>
-          <p className="text-slate-500 text-sm mt-1">Join LearnHub and start learning today</p>
+          <h1 className="text-2xl font-bold text-ink">Create your account</h1>
+          <p className="text-ink-muted text-sm mt-1">Join LearnHub and start learning today</p>
         </div>
 
         <form onSubmit={onSubmit} noValidate>
@@ -72,22 +72,22 @@ export default function RegisterPage() {
             message={passwordMessage ?? undefined}
           />
           {formMessage && (
-            <p role="alert" className="border border-red-300 bg-red-50 text-red-700 rounded-lg px-4 py-2.5 text-sm mb-4">
+            <p role="alert" className="border border-danger-line bg-danger-soft text-danger-ink rounded-xl px-4 py-2.5 text-sm mb-4">
               {formMessage}
             </p>
           )}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-colors cursor-pointer"
+            className="w-full bg-brand hover:bg-brand-strong shadow-card active:shadow-inset disabled:opacity-60 disabled:cursor-not-allowed text-on-brand font-semibold py-2.5 rounded-xl transition-colors cursor-pointer"
           >
             {submitting ? "Creating account…" : "Create account"}
           </button>
         </form>
 
-        <p className="text-center text-sm text-slate-500 mt-6">
+        <p className="text-center text-sm text-ink-muted mt-6">
           Already have an account?{" "}
-          <Link to="/login" className="text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
+          <Link to="/login" className="text-brand-ink font-medium hover:text-brand-ink transition-colors">
             Sign in
           </Link>
         </p>

@@ -24,3 +24,11 @@ describe("StarRating", () => {
     expect(screen.queryByLabelText(/out of 5/)).toBeNull();
   });
 });
+
+describe("StarRating contrast", () => {
+  it("shows the empty message in a colour dark enough to read", () => {
+    render(<StarRating average={null} count={0} />);
+
+    expect(screen.getByText("No reviews yet").className).toContain("text-ink-muted");
+  });
+});

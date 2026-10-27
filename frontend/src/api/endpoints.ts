@@ -4,6 +4,7 @@
 // and hooks that use these.
 import { request } from "./client";
 import type {
+  analytics,
   auth,
   certificate,
   course,
@@ -24,6 +25,7 @@ type ProgressSchemas = progress.components["schemas"];
 type CertificateSchemas = certificate.components["schemas"];
 type ReviewSchemas = review.components["schemas"];
 type ReviewSummariesSchemas = reviewSummaries.components["schemas"];
+type AnalyticsSchemas = analytics.components["schemas"];
 
 export type TokenPair = AuthSchemas["TokenPair"];
 export type MeView = { id: string; email: string; role: "STUDENT" | "INSTRUCTOR" | "ADMINISTRATOR"; createdAt: string };
@@ -51,6 +53,13 @@ export type CourseRatingSummaries = ReviewSummariesSchemas["CourseRatingSummarie
 
 /** The batch summaries endpoint refuses more than this many ids (callers chunk). */
 export const MAX_SUMMARY_IDS = 50;
+
+export type MyCourse = CourseSchemas["CourseFullView"];
+
+export type InstructorSummary = AnalyticsSchemas["Summary"];
+export type InstructorCourseList = AnalyticsSchemas["CourseList"];
+export type InstructorCourseDetail = AnalyticsSchemas["CourseDetail"];
+export type InstructorTotals = AnalyticsSchemas["Totals"];
 
 export type CourseListQuery = {
   q?: string;
@@ -184,4 +193,24 @@ export function deleteReview(reviewId: string): Promise<void> {
 
 export function listPayments(): Promise<Page<PaymentView>> {
   return request("/v1/payments");
+}
+
+// --- Instructor dashboard (specs/009-instructor-dashboard) ---------------------------------------
+
+/** The caller's own courses in every status (drafts and archived included). */
+export function listMyCourses(): Promise<MyCourse[]> {
+  return request("/v1/my/courses");
+}
+
+export function getInstructorSummary(): Promise<InstructorSummary> {
+  return request("/v1/instructor/stats/summary");
+}
+
+/** Courses with activity: the caller's own, or every course for an administrator (paged). */
+export function listInstructorCourses(page = 0, size = 200): Promise<InstructorCourseList> {
+  return request(`/v1/instructor/stats/courses?page=${page}&size=${size}`);
+}
+
+export function getInstructorCourse(courseId: string, days: 7 | 30 | 90): Promise<InstructorCourseDetail> {
+  return request(`/v1/instructor/stats/courses/${encodeURIComponent(courseId)}?days=${days}`);
 }

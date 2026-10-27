@@ -1,0 +1,129 @@
+openapi: 3.0.3
+info:
+  title: LearnHub analytics-service (009-instructor-dashboard)
+  version: "1.0.0"
+  description: >
+    Read-only dashboard figures for instructors and administrators. Reached only through the gateway
+    route /api/v1/instructor/** (roles INSTRUCTOR and ADMINISTRATOR). Never returns student
+    identities. Errors use RFC 7807 problem details with a correlationId.
+servers:
+  - url: /api/v1
+paths:
+  /instructor/stats/summary:
+    get:
+      summary: Totals across the caller's courses (platform-wide for ADMINISTRATOR)
+      responses:
+        "200":
+          description: Totals
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/Summary" } }
+        "403": { $ref: "#/components/responses/Problem" }
+        "503": { $ref: "#/components/responses/Problem" }
+  /instructor/stats/courses:
+    get:
+      summary: Per-course totals for courses that have activity
+      description: >
+        Instructors get their own courses (newest 200 owned) in one page. Administrators get every
+        course ordered by revenue descending, paged.
+      parameters:
+        - { name: page, in: query, required: false, schema: { type: integer, minimum: 0, default: 0 }, description: Administrators only }
+        - { name: size, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200, default: 50 }, description: Administrators only }
+      responses:
+        "200":
+          description: Courses with activity; courses without activity are absent
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/CourseList" } }
+        "400": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "503": { $ref: "#/components/responses/Problem" }
+  /instructor/stats/courses/{courseId}:
+    get:
+      summary: One course's totals, funnel and daily enrollments
+      parameters:
+        - { name: courseId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: days, in: query, required: false, schema: { type: integer, enum: [7, 30, 90], default: 30 } }
+      responses:
+        "200":
+          description: Course detail
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/CourseDetail" } }
+        "400":
+          description: days is not 7, 30 or 90, or courseId is not a UUID (field error on the offending parameter)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404":
+          description: No such course, or not owned by the caller (identical response for both)
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+        "503":
+          description: Course ownership could not be confirmed; no figures returned
+          content:
+            application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+components:
+  responses:
+    Problem:
+      description: Standard problem details
+      content:
+        application/problem+json: { schema: { $ref: "#/components/schemas/ProblemDetail" } }
+  schemas:
+    Totals:
+      type: object
+      required: [enrollments, revenueCents, completions, certificates]
+      properties:
+        enrollments: { type: integer, format: int64, minimum: 0 }
+        revenueCents: { type: integer, format: int64, minimum: 0 }
+        completions: { type: integer, format: int64, minimum: 0 }
+        certificates: { type: integer, format: int64, minimum: 0 }
+    Summary:
+      type: object
+      required: [scope, totals, truncated, generatedAt]
+      properties:
+        scope: { type: string, enum: [OWN, PLATFORM] }
+        totals: { $ref: "#/components/schemas/Totals" }
+        truncated: { type: boolean, description: "True when an instructor owns 200 or more courses, so totals cover only the newest 200" }
+        generatedAt: { type: string, format: date-time }
+    CourseStats:
+      type: object
+      required: [courseId, totals]
+      properties:
+        courseId: { type: string, format: uuid }
+        totals: { $ref: "#/components/schemas/Totals" }
+    CourseList:
+      type: object
+      required: [items, page, size, totalItems, truncated, generatedAt]
+      properties:
+        items: { type: array, maxItems: 200, items: { $ref: "#/components/schemas/CourseStats" } }
+        page: { type: integer }
+        size: { type: integer }
+        totalItems: { type: integer, format: int64 }
+        truncated: { type: boolean, description: "Same meaning as in Summary; always false for ADMINISTRATOR" }
+        generatedAt: { type: string, format: date-time }
+    Funnel:
+      type: object
+      required: [enrolled, completed, certificateIssued]
+      properties:
+        enrolled: { type: integer, format: int64 }
+        completed: { type: integer, format: int64 }
+        certificateIssued: { type: integer, format: int64 }
+    DailyEnrollment:
+      type: object
+      required: [day, enrollments]
+      properties:
+        day: { type: string, format: date, description: UTC day }
+        enrollments: { type: integer, format: int64 }
+    CourseDetail:
+      type: object
+      required: [courseId, days, totals, funnel, series, generatedAt]
+      properties:
+        courseId: { type: string, format: uuid }
+        days: { type: integer, enum: [7, 30, 90] }
+        totals: { $ref: "#/components/schemas/Totals" }
+        funnel: { $ref: "#/components/schemas/Funnel" }
+        series:
+          type: array
+          description: Exactly `days` entries, oldest first, ending today (UTC), zero-filled
+          items: { $ref: "#/components/schemas/DailyEnrollment" }
+        generatedAt: { type: string, format: date-time }
+    ProblemDetail:
+      $ref: "../../001-platform-foundation/contracts/problem-details.schema.json"

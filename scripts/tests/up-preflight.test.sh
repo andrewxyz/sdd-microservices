@@ -35,8 +35,12 @@ PAYMENT_DB_PASSWORD=change-me-payment
 CERTIFICATE_DB_PASSWORD=change-me-certificate
 REVIEW_DB_PASSWORD=change-me-review
 NOTIFICATION_DB_PASSWORD=change-me-notification
+ANALYTICS_DB_PASSWORD=change-me-analytics
 RABBITMQ_DEFAULT_USER=learnhub
 RABBITMQ_DEFAULT_PASS=change-me-rabbit
+JWT_SIGNING_SECRET=change-me-jwt-signing-secret-32-bytes-minimum
+ADMIN_EMAIL=admin@learnhub.example
+ADMIN_PASSWORD=change-me-admin
 EOF
 }
 

@@ -304,4 +304,47 @@ class RealGatewayConfigTest {
             }
         }
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("instructor dashboard route: protected, instructor and administrator only, no overlap with courses (specs/009)")
+    void instructorDashboardRoute() {
+        Map<String, Object> route = routeById("instructor");
+
+        assertThat(route.get("uri")).isEqualTo("lb://analytics-service");
+        assertThat((List<String>) route.get("predicates")).containsExactly("Path=/api/v1/instructor/**");
+        Map<String, Object> metadata = (Map<String, Object>) route.get("metadata");
+        assertThat(metadata).as("the instructor route must declare its roles").isNotNull();
+        assertThat(metadata.get("public")).as("never public").isNotEqualTo(true);
+        assertThat((List<String>) metadata.get("roles")).containsExactlyInAnyOrder("INSTRUCTOR", "ADMINISTRATOR");
+
+        // /api/v1/instructor/** and /api/v1/courses/** are disjoint, so route order cannot matter between them.
+        for (Map<String, Object> other : routes()) {
+            if ("instructor".equals(other.get("id"))) {
+                continue;
+            }
+            for (String predicate : (List<String>) other.get("predicates")) {
+                assertThat(predicate).as("route '%s' must not overlap /api/v1/instructor", other.get("id"))
+                        .doesNotContain("/api/v1/instructor");
+            }
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("no route predicate can match the internal course list or lookup (specs/009-instructor-dashboard)")
+    void noRouteMatchesTheInternalCourseEndpoints() {
+        for (Map<String, Object> route : routes()) {
+            List<String> predicates = (List<String>) route.get("predicates");
+            if (predicates == null) {
+                continue;
+            }
+            for (String predicate : predicates) {
+                assertThat(predicate)
+                        .as("route '%s' predicate '%s' must not reach /api/v1/internal/courses",
+                                route.get("id"), predicate)
+                        .doesNotContain("/api/v1/internal");
+            }
+        }
+    }
 }
