@@ -28,7 +28,9 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # prometheus: this server is configured locally (constitution III) and so never reads the shared
+        # config-repo; the scrape endpoint that every other service gets from there has to be named here.
+        include: health,info,prometheus
   endpoint:
     health:
       probes:

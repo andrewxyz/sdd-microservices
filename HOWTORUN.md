@@ -118,6 +118,8 @@ service in the original plan is now built.
 | PostgreSQL | 9432 | One database per business service; `auth`, `course`, `enrollment`, `payment`, `certificate`, `review`, `notification` and `analytics` all have real tables now |
 | RabbitMQ (AMQP / management) | 9672 / 9673 | Message broker; carries `payment.succeeded`, `enrollment.created`, `course.completed` and `certificate.issued` on the `learning.events` exchange |
 | Mailpit (SMTP / web UI) | 9025 / 9825 | Catches outgoing mail locally; nothing leaves the machine |
+| Prometheus | 9090 | Scrapes every service and RabbitMQ; 24 h of history; no login (local machine only) |
+| Grafana | 9030 | Platform-health and event-pipeline dashboards plus alert rules; sign in with `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` |
 
 ## 3. Try it: curl walkthrough
 
@@ -743,6 +745,40 @@ curl -s "http://localhost:9080/api/v1/certificates/mine" -H "Authorization: Bear
 ```
 
 See `specs/005-progress-certificates-notifications/quickstart.md` for the complete walkthrough.
+
+### 3.33 See a dead-lettered message on the monitoring dashboards (spec 010)
+
+Open Grafana at <http://localhost:9030> and sign in with `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD`
+from your `.env`. Under the **LearnHub** folder, **Event pipeline** should show every dead-letter queue at
+0 and **Alerting → Alert rules** should show *Dead-letter queue not empty* as Normal.
+
+Publish an event no consumer can parse. It is retried three times and then set aside:
+
+```bash
+curl -s -u "$RABBITMQ_DEFAULT_USER:$RABBITMQ_DEFAULT_PASS" -H 'content-type: application/json' \
+  -X POST 'http://localhost:9673/api/exchanges/%2F/learning.events/publish' \
+  -d '{"properties":{},"routing_key":"enrollment.created","payload":"{\"not\":\"a valid envelope\"}","payload_encoding":"string"}'
+# {"routed":true}
+```
+
+Needs `notification-service` running, since it owns the queue that receives `enrollment.created`. In a
+measured run the dead-letter queue showed a depth of 1 on the dashboard after 17 seconds and the alert was
+firing after 89 seconds.
+
+Look at the stuck message itself, then clear it and watch the alert resolve without any acknowledgement:
+
+```bash
+curl -s -u "$RABBITMQ_DEFAULT_USER:$RABBITMQ_DEFAULT_PASS" -H 'content-type: application/json' -X POST \
+  'http://localhost:9673/api/queues/%2F/notification.q.dlq/get' \
+  -d '{"count":1,"ackmode":"ack_requeue_true","encoding":"auto"}'
+
+curl -s -u "$RABBITMQ_DEFAULT_USER:$RABBITMQ_DEFAULT_PASS" -X DELETE \
+  'http://localhost:9673/api/queues/%2F/notification.q.dlq/contents'
+```
+
+The depth returns to 0 within about 20 seconds and the alert returns to Normal about 40 seconds after the purge.
+Prometheus is at <http://localhost:9090> if you want to query `rabbitmq_detailed_queue_messages_ready`
+directly.
 
 ## 4. Automated tests
 

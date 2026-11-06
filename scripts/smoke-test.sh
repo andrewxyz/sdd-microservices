@@ -733,5 +733,55 @@ else
   fi
 fi
 
+# ------------------------------------------------ observability (spec 010, FR-021)
+# The point of these checks is SC-007: a monitoring gap must fail a test rather than pass unnoticed.
+
+if curl -fsS http://localhost:9090/-/healthy >/dev/null 2>&1; then
+  pass "Prometheus answers on 9090"
+else
+  fail "Prometheus answers on 9090" "no response from http://localhost:9090/-/healthy"
+fi
+
+# Expected scrape targets, from backend/docker/prometheus/prometheus.yml:
+#   10 business services + 2 infrastructure servers + 2 RabbitMQ jobs (aggregated and per-queue).
+# Adding a service to the platform means adding it there too; this count is what catches the omission.
+EXPECTED_TARGETS=14
+
+targets_json="$(curl -fsS "http://localhost:9090/api/v1/targets?state=active" 2>/dev/null)"
+if [ -z "$targets_json" ]; then
+  fail "Prometheus reports its scrape targets" "could not read /api/v1/targets"
+else
+  target_total="$(printf '%s' "$targets_json" | grep -o '"health":"[a-z]*"' | wc -l | tr -d ' ')"
+  target_up="$(printf '%s' "$targets_json" | grep -o '"health":"up"' | wc -l | tr -d ' ')"
+
+  # Both halves matter. "every target is up" alone would pass if a target were missing from the
+  # config entirely - which is exactly the gap this check exists to catch.
+  if [ "$target_total" -eq "$EXPECTED_TARGETS" ]; then
+    pass "Prometheus is scraping all $EXPECTED_TARGETS expected targets"
+  else
+    fail "Prometheus is scraping all $EXPECTED_TARGETS expected targets" \
+      "found $target_total; a service may be missing from backend/docker/prometheus/prometheus.yml"
+  fi
+
+  if [ "$target_up" -eq "$target_total" ] && [ "$target_total" -gt 0 ]; then
+    pass "every Prometheus scrape target reports up"
+  else
+    # One target per line first, then keep the ones that are not up and print their host:port. The
+    # JSON arrives on a single line and lastError text can contain braces, so a pattern spanning
+    # from a target's address to its health field is not reliable; per-line splitting is.
+    down_detail="$(printf '%s' "$targets_json" | sed 's/{"discoveredLabels"/\n&/g' \
+      | grep '"scrapeUrl"' | grep -v '"health":"up"' \
+      | grep -o '"scrapeUrl":"[^"]*"' | sed 's/"scrapeUrl":"http:\/\///; s/\/.*//' | sort -u | head -8 | tr '\n' ' ')"
+    fail "every Prometheus scrape target reports up" \
+      "$target_up of $target_total up; not up: ${down_detail:-unknown}"
+  fi
+fi
+
+if curl -fsS http://localhost:9030/api/health >/dev/null 2>&1; then
+  pass "Grafana answers on 9030"
+else
+  fail "Grafana answers on 9030" "no response from http://localhost:9030/api/health"
+fi
+
 printf '\n%d passed, %d failed\n' "$PASSED" "$FAILED"
 [ "$FAILED" -eq 0 ]

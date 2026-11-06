@@ -27,7 +27,19 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # prometheus is the scrape endpoint required by VIII. It arrives for every service through
+        # platform-common's micrometer-registry-prometheus, so nothing is declared per service.
+        # Note application-local.yml repeats this list: a profile file overrides rather than merges,
+        # so both have to name prometheus or it stays closed under that profile.
+        include: health,info,prometheus
+  metrics:
+    distribution:
+      # Micrometer publishes no latency buckets by default, so a p95 query returns nothing. A handful
+      # of explicit buckets keeps the series count (and Prometheus' 256MB cap) safe, where full
+      # percentile histograms would add dozens per endpoint. Read at startup, so a change here needs a
+      # service restart, unlike most of this file.
+      slo:
+        "[http.server.requests]": 50ms,100ms,250ms,500ms,1s,2s
   endpoint:
     health:
       probes:

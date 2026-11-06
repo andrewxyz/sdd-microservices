@@ -1,0 +1,90 @@
+# Prometheus scrape configuration (spec 010-observability, constitution VIII).
+#
+# Static targets, not service discovery: Prometheus has no Eureka mechanism, and the Compose topology
+# is fixed and known at start time, so a static list is the simplest thing that works (X). See
+# specs/010-observability/research.md R4.
+#
+# Addresses are Compose DNS names on INTERNAL ports, never localhost or a published host port. That
+# keeps this file correct if sec-002 (stop publishing internal service ports to the host) lands.
+#
+# Adding a service to the platform means adding it here too. scripts/smoke-test.sh asserts the target
+# count, so a forgotten entry fails a test instead of becoming an unmonitored service.
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    platform: learnhub
+
+scrape_configs:
+  # ---------------------------------------------------------------- business services
+  # All reached through the gateway in normal use, so none needs credentials here.
+  - job_name: learnhub-services
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - auth-service:9001
+          - course-service:9002
+          - enrollment-service:9003
+          - payment-service:9004
+          - certificate-service:9005
+          - review-service:9006
+          - notification-service:9007
+          - analytics-service:9008
+          - api-gateway:9080
+          - echo-service:9099
+    relabel_configs:
+      # instance defaults to host:port, which is unreadable in a dashboard legend. Dashboards group
+      # and legend by `service`; see specs/010-observability/data-model.md section 1.
+      - source_labels: [__address__]
+        regex: '([^:]+):.*'
+        target_label: service
+        replacement: '$1'
+
+  # ------------------------------------------------------------- infrastructure servers
+  # Separate job because these two require basic auth outside the `local` profile (VII, VIII). Keeping
+  # them apart means enabling that later is a change to this block alone.
+  - job_name: learnhub-platform
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - discovery-server:9761
+          - config-server:9888
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '([^:]+):.*'
+        target_label: service
+        replacement: '$1'
+    # Outside the `local` profile, uncomment and supply credentials - without these the scrape gets
+    # 401 and the targets show down:
+    # basic_auth:
+    #   username: ${EUREKA_USER}       # config-server uses CONFIG_USER; split the job if they differ
+    #   password: ${EUREKA_PASSWORD}
+
+  # ------------------------------------------------------------------------- RabbitMQ
+  # Two jobs, deliberately. /metrics returns AGGREGATED values only and cannot attribute a depth to a
+  # named queue, so it alone could not satisfy FR-008 or the dead-letter alert at all (research R5).
+  - job_name: rabbitmq-aggregated
+    metrics_path: /metrics
+    static_configs:
+      - targets: [rabbitmq:15692]
+    relabel_configs:
+      - target_label: service
+        replacement: rabbitmq
+
+  # Per-queue depth (including dead-letter queues) and per-queue delivery counters. Two `family`
+  # values only, chosen from a live scrape: queue_coarse_metrics is the ready/unacked depth, and
+  # queue_delivery_metrics is 4 counters (acked/delivered/redelivered) at a handful of series. The
+  # broader queue_metrics family was left out - 41 series for two queues - to respect the 256MB cap.
+  #
+  # Metrics from this endpoint carry the `rabbitmq_detailed_` prefix, NOT `rabbitmq_`. A dashboard
+  # query written against the short name returns no data and no error.
+  - job_name: rabbitmq-queues
+    metrics_path: /metrics/detailed
+    params:
+      family: [queue_coarse_metrics, queue_delivery_metrics]
+    static_configs:
+      - targets: [rabbitmq:15692]
+    relabel_configs:
+      - target_label: service
+        replacement: rabbitmq

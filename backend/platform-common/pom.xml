@@ -42,6 +42,22 @@
     </dependency>
 
     <!--
+      The Prometheus scrape endpoint for every service (constitution VIII). Compile scope on purpose:
+      every runnable module already depends on this library, so one declaration here gives all of
+      them /actuator/prometheus and no service needs metrics wiring of its own.
+
+      Unlike the optional block below, this is safe to propagate: it brings only micrometer-core and
+      prometheus-metrics-*, no servlet or WebFlux classes, so it cannot confuse Spring Boot's
+      web-application-type detection in the reactive gateway.
+
+      No <version>: spring-boot-starter-parent manages the Micrometer BOM (constitution IX).
+    -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
+    <!--
       Optional on purpose. The gateway is a WebFlux application and depends on this module; if these
       were compile-scope transitive dependencies it would gain servlet classes on its classpath and
       Spring Boot could no longer tell which web application type to start.

@@ -1,0 +1,26 @@
+# Grafana datasource provisioning (spec 010-observability).
+#
+# Committed configuration, applied at startup: no one has to add a datasource by hand, and an edit
+# made in the UI does not become the real configuration (FR-011). This directory is mounted
+# read-only, so Grafana cannot rewrite it.
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    # A fixed uid, because the provisioned dashboards and alert rules refer to the datasource by uid.
+    # Left to default it would be random and every committed reference would point at nothing.
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    # Container DNS name on the internal port - Grafana queries Prometheus over the Compose network,
+    # not through the published host port.
+    url: http://prometheus:9090
+    isDefault: true
+    # The committed file is the source of truth, so the UI must not offer to change it.
+    editable: false
+    jsonData:
+      # Matches global.scrape_interval in prometheus.yml. Telling Grafana the real interval stops it
+      # requesting a finer resolution than the data actually has.
+      timeInterval: 15s
+      httpMethod: POST

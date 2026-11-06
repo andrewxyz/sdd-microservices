@@ -74,6 +74,9 @@ class ComposeFileTest {
         assertThat(ports("postgres")).contains("9432:5432");
         assertThat(ports("rabbitmq")).contains("9672:5672", "9673:15672");
         assertThat(ports("mailpit")).contains("9025:1025", "9825:8025");
+        // 010-observability: Prometheus keeps its own default port; Grafana's 3000 is mapped in.
+        assertThat(ports("prometheus")).contains("9090:9090");
+        assertThat(ports("grafana")).contains("9030:3000");
     }
 
     @Test
@@ -110,9 +113,46 @@ class ComposeFileTest {
     @DisplayName("database and broker data live in named volumes so a restart keeps them")
     void dataUsesNamedVolumes() {
         assertThat(volumes).as("named volumes are declared")
-                .containsKeys("postgres-data", "rabbitmq-data");
+                .containsKeys("postgres-data", "rabbitmq-data", "prometheus-data", "grafana-data");
         assertThat(service("postgres").get("volumes").toString()).contains("postgres-data");
         assertThat(service("rabbitmq").get("volumes").toString()).contains("rabbitmq-data");
+        assertThat(service("prometheus").get("volumes").toString()).contains("prometheus-data");
+        assertThat(service("grafana").get("volumes").toString()).contains("grafana-data");
+    }
+
+    @Test
+    @DisplayName("the monitoring stack is capped, bounded and cannot rewrite its own configuration")
+    void monitoringStackIsConstrained() {
+        // Memory caps: the dev host runs this whole stack in under 4 GB, and SC-006 allows the two
+        // monitoring containers 500 MB between them.
+        assertThat(service("prometheus").get("mem_limit")).as("prometheus is capped").isNotNull();
+        assertThat(service("grafana").get("mem_limit")).as("grafana is capped").isNotNull();
+
+        // Retention is bounded on both axes: time alone leaves size unbounded if scrape volume
+        // grows, and SC-008 asks for a size that stays bounded indefinitely.
+        String prometheusCommand = String.valueOf(service("prometheus").get("command"));
+        assertThat(prometheusCommand)
+                .contains("--storage.tsdb.retention.time=")
+                .contains("--storage.tsdb.retention.size=");
+
+        // Provisioned configuration is mounted read-only, so a hand edit in either tool's UI cannot
+        // become the source of truth (FR-011, FR-016) - the same guarantee config-server gets.
+        assertThat(service("prometheus").get("volumes").toString())
+                .as("prometheus config is mounted read-only").contains(":ro");
+        assertThat(service("grafana").get("volumes").toString())
+                .as("grafana provisioning is mounted read-only").contains(":ro");
+
+        // Grafana must not start against a datasource that is not answering yet.
+        assertThat(dependsOn("grafana")).containsKey("prometheus");
+        assertThat(dependsOn("grafana").get("prometheus").toString()).contains("service_healthy");
+    }
+
+    @Test
+    @DisplayName("Grafana credentials come from the environment with no default")
+    void grafanaCredentialsAreRequiredSettings() {
+        // FR-012: no default and no blank password. The ${VAR:?message} form also rejects an empty
+        // value, so a present-but-empty setting fails at start rather than silently using a default.
+        assertThat(raw).contains("${GRAFANA_ADMIN_USER:?").contains("${GRAFANA_ADMIN_PASSWORD:?");
     }
 
     @Test

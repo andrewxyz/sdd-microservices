@@ -1,0 +1,23 @@
+# Grafana dashboard provisioning (spec 010-observability).
+#
+# Points Grafana at the committed dashboard JSON mounted from backend/docker/grafana/dashboards.
+# Dashboards appear on startup with nothing imported or clicked (FR-011, SC-005).
+
+apiVersion: 1
+
+providers:
+  - name: learnhub
+    orgId: 1
+    folder: LearnHub
+    type: file
+    # The committed files are the source of truth. With this false, an edit made in the UI cannot be
+    # saved over the provisioned dashboard, so a restart always restores what is in git.
+    allowUiUpdates: false
+    # Keep dashboards when this provider's files are removed? No - a deleted file should mean a
+    # deleted dashboard, otherwise stale dashboards linger with no definition behind them.
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards
+      # Use the JSON files' own folder structure rather than flattening them.
+      foldersFromFilesStructure: false

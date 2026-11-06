@@ -106,6 +106,22 @@ OpenAPI so the frontend can rely on it. The frontend MUST NOT call a service dir
   responses.
 - Every service MUST expose Actuator health with liveness and readiness probes.
 - Logs MUST be structured and MUST carry the correlation ID.
+- Every service MUST expose its runtime metrics on a scrape endpoint that a collector reads on a
+  schedule. That endpoint MUST be delivered through `platform-common`, so no service carries metrics
+  wiring of its own and a new service gains metrics by depending on the shared library alone.
+- Like Eureka and the config server under VII, the metrics endpoint MUST require basic auth in every
+  profile other than `local`. The liveness and readiness probes keep their existing exemption.
+- The platform MUST run a metrics collector that scrapes every service and the broker, and a
+  dashboard tool for presenting what it collects.
+- Dashboards and alert rules MUST be committed configuration, provisioned automatically at startup.
+  Creating or editing either by hand in the running tool MUST NOT be the source of truth: a restart
+  restores the committed definitions.
+- Alert rules MUST at minimum cover a non-empty dead-letter queue, a service the collector cannot
+  reach, and an elevated server-error rate.
+
+Rationale: an event-driven platform fails quietly. A message that dead-letters after its retries
+produces no error for any user to report, so without metrics and an alert on queue depth, a paid-for
+enrollment can be lost silently. Health probes answer "is it running"; these answer "is it working".
 
 ### IX. Conventions
 
@@ -122,6 +138,21 @@ The simplest design that meets the spec MUST be chosen. No extra service, librar
 may be introduced without amending this constitution. The approved test-scope-only libraries beyond
 JUnit 5 and Testcontainers are WireMock (stubbing HTTP upstreams in backend tests) and, on the
 frontend, Vitest and Testing Library.
+
+The approved runtime additions beyond the stack named below are, for observability only (VIII):
+Prometheus (metrics collection, retention and alert evaluation), Grafana (dashboards and alert
+presentation) and the `micrometer-registry-prometheus` library (the scrape endpoint on each service).
+These are the first runtime additions this constitution has approved; everything previously approved
+beyond the original stack was test-scope only. Their scope is observability and nothing else: they
+MUST NOT be given a role in serving application traffic or holding application data.
+
+The `micrometer-registry-prometheus` version is managed by the Spring Boot BOM already imported in
+`backend/pom.xml`, so it MUST be declared without a `<version>` and IX is satisfied without a pin.
+
+Distributed tracing (for example OpenTelemetry or Micrometer Tracing with a trace backend) and
+central log aggregation (for example Loki or ELK) are deliberately NOT approved. Both are recognised
+gaps; adding either requires a further amendment, because tracing in particular would change the
+`shared-events` envelope and every consumer.
 
 ### XI. Frontend Stack and Conventions
 
@@ -189,6 +220,11 @@ limits the personal data held outside the service that owns it.
 RabbitMQ 4.3; Mailpit (local email only). Spring Cloud components: Eureka, Config Server, Gateway,
 OpenFeign, LoadBalancer, Resilience4j.
 
+**Observability**: Prometheus (scrapes every service and the broker, retains a bounded window and
+evaluates alert rules); Grafana (dashboards and alert presentation, provisioned from committed
+configuration); `micrometer-registry-prometheus` on every service, supplied through
+`platform-common`. Approved for observability only, under VIII and X.
+
 **Frontend**: React 19; TypeScript in strict mode; Vite; React Router; plain CSS. No UI component
 framework and no state-management library. Served in production by nginx inside the frontend
 container.
@@ -224,6 +260,8 @@ cover every host port in this table.
 | RabbitMQ management | 9673 | Internal 15672 |
 | Mailpit SMTP | 9025 | Internal 1025 |
 | Mailpit web UI | 9825 | Internal 8025 |
+| Prometheus | 9090 | Internal 9090 (its own default) |
+| Grafana | 9030 | Internal 3000 |
 
 ## Development Workflow
 
@@ -235,6 +273,14 @@ cover every host port in this table.
   edit or delete their own review, and anyone can browse a course's reviews and aggregate rating.
   Spec 009 (the instructor dashboard) is complete: `analytics-service` and the first instructor
   pages show instructors their own course statistics and administrators platform-wide totals.
+  Spec 010 (observability) is in progress: a Prometheus scrape endpoint on every service, a
+  Prometheus collector, and Grafana dashboards and alert rules for operators. It covers metrics only;
+  tracing and log aggregation stay out of scope and unapproved under X.
+- Operator-facing telemetry (VIII, spec 010) and instructor-facing statistics (XIV,
+  `analytics-service`) are separate concerns and MUST NOT be merged. The first is technical data
+  about the running system, read by whoever operates the platform; the second is business data about
+  courses, read by instructors through the gateway. Neither may be used as a substitute for the
+  other.
 - Other administrator screens and course authoring in the web app come later, if at all. They MUST
   NOT be folded into the student web app spec.
 - Each spec MUST go through specify, clarify, plan, tasks and implement on its own branch.
@@ -251,4 +297,4 @@ wording. Adding a technology, service or the frontend stack is a MINOR amendment
 plan review and pull request MUST verify compliance with this constitution, and unjustified
 complexity MUST be rejected.
 
-**Version**: 1.3.2 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-27
+**Version**: 1.4.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-11-06

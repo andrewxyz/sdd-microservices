@@ -1,0 +1,147 @@
+# Grafana alert rules (spec 010-observability, constitution VIII).
+#
+# Committed configuration, provisioned at startup. An alert is a state that moves between Normal,
+# Pending and Firing on its own, so FR-017 (self-resolving) comes from the model rather than from code.
+# Alerts show in Grafana's own UI; delivery to email, chat or a pager is out of scope for this spec.
+#
+# Every rule has the same three steps: A queries Prometheus, B reduces each series to its latest value,
+# C compares it against the threshold. Windows are deliberate - see the note on each rule.
+
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: learnhub-operations
+    folder: LearnHub
+    # How often the rules are evaluated. With a 15s scrape interval and the shortest `for` below, the
+    # worst case from a dead-letter landing to Firing is about 15s + 30s + 60s, inside SC-002's 2 min.
+    interval: 30s
+    rules:
+      # ------------------------------------------------------------------------------ US1
+      - uid: learnhub-dlq-not-empty
+        title: Dead-letter queue not empty
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              datasource: { type: prometheus, uid: prometheus }
+              # The .dlq suffix is what every consumer's dead-letter queue ends in: confirmed in all four
+              # RabbitTopologyConfig classes, and observed live for notification.q.dlq. A future
+              # consumer that follows the convention is covered with no change here.
+              expr: sum by (queue) (rabbitmq_detailed_queue_messages_ready{queue=~".*[.]dlq"})
+              instant: false
+              range: true
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+              datasource: { type: __expr__, uid: __expr__ }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              datasource: { type: __expr__, uid: __expr__ }
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+        # No series at all means the queue does not exist yet, which is not a stuck message.
+        noDataState: OK
+        execErrState: Error
+        # One minute, not longer: a dead-lettered message never clears itself, so there is nothing to
+        # wait out, and SC-002 allows 2 minutes end to end.
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "Dead-letter queue {{ $labels.queue }} is not empty"
+          description: "{{ $labels.queue }} holds {{ $values.B }} message(s) that failed their retries and were set aside. A consumer could not process them; see its logs by correlationId, then drain the queue."
+
+      # ------------------------------------------------------------------------------ US2
+      - uid: learnhub-service-unreachable
+        title: Service unreachable
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              datasource: { type: prometheus, uid: prometheus }
+              expr: up{job=~"learnhub-.*"}
+              instant: false
+              range: true
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+              datasource: { type: __expr__, uid: __expr__ }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              datasource: { type: __expr__, uid: __expr__ }
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+        noDataState: OK
+        execErrState: Error
+        # Two minutes is what keeps a normal start from alerting (FR-018, SC-009): a Spring service's
+        # own health check allows a 30s start period plus retries before it is ready, and a shorter
+        # window would fire on every single `scripts/up.sh`.
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "{{ $labels.service }} is unreachable"
+          description: "Prometheus has been unable to scrape {{ $labels.service }} for 2 minutes. It has crashed, never started, or its metrics endpoint is closed."
+
+      - uid: learnhub-server-errors-elevated
+        title: Server error rate elevated
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              datasource: { type: prometheus, uid: prometheus }
+              # A share, not a count, so a single failed request on an idle service is not read as 100%.
+              # Uses outcome="SERVER_ERROR", the label Spring Boot fills in for exactly this purpose.
+              expr: 100 * sum by (service) (rate(http_server_requests_seconds_count{outcome="SERVER_ERROR"}[5m])) / sum by (service) (rate(http_server_requests_seconds_count[5m]))
+              instant: false
+              range: true
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+              settings: { mode: dropNN }
+              datasource: { type: __expr__, uid: __expr__ }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              datasource: { type: __expr__, uid: __expr__ }
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+        # No traffic is 0/0, i.e. NaN, which dropNN discards: an idle service is not an erroring one.
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.service }} is returning server errors"
+          description: "{{ $labels.service }} has answered {{ $values.B }}% of requests with a 5xx over the last 5 minutes."

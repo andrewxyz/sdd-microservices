@@ -91,6 +91,8 @@ mapped into that range; the Spring services use the same port inside and outside
 | Mailpit (SMTP) | 9025 | 1025 |
 | Mailpit (web UI) | 9825 | 8025 |
 | **frontend (nginx)** | **9100** | **80** |
+| Prometheus (metrics) | 9090 | 9090 |
+| Grafana (dashboards, alerts) | 9030 | 3000 |
 
 ## Changing a central setting
 
@@ -128,6 +130,10 @@ Secrets never go in `backend/config-repo`. They come from environment variables 
    everything else is protected by default.
 5. **Add a Compose entry** in `docker-compose.yml`, using its reserved port from the table above and
    the same build, health check and `depends_on` shape as `echo-service`.
+6. **Register it for monitoring** by adding `<name>-service:<port>` to the `learnhub-services` job in
+   `backend/docker/prometheus/prometheus.yml`. The service itself needs nothing: its metrics endpoint
+   comes from `platform-common`. `scripts/smoke-test.sh` counts Prometheus' scrape targets, so a service
+   left out of this file fails the smoke test instead of going unmonitored.
 
 That is all. Registration with the registry, central configuration, health probes, structured logging
 and correlation IDs all arrive from `platform-common` and the shared config; you write no code for
@@ -260,6 +266,31 @@ an event.
   who owns what, the answer is a 503 with a reference code and no numbers.
 - **Course list**: course-service gained one internal endpoint, `GET /api/v1/internal/courses?instructorId=`,
   reachable only service to service (no gateway route).
+
+## Monitoring
+
+`prometheus` (port 9090) scrapes every service and RabbitMQ every 15 seconds and keeps 24 hours of
+history. `grafana` (port 9030) shows it on two dashboards, **Platform health** (is each service up, how
+much traffic, how fast, how many errors, how much memory) and **Event pipeline** (queue depth, throughput
+and dead-letter depth per queue). Sign in with `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` from your
+`.env`. These are tools for whoever runs the platform: nothing here appears in the student or
+instructor app, and it is separate from the instructor statistics above.
+
+**New to Prometheus or Grafana?** Read [`docs/monitoring-grafana-prometheus.md`](docs/monitoring-grafana-prometheus.md):
+what was built, how to run it, step-by-step use of both tools, worked exercises, troubleshooting.
+
+- **Dashboards and alert rules are code.** They live in `backend/docker/grafana/` and are loaded at
+  startup. The directory is mounted read-only, so an edit made in Grafana's UI does not survive a restart:
+  change the file instead.
+- **Three alerts** fire in Grafana's UI: a dead-letter queue is not empty (within about 90 seconds),
+  a service cannot be reached for 2 minutes, and a service's server-error rate stays above 5% for
+  5 minutes. They clear on their own once the condition does.
+- **Every service exposes `/actuator/prometheus`.** It arrives through `platform-common`, so no service
+  carries metrics code. Under the `local` profile it is open; outside it, it requires basic auth like
+  Eureka and the config server.
+- **Adding a service** means adding it to `backend/docker/prometheus/prometheus.yml` too (step 6 above).
+- Not included, by design: distributed tracing and log aggregation. They need their own specs and a
+  constitution amendment.
 
 ## Building and testing
 

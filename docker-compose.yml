@@ -513,6 +513,71 @@ services:
       retries: 10
       start_period: 10s
 
+  # ------------------------------------------------------------------- observability
+  # Operator-facing only (constitution VIII, spec 010). Deliberately no gateway route: these are not
+  # client APIs, so Principle IV is not engaged - the same position notification-service is in.
+  #
+  # Always on rather than behind a profile, so one command brings up a monitored platform (FR-019)
+  # and the smoke test can assert on it every run (FR-021). The memory caps are what make that safe
+  # on a host that runs this whole stack in under 4 GB.
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      # Both bounds, not just time: time alone leaves size unbounded if scrape volume grows, and
+      # SC-008 asks for a size that stays bounded indefinitely. 14 targets at 15s will not approach
+      # 512MB in 24h, so the size bound is a guard rather than the operative limit.
+      - --storage.tsdb.retention.time=24h
+      - --storage.tsdb.retention.size=512MB
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    volumes:
+      # Read-only, exactly as config-server mounts config-repo: the running tool must not be able to
+      # rewrite its own source of truth.
+      - ./backend/docker/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    mem_limit: 256m
+    healthcheck:
+      # wget, not curl: these images are minimal and may not ship curl, the same reason frontend's
+      # health check uses wget.
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  grafana:
+    image: grafana/grafana:11.5.1
+    environment:
+      # FR-012: no default and no blank password. The :? form rejects an empty value too, so a
+      # present-but-empty setting fails at start rather than silently falling back to admin/admin.
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:?GRAFANA_ADMIN_USER is required; copy .env.example to .env}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required; copy .env.example to .env}
+      # Nothing here is public, and the host has no internet guarantee.
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "9030:3000"
+    volumes:
+      # Read-only so a hand edit in the UI cannot become the real configuration: a restart restores
+      # the committed definitions (FR-011, FR-016).
+      - ./backend/docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./backend/docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    mem_limit: 192m
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   # A second copy of the echo service, for checking that calls spread across instances.
   # Started on demand:  docker compose --profile scale up -d echo-service-b
   # No host port: it is reached only through the gateway, by service name.
@@ -545,3 +610,8 @@ services:
 volumes:
   postgres-data:
   rabbitmq-data:
+  # Metric history and Grafana's own state. Both survive a restart and are wiped by `down -v`
+  # (FR-023). Dashboards and alert rules are NOT in here - they are provisioned from committed files,
+  # so they come back immediately even after a reset.
+  prometheus-data:
+  grafana-data:
